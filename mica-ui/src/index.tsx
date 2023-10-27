@@ -1,0 +1,25 @@
+import { createRouter } from './router.tsx';
+import CssBaseline from '@mui/material/CssBaseline';
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { RouterProvider } from 'react-router-dom';
+
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
+
+const queryClient = new QueryClient();
+const router = createRouter();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+        <CssBaseline>
+            <QueryClientProvider client={queryClient}>
+                <RouterProvider router={router} />
+            </QueryClientProvider>
+        </CssBaseline>
+    </React.StrictMode>,
+);

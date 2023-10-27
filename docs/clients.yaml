@@ -1,0 +1,17 @@
+clients:
+  - id: "foo"
+    name: "Foo Corp"
+    status: "active"
+    gadgets:
+      - a spinny thing
+      - a thing that always gets lost in drawers
+    widgets:
+      - thingamabob
+      - thingamajig
+
+  - id: "bar"
+    name: "Bar Inc"
+    status: "retired"
+    preferredColors:
+      - wenge
+      - smalt
