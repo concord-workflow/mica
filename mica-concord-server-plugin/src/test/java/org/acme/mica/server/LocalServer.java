@@ -27,14 +27,19 @@ public class LocalServer {
         try (var server = new TestingConcordServer(config, List.of(_cfg -> new LocalServerModule(), MicaModule::new))) {
             server.start();
 
+            var db = server.getDb();
             System.out.println("""
                     ==============================================================
 
                       UI (hosted): http://localhost:8001/mica/
                       UI (dev): http://localhost:5173/mica/ (launched separately)
+                      DB:
+                        JDBC URL: %s
+                        username: %s
+                        password: %s
 
                     ==============================================================
-                    """);
+                    """.formatted(db.getJdbcUrl(), db.getUsername(), db.getPassword()));
             Thread.currentThread().join();
         }
     }

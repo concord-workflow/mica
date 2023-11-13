@@ -10,9 +10,7 @@ import com.walmartlabs.ollie.config.Environment;
 import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
 import org.acme.mica.db.MicaDatabaseModule;
-import org.acme.mica.server.api.ClientDataImporter;
-import org.acme.mica.server.api.ClientDataResource;
-import org.acme.mica.server.api.ClientResource;
+import org.acme.mica.server.api.*;
 import org.acme.mica.server.oidc.OidcResource;
 import org.acme.mica.server.ui.UiServlet;
 import org.acme.mica.server.ui.WhoamiResource;
@@ -72,13 +70,16 @@ public class MicaModule implements Module {
 
         bindJaxRsResource(binder, WhoamiResource.class);
         bindJaxRsResource(binder, OidcResource.class);
+        bindJaxRsResource(binder, DocumentResource.class);
         bindJaxRsResource(binder, ClientResource.class);
         bindJaxRsResource(binder, ClientDataResource.class);
 
         // other beans
 
         binder.bind(UuidGenerator.class).in(SINGLETON);
-        binder.bind(ClientDataImporter.class);
+
+        binder.bind(ClientDataImporter.class).in(SINGLETON);
+        newSetBinder(binder, DocumentImporter.class).addBinding().to(ClientDataImporter.class);
     }
 
     private static Config loadDefaultConfig() {

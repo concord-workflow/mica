@@ -74,7 +74,7 @@ public class ClientResource implements Resource {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> parseAndFilterProperties(JSONB json, Set<String> props) {
-        if (props.isEmpty()) {
+        if (json == null || props.isEmpty()) {
             return Map.of();
         }
 

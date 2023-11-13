@@ -1,4 +1,4 @@
-import { useImportClientData } from '../api/clientData.ts';
+import { useImportData } from '../api/document.ts';
 import { LoadingButton } from '@mui/lab';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
@@ -13,7 +13,9 @@ interface Props {
 
 function ClientDataUploadDialog({ open, onSuccess, onClose }: Props) {
     const client = useQueryClient();
-    const { mutateAsync, isLoading, error } = useImportClientData(client);
+    const { mutateAsync, isLoading, error } = useImportData({
+        onSuccess: () => client.invalidateQueries('clientList'),
+    });
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const handleUpload = async () => {

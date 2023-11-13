@@ -1,12 +1,5 @@
 # Mica
 
-## Implementation Notes
-
-Mica can be run separately or as a part of
-the [concord-server](https://github.com/walmartlabs/concord/tree/master/server).
-
-The standalone mode requires a bit of a setup, see the example in `org.acme.mica.server.LocalServer`.
-
 ## Model
 
 - `Client` -- an external company, client of Acme Corp.
@@ -17,29 +10,56 @@ The standalone mode requires a bit of a setup, see the example in `org.acme.mica
   periodically by an external process. E.g. status, business name, VPCs, etc.
   - `documentId` -- uuid, internal ID;
   - `externalId` -- string, "external" human-readable Client ID;
+  - `kind` -- string, type of the document. Mostly for versioning purposes;
   - `parsedData` -- JSON, client properties.
 
-## APIs
+- `Client Profile` -- defines a set of properties for a given client.
+  - `id` -- uuid, internal ID;
+  - `name` -- string;
+  - `kind` -- type of the profile. Mostly for versioning purposes;
+  - `schema` -- JSON schema, defines the set of properties.
 
-Enumerate clients:
+## Use Cases
 
+### Enforcing Client Data Schema
+
+Client profiles can be used to enforce a certain schema to the client data.
+
+### Verification of Remote Client Endpoints
+
+Given a client profile:
+
+```yaml
+name: "remote-client"
+kind: "MicaProfile/1.0"
+schema:
+  type: object
+  required:
+    - validationEndpoint
+  properties:
+      validationEndpoint:
+        type: string
+        format: uri      
 ```
-# get all clients
-GET /api/mica/v1/client
 
-# search
-GET /api/mica/v1/client?search=foobar
+One can make a Concord flow that fetches all `validationEndpoint` values (using
+an imaginary, for now, Concord task `mica`):
 
-# search and return extra properties from the latest client data
-GET /api/mica/v1/client?search=foobar&props=some_prop&props=...
+```yaml
+- task: mica
+  in:
+    action: listClients
+    props:
+      - validationEndpoint
+  out: clients
 ```
 
-Read client data:
+And runs some form of validation for each client:
 
-```
-# upload client data
-POST /api/mica/v1/clientData/import
-
-# fetch the latest published data
-GET /api/mica/v1/clientData/latest?externalId=...
+```yaml
+- task: validateClient
+  in:
+    endpoint: ${item.properties.validationEndpoint}
+  loop:
+    items: ${clients}
 ```

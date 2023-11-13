@@ -34,5 +34,23 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+
+        <createTable tableName="CLIENT_PROFILES">
+            <column name="ID" type="UUID">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="NAME" type="TEXT">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="CREATED_AT" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="KIND" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SCHEMA" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
 </databaseChangeLog>

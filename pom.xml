@@ -23,7 +23,7 @@
         <jooq.version>3.14.0</jooq.version>
         <node.version>v20.8.0</node.version>
         <npm.version>10.2.0</npm.version>
-        <concord.version>2.1.1-SNAPSHOT</concord.version>
+        <concord.version>2.2.0</concord.version>
     </properties>
 
     <dependencyManagement>

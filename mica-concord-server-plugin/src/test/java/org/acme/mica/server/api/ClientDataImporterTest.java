@@ -9,18 +9,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class ClientDataImporterTest {
 
     private PostgreSQLContainer<?> db;
     private DataSource dataSource;
     private Configuration jooqCfg;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     public void setUp() {
@@ -43,12 +47,14 @@ public class ClientDataImporterTest {
 
     @Test
     public void testImport() {
-        var document = new Document(List.of(
-                new ClientDataEntry("id1", Map.of()),
-                new ClientDataEntry("id2", Map.of())));
+        var document = new Document(Optional.of(ClientDataDocument.KIND),
+                Map.of("clients",
+                        List.of(
+                                new ClientDataEntry("id1", Map.of()),
+                                new ClientDataEntry("id2", Map.of()))));
 
         var importer = new ClientDataImporter(jooqCfg, new UuidGenerator());
-        importer.importClientData(document);
+        importer.importDocument(document);
     }
 
     private static final class DatabaseConfigurationImpl implements DatabaseConfiguration {

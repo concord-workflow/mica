@@ -18,7 +18,7 @@ import static org.acme.mica.db.jooq.Tables.CLIENTS;
 import static org.acme.mica.db.jooq.Tables.CLIENT_DATA;
 import static org.jooq.JSONB.jsonb;
 
-public class ClientDataImporter {
+public class ClientDataImporter implements DocumentImporter {
 
     private static final Logger log = LoggerFactory.getLogger(ClientDataImporter.class);
 
@@ -33,18 +33,25 @@ public class ClientDataImporter {
         this.jsonMapper = new ObjectMapper();
     }
 
-    public ImportResult importClientData(Document document) {
+    @Override
+    public boolean canImport(Document doc) {
+        return doc.getKind().map(kind -> kind.equals(ClientDataDocument.KIND))
+                .orElseGet(() -> doc.getData().containsKey("clients"));
+    }
+
+    @Override
+    public void importDocument(Document document) {
         // TODO validate ClientDataEntry#id() format
+        var clientList = jsonMapper.convertValue(document, ClientDataDocument.class);
 
         var documentId = uuidGenerator.generate();
-        log.info("Importing a new client data document with {} client(s), documentId={}", document.clients().size(),
+        log.info("Importing a new client data document with {} client(s), documentId={}", clientList.clients().size(),
                 documentId);
         DSL.using(cfg).transaction(cfg -> {
             var tx = DSL.using(cfg);
-            document.clients()
+            clientList.clients()
                     .forEach(client -> insert(tx, documentId, client));
         });
-        return new ImportResult(documentId);
     }
 
     private void insert(DSLContext tx, UUID documentId, ClientDataEntry client) {
@@ -56,11 +63,11 @@ public class ClientDataImporter {
         }
         tx.insertInto(CLIENT_DATA)
                 .columns(CLIENT_DATA.DOCUMENT_ID, CLIENT_DATA.KIND, CLIENT_DATA.EXTERNAL_ID, CLIENT_DATA.PARSED_DATA)
-                .values(documentId, ClientDataEntry.KIND, client.id(), data)
+                .values(documentId, ClientDataEntry.KIND, client.getId(), data)
                 .execute();
 
         var clientId = uuidGenerator.generate();
-        var clientName = client.id();
+        var clientName = client.getId();
 
         int rows = tx.insertInto(CLIENTS).columns(CLIENTS.ID, CLIENTS.NAME)
                 .values(clientId, clientName)
