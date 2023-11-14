@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="mica-10000" author="ibodrov@gmail.com">
-        <createTable tableName="CLIENTS">
+        <createTable tableName="MICA_CLIENTS">
             <column name="ID" type="UUID">
                 <constraints primaryKey="true"/>
             </column>
@@ -17,7 +17,7 @@
             </column>
         </createTable>
 
-        <createTable tableName="CLIENT_DATA">
+        <createTable tableName="MICA_CLIENT_DATA">
             <column name="DOCUMENT_ID" type="UUID">
                 <constraints nullable="false"/>
             </column>
@@ -35,7 +35,11 @@
             </column>
         </createTable>
 
-        <createTable tableName="CLIENT_PROFILES">
+        <createIndex tableName="MICA_CLIENT_DATA" indexName="IDX_CLIENT_DATA_BY_EXTERNAL_ID">
+            <column name="EXTERNAL_ID"/>
+        </createIndex>
+
+        <createTable tableName="MICA_PROFILES">
             <column name="ID" type="UUID">
                 <constraints primaryKey="true"/>
             </column>

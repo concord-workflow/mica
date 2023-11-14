@@ -56,6 +56,20 @@ const Sidebar = ({ open }: { open: boolean }) => {
                 </ListItemIcon>
                 <ListItemText primary="Profiles" />
             </ListItemButton>
+
+            {/*Profiles/Details*/}
+            {open && /^\/profile\/.*\/details$/.test(location.pathname) && (
+                <Collapse in={true} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                        <ListItemButton sx={{ pl: 4 }} selected={true}>
+                            <ListItemIcon>
+                                <PublishIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Details" />
+                        </ListItemButton>
+                    </List>
+                </Collapse>
+            )}
         </List>
     );
 };

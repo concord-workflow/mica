@@ -16,8 +16,8 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.UUID;
 
-import static org.acme.mica.db.jooq.Tables.CLIENTS;
-import static org.acme.mica.db.jooq.Tables.CLIENT_DATA;
+import static org.acme.mica.db.jooq.Tables.MICA_CLIENTS;
+import static org.acme.mica.db.jooq.Tables.MICA_CLIENT_DATA;
 import static org.jooq.JSONB.jsonb;
 
 public class ClientDataImporter implements DocumentImporter {
@@ -63,15 +63,16 @@ public class ClientDataImporter implements DocumentImporter {
         } catch (IOException e) {
             throw new RuntimeException("JSON serialization error: " + e.getMessage());
         }
-        tx.insertInto(CLIENT_DATA)
-                .columns(CLIENT_DATA.DOCUMENT_ID, CLIENT_DATA.KIND, CLIENT_DATA.EXTERNAL_ID, CLIENT_DATA.PARSED_DATA)
+        tx.insertInto(MICA_CLIENT_DATA)
+                .columns(MICA_CLIENT_DATA.DOCUMENT_ID, MICA_CLIENT_DATA.KIND, MICA_CLIENT_DATA.EXTERNAL_ID,
+                        MICA_CLIENT_DATA.PARSED_DATA)
                 .values(documentId, ClientDataEntry.KIND, client.getId(), data)
                 .execute();
 
         var clientId = uuidGenerator.generate();
         var clientName = client.getId();
 
-        int rows = tx.insertInto(CLIENTS).columns(CLIENTS.ID, CLIENTS.NAME)
+        int rows = tx.insertInto(MICA_CLIENTS).columns(MICA_CLIENTS.ID, MICA_CLIENTS.NAME)
                 .values(clientId, clientName)
                 .onConflictDoNothing()
                 .execute();

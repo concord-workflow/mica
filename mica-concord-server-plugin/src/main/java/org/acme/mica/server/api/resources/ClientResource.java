@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static org.acme.mica.db.jooq.Tables.CLIENTS;
-import static org.acme.mica.db.jooq.Tables.CLIENT_DATA;
+import static org.acme.mica.db.jooq.Tables.MICA_CLIENTS;
+import static org.acme.mica.db.jooq.Tables.MICA_CLIENT_DATA;
 import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.val;
@@ -31,9 +31,9 @@ public class ClientResource implements Resource {
     private final ObjectMapper objectMapper;
 
     @Inject
-    public ClientResource(@MicaDB Configuration cfg) {
+    public ClientResource(@MicaDB Configuration cfg, ObjectMapper objectMapper) {
         this.cfg = cfg;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     @GET
@@ -42,21 +42,21 @@ public class ClientResource implements Resource {
                                   @QueryParam("props") Set<String> props) {
 
         var searchCondition = Optional.ofNullable(search)
-                .map(CLIENTS.NAME::containsIgnoreCase)
+                .map(MICA_CLIENTS.NAME::containsIgnoreCase)
                 .orElseGet(DSL::noCondition);
 
         var latestData = props.isEmpty() ? val(jsonb("{}")).as("latest_data")
-                : select(CLIENT_DATA.PARSED_DATA).from(CLIENT_DATA)
-                        .where(CLIENT_DATA.EXTERNAL_ID.eq(CLIENTS.NAME))
-                        .orderBy(CLIENT_DATA.IMPORTED_AT.desc())
+                : select(MICA_CLIENT_DATA.PARSED_DATA).from(MICA_CLIENT_DATA)
+                        .where(MICA_CLIENT_DATA.EXTERNAL_ID.eq(MICA_CLIENTS.NAME))
+                        .orderBy(MICA_CLIENT_DATA.IMPORTED_AT.desc())
                         .limit(1)
                         .asField("latest_data");
 
         var data = cfg.dsl()
-                .select(CLIENTS.ID, CLIENTS.NAME, latestData)
-                .from(CLIENTS)
+                .select(MICA_CLIENTS.ID, MICA_CLIENTS.NAME, latestData)
+                .from(MICA_CLIENTS)
                 .where(searchCondition)
-                .fetch(r -> new Client(r.get(CLIENTS.ID), r.get(CLIENTS.NAME),
+                .fetch(r -> new Client(r.get(MICA_CLIENTS.ID), r.get(MICA_CLIENTS.NAME),
                         parseAndFilterProperties(r.get("latest_data", JSONB.class), props)));
 
         return new ClientList(data);

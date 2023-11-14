@@ -10,11 +10,11 @@ import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
 import org.acme.mica.db.MicaDatabaseModule;
 import org.acme.mica.server.api.resources.ClientDataResource;
-import org.acme.mica.server.api.resources.ClientProfileResource;
+import org.acme.mica.server.api.resources.ProfileResource;
 import org.acme.mica.server.api.resources.ClientResource;
 import org.acme.mica.server.api.resources.DocumentResource;
 import org.acme.mica.server.data.ClientDataImporter;
-import org.acme.mica.server.data.ClientProfileImporter;
+import org.acme.mica.server.data.ProfileImporter;
 import org.acme.mica.server.data.DocumentImporter;
 import org.acme.mica.server.exceptions.DataAccessExceptionMapper;
 import org.acme.mica.server.oidc.OidcResource;
@@ -79,7 +79,7 @@ public class MicaModule implements Module {
         bindJaxRsResource(binder, DocumentResource.class);
         bindJaxRsResource(binder, ClientResource.class);
         bindJaxRsResource(binder, ClientDataResource.class);
-        bindJaxRsResource(binder, ClientProfileResource.class);
+        bindJaxRsResource(binder, ProfileResource.class);
 
         // other beans
 
@@ -88,8 +88,8 @@ public class MicaModule implements Module {
         binder.bind(ClientDataImporter.class).in(SINGLETON);
         newSetBinder(binder, DocumentImporter.class).addBinding().to(ClientDataImporter.class);
 
-        binder.bind(ClientProfileImporter.class).in(SINGLETON);
-        newSetBinder(binder, DocumentImporter.class).addBinding().to(ClientProfileImporter.class);
+        binder.bind(ProfileImporter.class).in(SINGLETON);
+        newSetBinder(binder, DocumentImporter.class).addBinding().to(ProfileImporter.class);
     }
 
     private static Config loadDefaultConfig() {

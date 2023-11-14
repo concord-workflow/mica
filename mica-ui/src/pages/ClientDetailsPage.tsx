@@ -27,16 +27,16 @@ const HELP: React.ReactNode = (
 );
 
 type RouteParams = {
-    clientId: string;
+    clientName: string;
 };
 
 const ClientDetailsPage = () => {
-    const { clientId } = useParams<RouteParams>();
+    const { clientName } = useParams<RouteParams>();
     const { data, isFetching } = useQuery(
-        ['client', 'data', clientId],
-        () => getLatestData(clientId!),
+        ['client', 'data', clientName],
+        () => getLatestData(clientName!),
         {
-            enabled: clientId !== undefined,
+            enabled: clientName !== undefined,
         },
     );
 

@@ -1,4 +1,4 @@
-import { listClientProfiles } from '../api/clientProfile.ts';
+import { listClientProfiles } from '../api/profile.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import RowMenu from '../components/RowMenu.tsx';
