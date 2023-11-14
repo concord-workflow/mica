@@ -17,7 +17,7 @@ can be added directly to the classpath of concord-server.
 
 ## Running in IDE
 
-Start `org.acme.mica.server.LocalServer` with the following environment variables:
+Start `ca.ibodrov.mica.server.LocalServer` with the following environment variables:
 - `TEST_OIDC_AUTHSERVER` - the OIDC server URL, for example `https://dev-12345678.okta.com`;
 - `TEST_OIDC_CLIENTID` - the OIDC client ID;
 - `TEST_OIDC_SECRET` - the OIDC client secret.

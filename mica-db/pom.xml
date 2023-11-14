@@ -6,9 +6,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.acme</groupId>
+        <groupId>ca.ibodrov</groupId>
         <artifactId>mica</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>mica-db</artifactId>
@@ -18,7 +18,7 @@
         <db.host>localhost</db.host>
         <db.username>postgres</db.username>
         <db.password>mica</db.password>
-        <db.changeLogPath>org/acme/mica/db/liquibase.xml</db.changeLogPath>
+        <db.changeLogPath>ca/ibodrov/mica/db/liquibase.xml</db.changeLogPath>
         <liquibase.version>4.24.0</liquibase.version>
     </properties>
 
@@ -179,7 +179,7 @@
                             <includes>.*</includes>
                         </database>
                         <target>
-                            <packageName>org.acme.mica.db.jooq</packageName>
+                            <packageName>ca.ibodrov.mica.db.jooq</packageName>
                             <directory>target/generated-sources/jooq</directory>
                         </target>
                     </generator>

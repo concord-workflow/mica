@@ -6,21 +6,21 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.acme</groupId>
+        <groupId>ca.ibodrov</groupId>
         <artifactId>mica</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>mica-concord-server-plugin</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.acme</groupId>
+            <groupId>ca.ibodrov</groupId>
             <artifactId>mica-ui</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.acme</groupId>
+            <groupId>ca.ibodrov</groupId>
             <artifactId>mica-db</artifactId>
             <version>${project.version}</version>
         </dependency>
