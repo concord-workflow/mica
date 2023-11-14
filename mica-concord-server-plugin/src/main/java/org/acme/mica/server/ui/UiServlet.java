@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
+import java.util.Optional;
 
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
@@ -49,12 +50,13 @@ public class UiServlet extends HttpServlet {
             var in = cl.getResourceAsStream(RESOURCE_ROOT + path);
             if (in == null) {
                 in = cl.getResourceAsStream(INDEX_HTML);
-                contentType = TEXT_HTML_TYPE;
+                contentType = Optional.of(TEXT_HTML_TYPE);
             }
             assert in != null;
+            assert contentType.isPresent();
             try {
                 resp.setStatus(200);
-                resp.setHeader("Content-Type", contentType);
+                resp.setHeader("Content-Type", contentType.get());
                 ByteStreams.copy(in, resp.getOutputStream());
             } finally {
                 in.close();
@@ -64,20 +66,20 @@ public class UiServlet extends HttpServlet {
         }
     }
 
-    private static String getContentType(String fileName) {
+    private static Optional<String> getContentType(String fileName) {
         var extIdx = fileName.lastIndexOf('.');
         if (extIdx < 2 || extIdx >= fileName.length() - 1) {
-            throw new RuntimeException("Not a regular file: " + fileName);
+            return Optional.empty();
         }
         var ext = fileName.substring(extIdx + 1);
-        return switch (ext) {
+        return Optional.of(switch (ext) {
             case "html" -> "text/html";
             case "css" -> "text/css";
             case "js" -> "text/javascript";
             case "svg" -> "image/svg+xml";
             case "woff" -> "font/woff";
             case "woff2" -> "font/woff2";
-            default -> throw new RuntimeException("Can't determine content-type for " + fileName);
-        };
+            default -> null;
+        });
     }
 }

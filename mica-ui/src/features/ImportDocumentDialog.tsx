@@ -14,7 +14,10 @@ interface Props {
 function ImportDocumentDialog({ open, onSuccess, onClose }: Props) {
     const client = useQueryClient();
     const { mutateAsync, isLoading, error } = useImportDocument({
-        onSuccess: () => client.invalidateQueries('clientList'),
+        onSuccess: () => {
+            client.invalidateQueries(['client']);
+            client.invalidateQueries(['clientProfile']);
+        },
     });
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);

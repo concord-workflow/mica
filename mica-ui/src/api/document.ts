@@ -1,3 +1,5 @@
+import { handleJsonResponse } from './common.ts';
+
 import { useMutation } from 'react-query';
 import { UseMutationOptions } from 'react-query/types/react/types';
 
@@ -7,7 +9,7 @@ const importDocument = (file: File): Promise<ImportResponse> =>
     fetch('/api/mica/v1/document/import', {
         method: 'POST',
         body: file,
-    }).then((resp) => resp.json());
+    }).then(handleJsonResponse<ImportResponse>);
 
 export const useImportDocument = (
     options?: UseMutationOptions<ImportResponse, Error, { file: File }>,

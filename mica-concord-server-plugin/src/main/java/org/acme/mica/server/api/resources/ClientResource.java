@@ -37,7 +37,6 @@ public class ClientResource implements Resource {
     }
 
     @GET
-    @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     public ClientList listClients(@QueryParam("search") @Length(max = 128) String search,
                                   @QueryParam("props") Set<String> props) {
@@ -57,8 +56,7 @@ public class ClientResource implements Resource {
                 .select(CLIENTS.ID, CLIENTS.NAME, latestData)
                 .from(CLIENTS)
                 .where(searchCondition)
-                .fetch()
-                .map(r -> new Client(r.get(CLIENTS.ID), r.get(CLIENTS.NAME),
+                .fetch(r -> new Client(r.get(CLIENTS.ID), r.get(CLIENTS.NAME),
                         parseAndFilterProperties(r.get("latest_data", JSONB.class), props)));
 
         return new ClientList(data);

@@ -32,9 +32,13 @@ type RouteParams = {
 
 const ClientDetailsPage = () => {
     const { clientId } = useParams<RouteParams>();
-    const { data, isFetching } = useQuery('clientData', () => getLatestData(clientId!), {
-        enabled: clientId !== undefined,
-    });
+    const { data, isFetching } = useQuery(
+        ['client', 'data', clientId],
+        () => getLatestData(clientId!),
+        {
+            enabled: clientId !== undefined,
+        },
+    );
 
     return (
         <>

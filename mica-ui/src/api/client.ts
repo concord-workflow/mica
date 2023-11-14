@@ -1,3 +1,5 @@
+import { handleJsonResponse } from './common.ts';
+
 export interface Client {
     id: string;
     name: string;
@@ -13,4 +15,4 @@ export interface ClientList {
 export const listClients = (search?: string, props?: Array<string>): Promise<ClientList> =>
     fetch(
         `/api/mica/v1/client?search=${search}${props?.map((prop) => `&props=${prop}`).join()}`,
-    ).then((resp) => resp.json());
+    ).then(handleJsonResponse<ClientList>);

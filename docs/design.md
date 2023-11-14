@@ -13,7 +13,7 @@
   - `kind` -- string, type of the document. Mostly for versioning purposes;
   - `parsedData` -- JSON, client properties.
 
-- `Client Profile` -- defines a set of properties for a given client.
+- `Client ClientProfile` -- defines a set of properties for a given client.
   - `id` -- uuid, internal ID;
   - `name` -- string;
   - `kind` -- type of the profile. Mostly for versioning purposes;

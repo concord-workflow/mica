@@ -4,26 +4,27 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.server.boot.FilterChainConfigurator;
-import com.walmartlabs.concord.server.security.UnauthenticatedExceptionMapper;
 import com.walmartlabs.ollie.config.ConfigurationProcessor;
 import com.walmartlabs.ollie.config.Environment;
 import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
 import org.acme.mica.db.MicaDatabaseModule;
 import org.acme.mica.server.api.resources.ClientDataResource;
+import org.acme.mica.server.api.resources.ClientProfileResource;
 import org.acme.mica.server.api.resources.ClientResource;
 import org.acme.mica.server.api.resources.DocumentResource;
 import org.acme.mica.server.data.ClientDataImporter;
 import org.acme.mica.server.data.ClientProfileImporter;
 import org.acme.mica.server.data.DocumentImporter;
+import org.acme.mica.server.exceptions.DataAccessExceptionMapper;
 import org.acme.mica.server.oidc.OidcResource;
 import org.acme.mica.server.ui.UiServlet;
 import org.acme.mica.server.ui.WhoamiResource;
 import org.apache.shiro.realm.Realm;
+import org.sonatype.siesta.Component;
 
 import javax.inject.Named;
 import javax.servlet.http.HttpServlet;
-import javax.ws.rs.ext.ExceptionMapper;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -65,7 +66,7 @@ public class MicaModule implements Module {
 
         // exception mappers
 
-        newSetBinder(binder, ExceptionMapper.class).addBinding().to(UnauthenticatedExceptionMapper.class);
+        newSetBinder(binder, Component.class).addBinding().to(DataAccessExceptionMapper.class);
 
         // security realms
 
@@ -78,6 +79,7 @@ public class MicaModule implements Module {
         bindJaxRsResource(binder, DocumentResource.class);
         bindJaxRsResource(binder, ClientResource.class);
         bindJaxRsResource(binder, ClientDataResource.class);
+        bindJaxRsResource(binder, ClientProfileResource.class);
 
         // other beans
 

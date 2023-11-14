@@ -6,7 +6,6 @@ import org.acme.mica.server.UuidGenerator;
 import org.acme.mica.server.api.model.ClientProfile;
 import org.acme.mica.server.api.model.Document;
 import org.jooq.Configuration;
-import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +36,7 @@ public class ClientProfileImporter implements DocumentImporter {
 
     @Override
     public void importDocument(Document doc) {
-        var profile = objectMapper.convertValue(doc, ClientProfile.class);
+        var profile = objectMapper.convertValue(doc.getData(), ClientProfile.class);
 
         String schema;
         try {
@@ -47,11 +46,11 @@ public class ClientProfileImporter implements DocumentImporter {
         }
 
         var id = uuidGenerator.generate();
-        cfg.dsl()
+        cfg.dsl().transaction(cfg -> cfg.dsl()
                 .insertInto(CLIENT_PROFILES)
                 .columns(CLIENT_PROFILES.ID, CLIENT_PROFILES.NAME, CLIENT_PROFILES.KIND, CLIENT_PROFILES.SCHEMA)
-                .values(id, profile.name(), profile.kind(), schema)
-                .execute();
+                .values(id, profile.name(), ClientProfile.KIND, schema)
+                .execute());
 
         log.info("Inserted a new profile, id={}, name={}", id, profile.name());
     }

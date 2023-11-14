@@ -1,4 +1,4 @@
-import { listClients } from '../api/client.ts';
+import { listClientProfiles } from '../api/clientProfile.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import RowMenu from '../components/RowMenu.tsx';
@@ -31,18 +31,18 @@ import { Link as RouterLink } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
-        <b>Clients</b> page provides overview of all clients registered in Mica. Use the{' '}
-        <b>upload</b> feature to import client lists in YAML format.
+        <b>Profiles</b> page provides overview of all profiles registered in Mica. Use the{' '}
+        <b>upload</b> feature to import profiles in YAML format.
     </>
 );
 
-const ClientListPage = () => {
+const ProfileListPage = () => {
     const [openUpload, setOpenUpload] = useState(false);
 
     const [search, setSearch] = useState<string>('');
     const { data, isFetching } = useQuery(
         ['client', 'list', search],
-        () => listClients(search, ['status']),
+        () => listClientProfiles(search),
         {
             keepPreviousData: true,
             select: ({ data }) => data,
@@ -57,7 +57,7 @@ const ClientListPage = () => {
 
     return (
         <>
-            <PageTitle help={HELP}>Clients</PageTitle>
+            <PageTitle help={HELP}>Profiles</PageTitle>
             <ImportDocumentDialog
                 open={openUpload}
                 onSuccess={handleSuccessfulUpload}
@@ -67,7 +67,7 @@ const ClientListPage = () => {
                 open={openSuccessNotification}
                 autoHideDuration={5000}
                 onClose={() => setOpenSuccessNotification(false)}
-                message="Client data uploaded successfully"
+                message="Profile uploaded successfully"
             />
             <ActionBar>
                 <FormControl>
@@ -85,7 +85,6 @@ const ClientListPage = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell width="10%">Status</TableCell>
                             <TableCell>Name</TableCell>
                             <TableCell align="right">
                                 {isFetching && (
@@ -99,11 +98,10 @@ const ClientListPage = () => {
                             data.length > 0 &&
                             data.map((row) => (
                                 <TableRow key={row.id}>
-                                    <TableCell>{row.properties.status}</TableCell>
                                     <TableCell>
                                         <Link
                                             component={RouterLink}
-                                            to={`/client/${row.name}/details`}>
+                                            to={`/profile/${row.name}/details`}>
                                             {row.name}
                                         </Link>
                                     </TableCell>
@@ -133,4 +131,4 @@ const ClientListPage = () => {
     );
 };
 
-export default ClientListPage;
+export default ProfileListPage;
