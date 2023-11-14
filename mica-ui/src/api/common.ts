@@ -1,3 +1,15 @@
+export const doFetch = async (input: RequestInfo | URL, init?: RequestInit) =>
+    fetch(input, addUiHeader(init));
+
+const addUiHeader = (init?: RequestInit): RequestInit => {
+    // add X-Concord-UI-Request header
+    // that's how concord-server knows not to respond with 'WWW-Authenticate: Basic'
+    // which triggers the browser's basic auth popup, and we don't want that
+    const headers = new Headers(init?.headers);
+    headers.append('X-Concord-UI-Request', 'true');
+    return { ...init, headers };
+};
+
 export const handleJsonResponse = async <T>(resp: Response): Promise<T> => {
     if (!resp.ok) {
         throw new Error(await parseError(resp));
