@@ -10,7 +10,12 @@ import com.walmartlabs.ollie.config.Environment;
 import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
 import org.acme.mica.db.MicaDatabaseModule;
-import org.acme.mica.server.api.*;
+import org.acme.mica.server.api.resources.ClientDataResource;
+import org.acme.mica.server.api.resources.ClientResource;
+import org.acme.mica.server.api.resources.DocumentResource;
+import org.acme.mica.server.data.ClientDataImporter;
+import org.acme.mica.server.data.ClientProfileImporter;
+import org.acme.mica.server.data.DocumentImporter;
 import org.acme.mica.server.oidc.OidcResource;
 import org.acme.mica.server.ui.UiServlet;
 import org.acme.mica.server.ui.WhoamiResource;
@@ -80,6 +85,9 @@ public class MicaModule implements Module {
 
         binder.bind(ClientDataImporter.class).in(SINGLETON);
         newSetBinder(binder, DocumentImporter.class).addBinding().to(ClientDataImporter.class);
+
+        binder.bind(ClientProfileImporter.class).in(SINGLETON);
+        newSetBinder(binder, DocumentImporter.class).addBinding().to(ClientProfileImporter.class);
     }
 
     private static Config loadDefaultConfig() {

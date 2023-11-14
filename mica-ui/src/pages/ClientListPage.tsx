@@ -4,7 +4,7 @@ import PageTitle from '../components/PageTitle.tsx';
 import RowMenu from '../components/RowMenu.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
-import ClientDataUploadDialog from '../features/ClientDataUploadDialog.tsx';
+import ImportDocumentDialog from '../features/ImportDocumentDialog.tsx';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
@@ -58,7 +58,7 @@ const ClientListPage = () => {
     return (
         <>
             <PageTitle help={HELP}>Clients</PageTitle>
-            <ClientDataUploadDialog
+            <ImportDocumentDialog
                 open={openUpload}
                 onSuccess={handleSuccessfulUpload}
                 onClose={() => setOpenUpload(false)}

@@ -3,12 +3,13 @@ import { UseMutationOptions } from 'react-query/types/react/types';
 
 export interface ImportResponse {}
 
-const importData = (file: File): Promise<ImportResponse> =>
+const importDocument = (file: File): Promise<ImportResponse> =>
     fetch('/api/mica/v1/document/import', {
         method: 'POST',
         body: file,
     }).then((resp) => resp.json());
 
-export const useImportData = (
+export const useImportDocument = (
     options?: UseMutationOptions<ImportResponse, Error, { file: File }>,
-) => useMutation<ImportResponse, Error, { file: File }>(({ file }) => importData(file), options);
+) =>
+    useMutation<ImportResponse, Error, { file: File }>(({ file }) => importDocument(file), options);

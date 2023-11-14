@@ -1,8 +1,10 @@
-package org.acme.mica.server.api;
+package org.acme.mica.server.api.resources;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.acme.mica.server.data.DocumentImporter;
+import org.acme.mica.server.api.model.Document;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
@@ -15,6 +17,9 @@ import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
+/**
+ * Imports various YAML documents.
+ */
 @Path("/api/mica/v1/document")
 public class DocumentResource implements Resource {
 

@@ -1,4 +1,4 @@
-package org.acme.mica.server.api;
+package org.acme.mica.server.api.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

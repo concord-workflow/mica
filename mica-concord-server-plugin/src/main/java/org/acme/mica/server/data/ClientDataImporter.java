@@ -1,12 +1,14 @@
-package org.acme.mica.server.api;
+package org.acme.mica.server.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.acme.mica.db.MicaDB;
 import org.acme.mica.server.UuidGenerator;
+import org.acme.mica.server.api.model.ClientDataDocument;
+import org.acme.mica.server.api.model.ClientDataEntry;
+import org.acme.mica.server.api.model.Document;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,13 +26,13 @@ public class ClientDataImporter implements DocumentImporter {
 
     private final Configuration cfg;
     private final UuidGenerator uuidGenerator;
-    private final ObjectMapper jsonMapper;
+    private final ObjectMapper objectMapper;
 
     @Inject
     public ClientDataImporter(@MicaDB Configuration cfg, UuidGenerator uuidGenerator) {
         this.cfg = cfg;
         this.uuidGenerator = uuidGenerator;
-        this.jsonMapper = new ObjectMapper();
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
@@ -42,13 +44,13 @@ public class ClientDataImporter implements DocumentImporter {
     @Override
     public void importDocument(Document document) {
         // TODO validate ClientDataEntry#id() format
-        var clientList = jsonMapper.convertValue(document, ClientDataDocument.class);
+        var clientList = objectMapper.convertValue(document, ClientDataDocument.class);
 
         var documentId = uuidGenerator.generate();
         log.info("Importing a new client data document with {} client(s), documentId={}", clientList.clients().size(),
                 documentId);
-        DSL.using(cfg).transaction(cfg -> {
-            var tx = DSL.using(cfg);
+        cfg.dsl().transaction(cfg -> {
+            var tx = cfg.dsl();
             clientList.clients()
                     .forEach(client -> insert(tx, documentId, client));
         });
@@ -57,9 +59,9 @@ public class ClientDataImporter implements DocumentImporter {
     private void insert(DSLContext tx, UUID documentId, ClientDataEntry client) {
         JSONB data;
         try {
-            data = jsonb(jsonMapper.writeValueAsString(client));
+            data = jsonb(objectMapper.writeValueAsString(client));
         } catch (IOException e) {
-            throw new ClientDataException("JSON serialization error: " + e.getMessage());
+            throw new RuntimeException("JSON serialization error: " + e.getMessage());
         }
         tx.insertInto(CLIENT_DATA)
                 .columns(CLIENT_DATA.DOCUMENT_ID, CLIENT_DATA.KIND, CLIENT_DATA.EXTERNAL_ID, CLIENT_DATA.PARSED_DATA)
@@ -76,8 +78,5 @@ public class ClientDataImporter implements DocumentImporter {
         if (rows > 0) {
             log.info("Inserted a new client entry, clientId={}, clientName={}", clientId, clientName);
         }
-    }
-
-    public record ImportResult(UUID documentId) {
     }
 }

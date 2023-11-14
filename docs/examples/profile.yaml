@@ -1,5 +1,5 @@
 name: "remote-client"
-kind: "MicaProfile/1.0"
+kind: "MicaProfile/v1"
 schema:
   type: object
   required:

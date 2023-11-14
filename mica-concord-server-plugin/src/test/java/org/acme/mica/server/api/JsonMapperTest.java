@@ -2,6 +2,9 @@ package org.acme.mica.server.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import org.acme.mica.server.api.model.ClientDataDocument;
+import org.acme.mica.server.api.model.ClientDataEntry;
+import org.acme.mica.server.api.model.Document;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

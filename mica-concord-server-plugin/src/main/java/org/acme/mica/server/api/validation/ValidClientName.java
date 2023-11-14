@@ -1,4 +1,4 @@
-package org.acme.mica.server.api;
+package org.acme.mica.server.api.validation;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;

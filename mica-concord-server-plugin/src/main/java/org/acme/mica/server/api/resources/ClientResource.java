@@ -1,8 +1,8 @@
-package org.acme.mica.server.api;
+package org.acme.mica.server.api.resources;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.acme.mica.db.DbUtils;
 import org.acme.mica.db.MicaDB;
+import org.acme.mica.server.api.validation.ValidClientName;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.Configuration;
 import org.jooq.JSONB;
@@ -47,13 +47,13 @@ public class ClientResource implements Resource {
                 .orElseGet(DSL::noCondition);
 
         var latestData = props.isEmpty() ? val(jsonb("{}")).as("latest_data")
-                : select(DbUtils.jsonbObject(CLIENT_DATA.PARSED_DATA, "properties")).from(CLIENT_DATA)
+                : select(CLIENT_DATA.PARSED_DATA).from(CLIENT_DATA)
                         .where(CLIENT_DATA.EXTERNAL_ID.eq(CLIENTS.NAME))
                         .orderBy(CLIENT_DATA.IMPORTED_AT.desc())
                         .limit(1)
                         .asField("latest_data");
 
-        var data = DSL.using(cfg)
+        var data = cfg.dsl()
                 .select(CLIENTS.ID, CLIENTS.NAME, latestData)
                 .from(CLIENTS)
                 .where(searchCondition)

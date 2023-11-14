@@ -1,9 +1,9 @@
-package org.acme.mica.server.api;
+package org.acme.mica.server.api.resources;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import org.acme.mica.db.MicaDB;
+import org.acme.mica.server.api.validation.ValidClientName;
 import org.jooq.Configuration;
-import org.jooq.impl.DSL;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
@@ -29,7 +29,7 @@ public class ClientDataResource implements Resource {
     @Path("latest")
     @Produces(APPLICATION_JSON)
     public ClientData getLatestData(@QueryParam("externalId") @ValidClientName String externalId) {
-        return DSL.using(cfg)
+        return cfg.dsl()
                 .select(CLIENT_DATA.PARSED_DATA).from(CLIENT_DATA)
                 .where(CLIENT_DATA.EXTERNAL_ID.eq(externalId))
                 .orderBy(CLIENT_DATA.IMPORTED_AT.desc())

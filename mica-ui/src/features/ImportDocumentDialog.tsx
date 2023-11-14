@@ -1,4 +1,4 @@
-import { useImportData } from '../api/document.ts';
+import { useImportDocument } from '../api/document.ts';
 import { LoadingButton } from '@mui/lab';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
@@ -11,9 +11,9 @@ interface Props {
     onClose: () => void;
 }
 
-function ClientDataUploadDialog({ open, onSuccess, onClose }: Props) {
+function ImportDocumentDialog({ open, onSuccess, onClose }: Props) {
     const client = useQueryClient();
-    const { mutateAsync, isLoading, error } = useImportData({
+    const { mutateAsync, isLoading, error } = useImportDocument({
         onSuccess: () => client.invalidateQueries('clientList'),
     });
 
@@ -34,7 +34,7 @@ function ClientDataUploadDialog({ open, onSuccess, onClose }: Props) {
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Upload Client Data</DialogTitle>
+            <DialogTitle>Import Document</DialogTitle>
             <DialogContent sx={{ padding: 3 }}>
                 {error && (
                     <Alert severity="error" sx={{ marginBottom: 1 }}>
@@ -59,4 +59,4 @@ function ClientDataUploadDialog({ open, onSuccess, onClose }: Props) {
     );
 }
 
-export default ClientDataUploadDialog;
+export default ImportDocumentDialog;
