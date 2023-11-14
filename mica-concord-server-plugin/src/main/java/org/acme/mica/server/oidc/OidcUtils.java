@@ -1,7 +1,5 @@
 package org.acme.mica.server.oidc;
 
-import org.acme.mica.server.oidc.OidcClient.OidcUserInfo;
-
 import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
 

@@ -7,8 +7,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serial;
-import java.io.Serializable;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -96,10 +94,5 @@ public class OidcClient {
 
     public record CodeExchangeResponse(@JsonProperty("access_token") Optional<String> accessToken,
             Optional<String> error) {
-    }
-
-    public record OidcUserInfo(String email) implements Serializable {
-        @Serial
-        private static final long serialVersionUID = 1L;
     }
 }

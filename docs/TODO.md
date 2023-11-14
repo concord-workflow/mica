@@ -2,6 +2,7 @@
 
 # Features
 
+- consider renaming `ClientProfile` to `Profile`
 - profile viewer
 - client metadata editor
 
