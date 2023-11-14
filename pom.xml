@@ -1,12 +1,10 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>ca.ibodrov</groupId>
     <artifactId>mica</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <packaging>pom</packaging>
 
     <name>Mica</name>
@@ -15,9 +13,9 @@
 
     <licenses>
         <license>
-            <name/>
-            <url/>
-            <distribution/>
+            <name />
+            <url />
+            <distribution />
             <comments>Intentionally left blank.</comments>
         </license>
     </licenses>
@@ -215,7 +213,7 @@
     <scm>
         <url>${scm.connection}</url>
         <developerConnection>${scm.connection}</developerConnection>
-        <tag>HEAD</tag>
+        <tag>0.0.1</tag>
     </scm>
 
     <distributionManagement>
