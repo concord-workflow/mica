@@ -89,7 +89,7 @@ const ClientListPage = () => {
                             <TableCell>Name</TableCell>
                             <TableCell align="right">
                                 {isFetching && (
-                                    <CircularProgress size={24} sx={{ marginRight: 1 }} />
+                                    <CircularProgress size={12} sx={{ marginRight: 1 }} />
                                 )}
                             </TableCell>
                         </TableRow>

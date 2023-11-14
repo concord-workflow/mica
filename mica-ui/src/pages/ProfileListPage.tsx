@@ -41,7 +41,7 @@ const ProfileListPage = () => {
 
     const [search, setSearch] = useState<string>('');
     const { data, isFetching } = useQuery(
-        ['client', 'list', search],
+        ['profile', 'list', search],
         () => listClientProfiles(search),
         {
             keepPreviousData: true,
@@ -88,7 +88,7 @@ const ProfileListPage = () => {
                             <TableCell>Name</TableCell>
                             <TableCell align="right">
                                 {isFetching && (
-                                    <CircularProgress size={24} sx={{ marginRight: 1 }} />
+                                    <CircularProgress size={12} sx={{ marginRight: 1 }} />
                                 )}
                             </TableCell>
                         </TableRow>

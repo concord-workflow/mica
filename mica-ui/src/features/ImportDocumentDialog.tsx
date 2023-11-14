@@ -14,9 +14,9 @@ interface Props {
 function ImportDocumentDialog({ open, onSuccess, onClose }: Props) {
     const client = useQueryClient();
     const { mutateAsync, isLoading, error } = useImportDocument({
-        onSuccess: () => {
-            client.invalidateQueries(['client']);
-            client.invalidateQueries(['clientProfile']);
+        onSuccess: async () => {
+            await client.invalidateQueries(['client']);
+            await client.invalidateQueries(['profile']);
         },
     });
 
