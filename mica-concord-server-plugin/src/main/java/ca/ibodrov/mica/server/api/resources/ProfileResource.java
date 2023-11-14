@@ -1,24 +1,25 @@
 package ca.ibodrov.mica.server.api.resources;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.server.api.model.Profile;
+import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.server.api.ApiException;
+import ca.ibodrov.mica.api.model.Profile;
+import ca.ibodrov.mica.api.model.ProfileId;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.Configuration;
+import org.jooq.JSONB;
 import org.jooq.impl.DSL;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_PROFILES;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/api/mica/v1/profile")
 @Produces(APPLICATION_JSON)
@@ -51,22 +52,22 @@ public class ProfileResource implements Resource {
     @GET
     @Path("{name}")
     public Profile getProfile(@PathParam("name") String name) {
-        return cfg.dsl()
+        var profile = cfg.dsl()
                 .selectFrom(MICA_PROFILES)
                 .where(MICA_PROFILES.NAME.eq(name))
-                .fetchOptional(r -> new Profile(Optional.of(r.getId()),
+                .fetchOptional(r -> new Profile(ProfileId.of(r.getId()),
                         r.getName(),
                         Optional.of(r.getCreatedAt()),
-                        parseSchema(r.getSchema())))
-                .orElseThrow(() -> new WebApplicationException(NOT_FOUND));
+                        parseIntoSchema(r.getSchema())))
+                .orElseThrow(() -> ApiException.notFound("Profile not found: " + name));
+        return profile;
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> parseSchema(String schema) {
+    private ObjectSchemaNode parseIntoSchema(JSONB json) {
         try {
-            return objectMapper.readValue(schema, Map.class);
+            return objectMapper.readValue(json.data(), ObjectSchemaNode.class);
         } catch (Exception e) {
-            throw new WebApplicationException(INTERNAL_SERVER_ERROR);
+            throw new RuntimeException(e);
         }
     }
 

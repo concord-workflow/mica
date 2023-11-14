@@ -1,10 +1,12 @@
 package ca.ibodrov.mica.server.api.resources;
 
+import ca.ibodrov.mica.server.api.ApiException;
+import ca.ibodrov.mica.api.model.Document;
+import ca.ibodrov.mica.server.data.DocumentImporter;
+import ca.ibodrov.mica.server.data.InvalidDocumentException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import ca.ibodrov.mica.server.data.DocumentImporter;
-import ca.ibodrov.mica.server.api.model.Document;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
@@ -50,13 +52,17 @@ public class DocumentResource implements Resource {
         var handled = false;
         for (var importer : importers) {
             if (importer.canImport(doc)) {
-                importer.importDocument(doc);
-                handled = true;
+                try {
+                    importer.importDocument(doc);
+                    handled = true;
+                } catch (InvalidDocumentException e) {
+                    throw ApiException.badRequest(e);
+                }
             }
         }
 
         if (!handled) {
-            throw new WebApplicationException("No importer found for document kind: " + doc.getKind(), BAD_REQUEST);
+            throw ApiException.badRequest("No importer found for document kind: " + doc.getKind());
         }
 
         return new ImportResponse();

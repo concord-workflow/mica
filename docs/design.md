@@ -33,7 +33,6 @@ Given a client profile:
 name: "remote-client"
 kind: "MicaProfile/1.0"
 schema:
-  type: object
   required:
     - validationEndpoint
   properties:

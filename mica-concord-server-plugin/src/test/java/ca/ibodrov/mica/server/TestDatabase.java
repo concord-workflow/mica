@@ -1,64 +1,44 @@
-package ca.ibodrov.mica.server.api;
+package ca.ibodrov.mica.server;
 
-import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.api.model.ClientDataDocument;
-import ca.ibodrov.mica.server.api.model.ClientDataEntry;
-import ca.ibodrov.mica.server.api.model.Document;
-import ca.ibodrov.mica.server.data.ClientDataImporter;
+import ca.ibodrov.mica.db.MicaDatabaseModule;
 import com.codahale.metrics.MetricRegistry;
 import com.walmartlabs.concord.db.DatabaseConfiguration;
-import ca.ibodrov.mica.db.MicaDatabaseModule;
 import org.jooq.Configuration;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
-public class ClientDataImporterTest {
+/**
+ * A wrapper for PostgreSQLContainer for use in unit tests.
+ */
+public class TestDatabase implements AutoCloseable {
 
     private PostgreSQLContainer<?> db;
     private DataSource dataSource;
-    private Configuration jooqCfg;
+    private Configuration jooqConfiguration;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @BeforeEach
-    public void setUp() {
+    public void start() {
         db = new PostgreSQLContainer<>("postgres:15-alpine");
         db.start();
 
         var dbCfg = new DatabaseConfigurationImpl(db.getJdbcUrl(), db.getUsername(), db.getPassword(), 3);
         var dbModule = new MicaDatabaseModule();
         dataSource = dbModule.dataSource(dbCfg, new MetricRegistry());
-        jooqCfg = dbModule.jooqConfiguration(dataSource);
+        jooqConfiguration = dbModule.jooqConfiguration(dataSource);
     }
 
-    @AfterEach
-    public void tearDown() throws Exception {
+    public Configuration getJooqConfiguration() {
+        return jooqConfiguration;
+    }
+
+    @Override
+    public void close() throws Exception {
         Method m = dataSource.getClass().getMethod("close");
         m.invoke(dataSource);
 
         db.stop();
-    }
-
-    @Test
-    public void testImport() {
-        var document = new Document(Optional.of(ClientDataDocument.KIND),
-                Map.of("clients",
-                        List.of(
-                                new ClientDataEntry("id1", Map.of()),
-                                new ClientDataEntry("id2", Map.of()))));
-
-        var importer = new ClientDataImporter(jooqCfg, new UuidGenerator());
-        importer.importDocument(document);
     }
 
     private static final class DatabaseConfigurationImpl implements DatabaseConfiguration {

@@ -8,7 +8,7 @@ import { useParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
-        <b>Profile Details</b> page provides overview of all client-related data in Mica.
+        <b>Profile Details</b> -- TODO.
     </>
 );
 
@@ -31,12 +31,17 @@ const ProfileDetailsPage = () => {
             <PageTitle help={HELP}>Profile</PageTitle>
             <Container maxWidth="lg">
                 <Typography variant="h5" sx={{ marginBottom: 1 }}>
-                    Metadata {isFetching && <CircularProgress size={16} />}
+                    {profileName} {isFetching && <CircularProgress size={16} />}
                 </Typography>
                 {data && (
-                    <Paper sx={{ padding: 2 }}>
-                        <pre>{JSON.stringify(data.schema, null, 2)}</pre>
-                    </Paper>
+                    <>
+                        <Typography variant="h6" sx={{ marginBottom: 1 }}>
+                            Schema
+                        </Typography>
+                        <Paper sx={{ padding: 2 }}>
+                            <pre>{JSON.stringify(data.schema, null, 2)}</pre>
+                        </Paper>
+                    </>
                 )}
             </Container>
         </>

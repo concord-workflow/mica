@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.api.model;
+package ca.ibodrov.mica.api.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

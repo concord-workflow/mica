@@ -1,6 +1,6 @@
 package ca.ibodrov.mica.server.api.resources;
 
-import ca.ibodrov.mica.server.api.validation.ValidClientName;
+import ca.ibodrov.mica.api.validation.ValidClientName;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import ca.ibodrov.mica.db.MicaDB;
 import org.jooq.Configuration;

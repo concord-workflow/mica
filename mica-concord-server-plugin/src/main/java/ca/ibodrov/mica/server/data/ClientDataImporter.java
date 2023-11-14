@@ -1,11 +1,11 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.api.model.ClientDataDocument;
-import ca.ibodrov.mica.server.api.model.Document;
+import ca.ibodrov.mica.api.model.ClientDataDocument;
+import ca.ibodrov.mica.api.model.Document;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.server.api.model.ClientDataEntry;
+import ca.ibodrov.mica.api.model.ClientDataEntry;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;

@@ -1,0 +1,25 @@
+configuration:
+  dependencies:
+    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.2-SNAPSHOT
+
+flows:
+  default:
+    - name: Grab all Mica clients and fetch their validationEndpoint property
+      task: mica
+      in:
+        action: listClients
+        props:
+          - validationEndpoint
+        filterOutClientsWithoutProps: true
+      out: allClients
+
+    - log: "Got ${allClients.data.size()} client(s) with validationEndpoint"
+
+    - try:
+        - task: http
+          in:
+            method: GET
+            url: ${item.properties.validationEndpoint}
+        - log: "SUCCESS: ${item.properties.validationEndpoint}"
+      loop:
+        items: ${allClients.data}

@@ -52,7 +52,7 @@
             <column name="KIND" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="SCHEMA" type="TEXT">
+            <column name="SCHEMA" type="JSONB">
                 <constraints nullable="false"/>
             </column>
         </createTable>

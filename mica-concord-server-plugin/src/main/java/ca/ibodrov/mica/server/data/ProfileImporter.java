@@ -1,11 +1,13 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.api.model.Profile;
+import ca.ibodrov.mica.api.model.Document;
+import ca.ibodrov.mica.api.model.Profile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walmartlabs.concord.db.MainDB;
-import ca.ibodrov.mica.server.api.model.Document;
 import org.jooq.Configuration;
+import org.jooq.JSONB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +25,10 @@ public class ProfileImporter implements DocumentImporter {
     private final ObjectMapper objectMapper;
 
     @Inject
-    public ProfileImporter(@MainDB Configuration cfg, UuidGenerator uuidGenerator) {
+    public ProfileImporter(@MainDB Configuration cfg, UuidGenerator uuidGenerator, ObjectMapper objectMapper) {
         this.cfg = cfg;
         this.uuidGenerator = uuidGenerator;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -35,23 +37,29 @@ public class ProfileImporter implements DocumentImporter {
     }
 
     @Override
-    public void importDocument(Document doc) {
-        var profile = objectMapper.convertValue(doc.getData(), Profile.class);
-
-        String schema;
+    public void importDocument(Document doc) throws InvalidDocumentException {
+        Profile profile;
         try {
-            schema = objectMapper.writeValueAsString(profile.schema());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            profile = objectMapper.convertValue(doc.getData(), Profile.class);
+        } catch (Exception e) {
+            throw new InvalidDocumentException(e.getMessage());
         }
 
         var id = uuidGenerator.generate();
-        cfg.dsl().transaction(cfg -> cfg.dsl()
+        cfg.dsl().transaction(tx -> tx.dsl()
                 .insertInto(MICA_PROFILES)
                 .columns(MICA_PROFILES.ID, MICA_PROFILES.NAME, MICA_PROFILES.KIND, MICA_PROFILES.SCHEMA)
-                .values(id, profile.name(), Profile.KIND, schema)
+                .values(id, profile.name(), Profile.KIND, serializeAsJsonb(profile.schema()))
                 .execute());
 
         log.info("Inserted a new profile, id={}, name={}", id, profile.name());
+    }
+
+    private JSONB serializeAsJsonb(ObjectSchemaNode schema) {
+        try {
+            return JSONB.valueOf(objectMapper.writeValueAsString(schema));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

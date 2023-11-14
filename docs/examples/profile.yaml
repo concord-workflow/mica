@@ -7,4 +7,3 @@ schema:
   properties:
     validationEndpoint:
       type: string
-      format: uri

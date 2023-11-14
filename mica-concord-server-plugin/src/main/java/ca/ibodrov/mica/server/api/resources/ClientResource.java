@@ -1,8 +1,9 @@
 package ca.ibodrov.mica.server.api.resources;
 
-import ca.ibodrov.mica.server.api.validation.ValidClientName;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ca.ibodrov.mica.api.model.Client;
+import ca.ibodrov.mica.api.model.ClientList;
 import ca.ibodrov.mica.db.MicaDB;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.Configuration;
 import org.jooq.JSONB;
@@ -10,16 +11,17 @@ import org.jooq.impl.DSL;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
-import javax.validation.constraints.NotEmpty;
 import javax.ws.rs.*;
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENTS;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENT_DATA;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.val;
@@ -62,26 +64,27 @@ public class ClientResource implements Resource {
         return new ClientList(data);
     }
 
-    public record ClientList(List<Client> data) {
-    }
-
-    public record Client(@NotEmpty UUID id,
-            @ValidClientName String name,
-            Map<String, Object> properties) {
-    }
-
     @SuppressWarnings("unchecked")
-    private Map<String, Object> parseAndFilterProperties(JSONB json, Set<String> props) {
-        if (json == null || props.isEmpty()) {
+    private Map<String, Object> parseAndFilterProperties(JSONB json, Set<String> propsToPick) {
+        if (json == null || propsToPick == null || propsToPick.isEmpty()) {
             return Map.of();
         }
 
         try {
             var data = (Map<String, Object>) objectMapper.readValue(json.data(), Map.class);
-            return data.entrySet().stream()
-                    .filter(kv -> props.contains(kv.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+            var result = new HashMap<String, Object>();
+            for (var prop : propsToPick) {
+                if (!data.containsKey(prop)) {
+                    continue;
+                }
+
+                var value = data.get(prop);
+                if (value != null) {
+                    result.put(prop, value);
+                }
+            }
+            return result;
         } catch (IOException e) {
             throw new WebApplicationException(INTERNAL_SERVER_ERROR);
         }

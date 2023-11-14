@@ -14,6 +14,7 @@ import {
     TableHead,
     TableRow,
     Typography,
+    styled,
 } from '@mui/material';
 
 import React from 'react';
@@ -30,8 +31,37 @@ type RouteParams = {
     clientName: string;
 };
 
+const renderPropertyValue = (o: object, key: string): string =>
+    JSON.stringify((o as Record<string, object>)[key], null, 2);
+
+const searchProperties = (o: object, search: string): Array<string> => {
+    const searchLower = search.toLowerCase();
+    return Object.keys(o).filter((key) => key.toLowerCase().includes(searchLower));
+};
+
+const HighlightSpan = styled('span')(({ theme }) => ({
+    backgroundColor: theme.palette.info.main,
+    color: theme.palette.primary.contrastText,
+}));
+
+const highlightSubstring = (s: string, search: string): React.ReactNode => {
+    const searchLower = search.toLowerCase();
+    const index = s.toLowerCase().indexOf(searchLower);
+    if (index < 0) {
+        return s;
+    }
+    return (
+        <>
+            {s.substring(0, index)}
+            <HighlightSpan>{s.substring(index, index + search.length)}</HighlightSpan>
+            {s.substring(index + search.length)}
+        </>
+    );
+};
+
 const ClientDetailsPage = () => {
     const { clientName } = useParams<RouteParams>();
+
     const { data, isFetching } = useQuery(
         ['client', 'data', clientName],
         () => getLatestData(clientName!),
@@ -40,21 +70,21 @@ const ClientDetailsPage = () => {
         },
     );
 
+    const [search, setSearch] = React.useState<string>('');
+
     return (
         <>
             <PageTitle help={HELP}>Client Details</PageTitle>
             <Container maxWidth="lg">
                 <Typography variant="h5" sx={{ marginBottom: 1 }}>
-                    Metadata
+                    {clientName} {isFetching && <CircularProgress size={16} />}
                 </Typography>
-                <Paper sx={{ padding: 3, marginBottom: 5 }}>TODO</Paper>
-
                 {data && (
                     <>
-                        <Typography variant="h5">Properties</Typography>
+                        <Typography variant="h6">Properties</Typography>
                         <ActionBar>
                             <Spacer />
-                            <SearchField onChange={(search) => console.log('!TODO', { search })} />
+                            <SearchField onChange={(search) => setSearch(search)} />
                         </ActionBar>
                         <TableContainer component={Paper}>
                             <Table size="small">
@@ -73,25 +103,16 @@ const ClientDetailsPage = () => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {Object.keys(data.properties)
+                                    {searchProperties(data.properties, search)
                                         .sort()
                                         .map((key) => (
                                             <TableRow key={key}>
                                                 <TableCell sx={{ verticalAlign: 'top' }}>
-                                                    {key}
+                                                    {highlightSubstring(key, search)}
                                                 </TableCell>
                                                 <TableCell>
                                                     <pre>
-                                                        {JSON.stringify(
-                                                            (
-                                                                data.properties as Record<
-                                                                    string,
-                                                                    object
-                                                                >
-                                                            )[key],
-                                                            null,
-                                                            2,
-                                                        )}
+                                                        {renderPropertyValue(data.properties, key)}
                                                     </pre>
                                                 </TableCell>
                                                 <TableCell></TableCell>

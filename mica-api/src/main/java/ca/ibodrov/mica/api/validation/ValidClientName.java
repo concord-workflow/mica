@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.api.validation;
+package ca.ibodrov.mica.api.validation;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;

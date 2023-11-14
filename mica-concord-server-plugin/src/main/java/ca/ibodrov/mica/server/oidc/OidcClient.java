@@ -18,6 +18,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Optional;
 
+import static ca.ibodrov.mica.common.HttpClientUtils.parseResponseAsJson;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
@@ -60,7 +61,7 @@ public class OidcClient {
 
         try {
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            return parseResponseAsJson(response, CodeExchangeResponse.class);
+            return parseResponseAsJson(objectMapper, response, CodeExchangeResponse.class);
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -75,20 +76,9 @@ public class OidcClient {
 
         try {
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            return parseResponseAsJson(response, OidcUserInfo.class);
+            return parseResponseAsJson(objectMapper, response, OidcUserInfo.class);
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private <T> T parseResponseAsJson(HttpResponse<InputStream> response, Class<T> type) throws IOException {
-        if (response.headers().firstValue(CONTENT_TYPE)
-                .filter(contentType -> contentType.toLowerCase().contains("json"))
-                .isEmpty()) {
-            throw new RuntimeException("Not a JSON response, status code: " + response.statusCode());
-        }
-        try (var responseBody = response.body()) {
-            return objectMapper.readValue(responseBody, type);
         }
     }
 
