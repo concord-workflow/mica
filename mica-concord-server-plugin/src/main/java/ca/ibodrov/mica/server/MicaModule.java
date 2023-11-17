@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server;
 
+import ca.ibodrov.mica.server.api.resources.*;
 import ca.ibodrov.mica.server.ui.WhoamiResource;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -10,10 +11,6 @@ import com.walmartlabs.ollie.config.Environment;
 import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
 import ca.ibodrov.mica.db.MicaDatabaseModule;
-import ca.ibodrov.mica.server.api.resources.ClientDataResource;
-import ca.ibodrov.mica.server.api.resources.ProfileResource;
-import ca.ibodrov.mica.server.api.resources.ClientResource;
-import ca.ibodrov.mica.server.api.resources.DocumentResource;
 import ca.ibodrov.mica.server.data.ClientDataImporter;
 import ca.ibodrov.mica.server.data.ProfileImporter;
 import ca.ibodrov.mica.server.data.DocumentImporter;
@@ -74,12 +71,13 @@ public class MicaModule implements Module {
 
         // jax-rs resources
 
-        bindJaxRsResource(binder, WhoamiResource.class);
-        bindJaxRsResource(binder, OidcResource.class);
-        bindJaxRsResource(binder, DocumentResource.class);
-        bindJaxRsResource(binder, ClientResource.class);
         bindJaxRsResource(binder, ClientDataResource.class);
+        bindJaxRsResource(binder, ClientEndpointResource.class);
+        bindJaxRsResource(binder, ClientResource.class);
+        bindJaxRsResource(binder, DocumentResource.class);
+        bindJaxRsResource(binder, OidcResource.class);
         bindJaxRsResource(binder, ProfileResource.class);
+        bindJaxRsResource(binder, WhoamiResource.class);
 
         // other beans
 

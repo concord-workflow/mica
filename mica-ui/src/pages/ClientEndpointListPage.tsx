@@ -1,21 +1,16 @@
-import { listClients } from '../api/client.ts';
+import { listClientEndpoints } from '../api/clientEndpoint.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
-import RowMenu from '../components/RowMenu.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
-import highlightSubstring from '../components/highlight.tsx';
-import ImportDocumentDialog from '../features/ImportDocumentDialog.tsx';
+import ImportClientEndpointsDialog from '../features/ImportClientEndpointsDialog.tsx';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
 import {
     Button,
     CircularProgress,
     FormControl,
     Link,
-    MenuItem,
     Paper,
-    Snackbar,
     Table,
     TableBody,
     TableCell,
@@ -23,8 +18,6 @@ import {
     TableHead,
     TableRow,
 } from '@mui/material';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
 
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
@@ -32,51 +25,39 @@ import { Link as RouterLink } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
-        <b>Clients</b> page provides overview of all clients registered in Mica. Use the{' '}
-        <b>upload</b> feature to import client lists in YAML format.
+        <b>Client Endpoints</b> page provides overview of all client endpoints registered in Mica.
+        Use the <b>import</b> feature to import endpoints using the latest available client data.
     </>
 );
 
-const ClientListPage = () => {
-    const [openUpload, setOpenUpload] = useState(false);
+const ClientEndpointListPage = () => {
+    const [openImport, setOpenImport] = useState(false);
 
     const [search, setSearch] = useState<string>('');
     const { data, isFetching } = useQuery(
-        ['client', 'list', search],
-        () => listClients(search, ['status']),
+        ['clientEndpoint', 'list', search],
+        () => listClientEndpoints(search),
         {
             keepPreviousData: true,
-            select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),
+            select: ({ data }) => data,
         },
     );
 
-    const [openSuccessNotification, setOpenSuccessNotification] = useState(false);
-    const handleSuccessfulUpload = () => {
-        setOpenSuccessNotification(true);
-        setOpenUpload(false);
-    };
-
     return (
         <>
-            <PageTitle help={HELP}>Clients</PageTitle>
-            <ImportDocumentDialog
-                open={openUpload}
-                onSuccess={handleSuccessfulUpload}
-                onClose={() => setOpenUpload(false)}
-            />
-            <Snackbar
-                open={openSuccessNotification}
-                autoHideDuration={5000}
-                onClose={() => setOpenSuccessNotification(false)}
-                message="Client data uploaded successfully"
+            <PageTitle help={HELP}>Client Endpoints</PageTitle>
+            <ImportClientEndpointsDialog
+                open={openImport}
+                onSuccess={() => setOpenImport(false)}
+                onClose={() => setOpenImport(false)}
             />
             <ActionBar>
                 <FormControl>
                     <Button
                         startIcon={<CloudUploadIcon />}
                         variant="contained"
-                        onClick={() => setOpenUpload(true)}>
-                        Upload
+                        onClick={() => setOpenImport(true)}>
+                        Import
                     </Button>
                 </FormControl>
                 <Spacer />
@@ -87,7 +68,8 @@ const ClientListPage = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell width="10%">Status</TableCell>
-                            <TableCell>Name</TableCell>
+                            <TableCell width="20%">Client</TableCell>
+                            <TableCell>URI</TableCell>
                             <TableCell align="right">
                                 {isFetching && (
                                     <CircularProgress size={12} sx={{ marginRight: 1 }} />
@@ -100,24 +82,22 @@ const ClientListPage = () => {
                             data.length > 0 &&
                             data.map((row) => (
                                 <TableRow key={row.id}>
-                                    <TableCell>{row.properties.status}</TableCell>
+                                    <TableCell>{row.lastKnownStatus}</TableCell>
                                     <TableCell>
                                         <Link
                                             component={RouterLink}
-                                            to={`/client/${row.name}/details`}>
-                                            {highlightSubstring(row.name, search)}
+                                            to={`/client/${row.clientName}/details`}>
+                                            {row.clientName}
                                         </Link>
                                     </TableCell>
-                                    <TableCell align="right">
-                                        <RowMenu>
-                                            <MenuItem disabled={true}>
-                                                <ListItemIcon>
-                                                    <DeleteIcon fontSize="small" />
-                                                </ListItemIcon>
-                                                <ListItemText>Delete</ListItemText>
-                                            </MenuItem>
-                                        </RowMenu>
+                                    <TableCell>
+                                        <Link
+                                            component={RouterLink}
+                                            to={`/clientEndpoint/${row.id}/details`}>
+                                            {row.uri}
+                                        </Link>
                                     </TableCell>
+                                    <TableCell align="right"></TableCell>
                                 </TableRow>
                             ))}
                         {data && data.length < 1 && (
@@ -134,4 +114,4 @@ const ClientListPage = () => {
     );
 };
 
-export default ClientListPage;
+export default ClientEndpointListPage;

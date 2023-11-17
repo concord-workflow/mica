@@ -1,12 +1,12 @@
 package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.api.model.ClientDataEntry;
+import ca.ibodrov.mica.api.model.Profile;
 import org.jooq.Configuration;
 
 import java.util.UUID;
 
-import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENTS;
-import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENT_DATA;
+import static ca.ibodrov.mica.db.jooq.Tables.*;
 import static org.jooq.JSONB.jsonb;
 
 public final class TestData {
@@ -23,6 +23,13 @@ public final class TestData {
                 .columns(MICA_CLIENT_DATA.DOCUMENT_ID, MICA_CLIENT_DATA.EXTERNAL_ID, MICA_CLIENT_DATA.KIND,
                         MICA_CLIENT_DATA.PARSED_DATA)
                 .values(id, externalId, ClientDataEntry.KIND, jsonb(parsedData))
+                .execute();
+    }
+
+    public static void insertProfile(Configuration tx, UUID id, String name, String schema) {
+        tx.dsl().insertInto(MICA_PROFILES)
+                .columns(MICA_PROFILES.ID, MICA_PROFILES.NAME, MICA_PROFILES.KIND, MICA_PROFILES.SCHEMA)
+                .values(id, name, Profile.KIND, jsonb(schema))
                 .execute();
     }
 

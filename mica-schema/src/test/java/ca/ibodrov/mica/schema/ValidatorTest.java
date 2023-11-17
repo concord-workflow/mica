@@ -30,7 +30,9 @@ public class ValidatorTest {
                 }
                 """);
 
-        var props = validator.validateMap(schema, Map.of("username", "bob", "role", "builder"));
+        var props = validator.validateMap(schema, Map.of("username", "bob", "role", "builder"))
+                .properties();
+
         assertValidProperty(props, "username", TextNode.valueOf("bob"));
     }
 
@@ -53,7 +55,9 @@ public class ValidatorTest {
                  }
                 """);
 
-        var props = validator.validateMap(schema, Map.of("age", "not a number, clearly"));
+        var props = validator.validateMap(schema, Map.of("age", "not a number, clearly"))
+                .properties();
+
         assertInvalidProperty(props, "age");
         assertInvalidProperty(props, "username");
     }

@@ -11,7 +11,7 @@ interface Props {
     onClose: () => void;
 }
 
-function ImportDocumentDialog({ open, onSuccess, onClose }: Props) {
+const ImportDocumentDialog = ({ open, onSuccess, onClose }: Props) => {
     const client = useQueryClient();
     const { mutateAsync, isLoading, error } = useImportDocument({
         onSuccess: async () => {
@@ -60,6 +60,6 @@ function ImportDocumentDialog({ open, onSuccess, onClose }: Props) {
             </DialogActions>
         </Dialog>
     );
-}
+};
 
 export default ImportDocumentDialog;

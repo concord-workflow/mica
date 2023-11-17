@@ -77,7 +77,7 @@ public class ClientDataImporter implements DocumentImporter {
                 .onConflictDoNothing()
                 .execute();
         if (rows > 0) {
-            log.info("Inserted a new client entry, clientId={}, clientName={}", clientId, clientName);
+            log.info("Inserted a new client entry, id={}, name={}", clientId, clientName);
         }
     }
 }

@@ -1,5 +1,6 @@
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import LanguageIcon from '@mui/icons-material/Language';
 import PublishIcon from '@mui/icons-material/Publish';
 import SourceIcon from '@mui/icons-material/Source';
 import { Collapse, List } from '@mui/material';
@@ -46,6 +47,16 @@ const Sidebar = ({ open }: { open: boolean }) => {
                     </List>
                 </Collapse>
             )}
+
+            {/*Endpoints*/}
+            <ListItemButton
+                onClick={() => navigate('/clientEndpoint')}
+                selected={location.pathname === '/clientEndpoint'}>
+                <ListItemIcon>
+                    <LanguageIcon />
+                </ListItemIcon>
+                <ListItemText primary="Client Endpoints" />
+            </ListItemButton>
 
             {/*Profiles*/}
             <ListItemButton

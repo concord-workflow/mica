@@ -39,6 +39,24 @@
             <column name="EXTERNAL_ID"/>
         </createIndex>
 
+        <createTable tableName="MICA_CLIENT_ENDPOINTS">
+            <column name="ID" type="UUID">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="CLIENT_ID" type="UUID">
+                <constraints nullable="false" foreignKeyName="FK_CLIENT_ENDPOINTS_CLIENT" references="MICA_CLIENTS" deleteCascade="true"/>
+            </column>
+            <column name="ENDPOINT_URI" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LAST_KNOWN_STATUS" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STATUS_UPDATED_AT" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
         <createTable tableName="MICA_PROFILES">
             <column name="ID" type="UUID">
                 <constraints primaryKey="true"/>

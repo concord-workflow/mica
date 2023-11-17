@@ -1,5 +1,6 @@
 import App from './App.tsx';
 import ClientDetailsPage from './pages/ClientDetailsPage.tsx';
+import ClientEndpointListPage from './pages/ClientEndpointListPage.tsx';
 import ClientListPage from './pages/ClientListPage.tsx';
 import ProfileDetailsPage from './pages/ProfileDetailsPage.tsx';
 import ProfileListPage from './pages/ProfileListPage.tsx';
@@ -20,6 +21,10 @@ export const createRouter = () =>
                     {
                         path: 'client/:clientName/details',
                         element: <ClientDetailsPage />,
+                    },
+                    {
+                        path: 'clientEndpoint',
+                        element: <ClientEndpointListPage />,
                     },
                     {
                         path: 'profile',

@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ca.ibodrov.mica.schema.StandardTypes.OBJECT_TYPE;
+import static ca.ibodrov.mica.schema.StandardTypes.STRING_TYPE;
 
 public record ObjectSchemaNode(Optional<String> type,
         Optional<Map<String, ObjectSchemaNode>> properties,
@@ -12,6 +13,10 @@ public record ObjectSchemaNode(Optional<String> type,
 
     public static ObjectSchemaNode emptyObject() {
         return new ObjectSchemaNode(Optional.of(OBJECT_TYPE), Optional.empty(), Optional.empty());
+    }
+
+    public static ObjectSchemaNode string() {
+        return new ObjectSchemaNode(Optional.of(STRING_TYPE), Optional.empty(), Optional.empty());
     }
 
     public Optional<ObjectSchemaNode> getProperty(String name) {

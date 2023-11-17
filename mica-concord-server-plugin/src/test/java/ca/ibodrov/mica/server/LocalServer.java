@@ -1,10 +1,6 @@
 package ca.ibodrov.mica.server;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
@@ -16,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 /**
@@ -28,7 +25,7 @@ public class LocalServer {
         var authServerUri = assertEnvVar("TEST_OIDC_AUTHSERVER");
 
         var config = Map.of(
-                "mica.oidc.clientId", assertEnvVar("TEST_OIDC_CLIENTID"),
+                "mica.oidc.id", assertEnvVar("TEST_OIDC_CLIENTID"),
                 "mica.oidc.clientSecret", assertEnvVar("TEST_OIDC_SECRET"),
                 "mica.oidc.authorizationEndpoint", "%s/oauth2/v1/authorize".formatted(authServerUri),
                 "mica.oidc.tokenEndpoint", "%s/oauth2/v1/token".formatted(authServerUri),
@@ -66,15 +63,9 @@ public class LocalServer {
         public void configure(Binder binder) {
             newSetBinder(binder, Component.class).addBinding().to(LocalExceptionMapper.class);
 
-            // JAX-RS and friends are using ObjectMapper
-            var objectMapper = new ObjectMapper()
-                    .registerModule(new GuavaModule())
-                    .registerModule(new Jdk8Module())
-                    .registerModule(new JavaTimeModule())
-                    .setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
-
-            binder.bind(ObjectMapper.class).toInstance(objectMapper);
-            binder.bind(ObjectMapper.class).annotatedWith(Names.named("siesta")).toInstance(objectMapper);
+            binder.bind(ObjectMapper.class).toProvider(TestObjectMapperProvider.class).in(SINGLETON);
+            binder.bind(ObjectMapper.class).annotatedWith(Names.named("siesta"))
+                    .toProvider(TestObjectMapperProvider.class).in(SINGLETON);
             newSetBinder(binder, Component.class).addBinding().to(ObjectMapperResolver.class);
         }
     }

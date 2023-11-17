@@ -14,5 +14,7 @@ export interface ClientList {
 
 export const listClients = (search?: string, props?: Array<string>): Promise<ClientList> =>
     doFetch(
-        `/api/mica/v1/client?search=${search}${props?.map((prop) => `&props=${prop}`).join()}`,
+        `/api/mica/v1/client?search=${search ?? ''}${props
+            ?.map((prop) => `&props=${prop}`)
+            .join()}`,
     ).then(handleJsonResponse<ClientList>);

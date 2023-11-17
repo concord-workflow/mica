@@ -16,7 +16,7 @@ export interface Profile {
 }
 
 export const listClientProfiles = (search?: string): Promise<ProfileList> =>
-    doFetch(`/api/mica/v1/profile?search=${search}`).then(handleJsonResponse<ProfileList>);
+    doFetch(`/api/mica/v1/profile?search=${search ?? ''}`).then(handleJsonResponse<ProfileList>);
 
 export const getProfile = (name: string): Promise<Profile> =>
     doFetch(`/api/mica/v1/profile/${name}`).then(handleJsonResponse<Profile>);

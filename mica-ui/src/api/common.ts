@@ -10,10 +10,18 @@ const addUiHeader = (init?: RequestInit): RequestInit => {
     return { ...init, headers };
 };
 
-export const handleJsonResponse = async <T>(resp: Response): Promise<T> => {
+export const handleErrors = async (resp: Response) => {
     if (!resp.ok) {
+        if (resp.status == 401) {
+            window.location.pathname = '/api/mica/oidc/login';
+        }
+
         throw new Error(await parseError(resp));
     }
+};
+
+export const handleJsonResponse = async <T>(resp: Response): Promise<T> => {
+    await handleErrors(resp);
     const data = await resp.json();
     return data as T;
 };

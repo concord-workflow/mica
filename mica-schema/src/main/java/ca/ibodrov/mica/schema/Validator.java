@@ -19,15 +19,16 @@ public class Validator {
         this.objectMapper = objectMapper;
     }
 
-    public Map<String, ValidatedProperty> validateMap(ObjectSchemaNode schema, Map<String, Object> input) {
-        var result = new HashMap<String, ValidatedProperty>();
+    public ValidationResult validateMap(ObjectSchemaNode schema, Map<String, Object> input) {
+        var validatedProperties = new HashMap<String, ValidatedProperty>();
 
         schema.properties().orElseGet(Map::of)
                 .forEach((propertyName,
                           propertySchema) -> validateProperty(schema, propertyName, input.get(propertyName))
-                                  .ifPresent(validatedProperty -> result.put(propertyName, validatedProperty)));
+                                  .ifPresent(validatedProperty -> validatedProperties.put(propertyName,
+                                          validatedProperty)));
 
-        return result;
+        return new ValidationResult(validatedProperties);
     }
 
     public Optional<ValidatedProperty> validateProperty(ObjectSchemaNode parentSchema,

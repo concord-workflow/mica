@@ -4,6 +4,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
@@ -21,14 +22,20 @@ public class ApiException extends WebApplicationException {
         return new ApiException(NOT_FOUND, message);
     }
 
+    public static ApiException internalError(String message) {
+        return new ApiException(Status.INTERNAL_SERVER_ERROR, message);
+    }
+
     public ApiException(Status status, Throwable cause) {
         super(cause, Response.status(status)
+                .type(APPLICATION_JSON)
                 .entity(new ErrorResponse(cause.getMessage()))
                 .build());
     }
 
     public ApiException(Status status, String message) {
-        super(Response.status(status)
+        super(message, Response.status(status)
+                .type(APPLICATION_JSON)
                 .entity(new ErrorResponse(message))
                 .build());
     }

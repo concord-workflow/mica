@@ -3,6 +3,7 @@ import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
+import highlightSubstring from '../components/highlight.tsx';
 import {
     CircularProgress,
     Container,
@@ -14,7 +15,6 @@ import {
     TableHead,
     TableRow,
     Typography,
-    styled,
 } from '@mui/material';
 
 import React from 'react';
@@ -37,26 +37,6 @@ const renderPropertyValue = (o: object, key: string): string =>
 const searchProperties = (o: object, search: string): Array<string> => {
     const searchLower = search.toLowerCase();
     return Object.keys(o).filter((key) => key.toLowerCase().includes(searchLower));
-};
-
-const HighlightSpan = styled('span')(({ theme }) => ({
-    backgroundColor: theme.palette.info.main,
-    color: theme.palette.primary.contrastText,
-}));
-
-const highlightSubstring = (s: string, search: string): React.ReactNode => {
-    const searchLower = search.toLowerCase();
-    const index = s.toLowerCase().indexOf(searchLower);
-    if (index < 0) {
-        return s;
-    }
-    return (
-        <>
-            {s.substring(0, index)}
-            <HighlightSpan>{s.substring(index, index + search.length)}</HighlightSpan>
-            {s.substring(index + search.length)}
-        </>
-    );
 };
 
 const ClientDetailsPage = () => {

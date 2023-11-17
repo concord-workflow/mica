@@ -34,9 +34,9 @@ public class ProfileRenderer {
 
         // create the effective properties
         var validator = new Validator(objectMapper);
-        var effectiveProperties = validator.validateMap(effectiveSchema, values);
+        var validationResult = validator.validateMap(effectiveSchema, values);
 
-        return new EffectiveProfile(profile.name(), effectiveProperties);
+        return new EffectiveProfile(profile.name(), validationResult.properties());
     }
 
     public record EffectiveProfile(String profileName, Map<String, ValidatedProperty> properties) {

@@ -31,7 +31,7 @@ public class OidcResource implements Resource {
     private final OidcClient oidcClient;
 
     @Inject
-    public OidcResource(@Config("mica.oidc.clientId") String clientId,
+    public OidcResource(@Config("mica.oidc.id") String clientId,
                         @Config("mica.oidc.clientSecret") String clientSecret,
                         @Config("mica.oidc.authorizationEndpoint") String authorizationEndpoint,
                         @Config("mica.oidc.userinfoEndpoint") String userinfoEndpoint,
