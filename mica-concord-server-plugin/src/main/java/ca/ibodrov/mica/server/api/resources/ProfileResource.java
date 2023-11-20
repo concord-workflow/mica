@@ -6,6 +6,8 @@ import ca.ibodrov.mica.server.api.ApiException;
 import ca.ibodrov.mica.api.model.Profile;
 import ca.ibodrov.mica.api.model.ProfileId;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.Configuration;
 import org.jooq.JSONB;
@@ -21,6 +23,7 @@ import java.util.UUID;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_PROFILES;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "profile")
 @Path("/api/mica/v1/profile")
 @Produces(APPLICATION_JSON)
 public class ProfileResource implements Resource {
@@ -35,6 +38,7 @@ public class ProfileResource implements Resource {
     }
 
     @GET
+    @Operation(description = "List known profiles", operationId = "listProfiles")
     public ProfileList listProfiles(@QueryParam("search") @Length(max = 128) String search) {
         var searchCondition = Optional.ofNullable(search)
                 .map(MICA_PROFILES.NAME::containsIgnoreCase)
@@ -51,6 +55,7 @@ public class ProfileResource implements Resource {
 
     @GET
     @Path("{name}")
+    @Operation(description = "Get profile by name", operationId = "getProfile")
     public Profile getProfile(@PathParam("name") String name) {
         var profile = cfg.dsl()
                 .selectFrom(MICA_PROFILES)

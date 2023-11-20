@@ -4,6 +4,8 @@ import ca.ibodrov.mica.api.model.Client;
 import ca.ibodrov.mica.api.model.ClientList;
 import ca.ibodrov.mica.db.MicaDB;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.Configuration;
 import org.jooq.JSONB;
@@ -26,6 +28,7 @@ import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.val;
 
+@Tag(name = "Client")
 @Path("/api/mica/v1/client")
 public class ClientResource implements Resource {
 
@@ -40,6 +43,7 @@ public class ClientResource implements Resource {
 
     @GET
     @Produces(APPLICATION_JSON)
+    @Operation(description = "List known clients", operationId = "listClients")
     public ClientList listClients(@QueryParam("search") @Length(max = 128) String search,
                                   @QueryParam("props") Set<String> props) {
 

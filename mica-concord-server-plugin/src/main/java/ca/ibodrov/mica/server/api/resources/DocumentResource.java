@@ -7,6 +7,8 @@ import ca.ibodrov.mica.server.data.InvalidDocumentException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
@@ -22,6 +24,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 /**
  * Imports various YAML documents.
  */
+@Tag(name = "Document")
 @Path("/api/mica/v1/document")
 public class DocumentResource implements Resource {
 
@@ -41,6 +44,7 @@ public class DocumentResource implements Resource {
     @Path("import")
     @Consumes("*/*")
     @Produces(APPLICATION_JSON)
+    @Operation(description = "Imports a YAML document", operationId = "importDocument")
     public ImportResponse importDocument(InputStream in) {
         Document doc;
         try {

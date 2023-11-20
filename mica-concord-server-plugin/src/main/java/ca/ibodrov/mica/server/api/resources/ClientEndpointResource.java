@@ -4,6 +4,8 @@ import ca.ibodrov.mica.api.model.ClientEndpoint;
 import ca.ibodrov.mica.api.model.ClientEndpointList;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.data.ClientEndpointController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.Configuration;
 import org.jooq.impl.DSL;
@@ -21,6 +23,7 @@ import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENT_ENDPOINTS;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jooq.impl.DSL.select;
 
+@Tag(name = "ClientEndpoint")
 @Path("/api/mica/v1/clientEndpoint")
 public class ClientEndpointResource implements Resource {
 
@@ -35,6 +38,7 @@ public class ClientEndpointResource implements Resource {
 
     @GET
     @Produces(APPLICATION_JSON)
+    @Operation(description = "List known client endpoints", operationId = "listClientEndpoints")
     public ClientEndpointList listClientEndpoints(@QueryParam("search") @Length(max = 128) String search) {
         var clientName = select(MICA_CLIENTS.NAME).from(MICA_CLIENTS)
                 .where(MICA_CLIENTS.ID.eq(MICA_CLIENT_ENDPOINTS.CLIENT_ID))
@@ -62,6 +66,7 @@ public class ClientEndpointResource implements Resource {
     @POST
     @Path("importFromClientData")
     @Consumes(APPLICATION_JSON)
+    @Operation(description = "Import client endpoints using client data", operationId = "importFromClientData")
     public void importFromClientData(@Valid ImportRequest request) {
         controller.importFromClientData(request.profileId());
     }
