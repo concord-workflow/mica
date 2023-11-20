@@ -1,8 +1,10 @@
 package ca.ibodrov.mica.server.api.resources;
 
 import ca.ibodrov.mica.api.validation.ValidClientName;
-import com.fasterxml.jackson.annotation.JsonRawValue;
 import ca.ibodrov.mica.db.MicaDB;
+import com.fasterxml.jackson.annotation.JsonRawValue;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jooq.Configuration;
 import org.sonatype.siesta.Resource;
 
@@ -12,9 +14,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENT_DATA;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "ClientData")
 @Path("/api/mica/v1/clientData")
 public class ClientDataResource implements Resource {
 
@@ -28,6 +31,7 @@ public class ClientDataResource implements Resource {
     @GET
     @Path("latest")
     @Produces(APPLICATION_JSON)
+    @Operation(description = "Returns the latest client data", operationId = "getLatestData")
     public ClientData getLatestData(@QueryParam("externalId") @ValidClientName String externalId) {
         return cfg.dsl()
                 .select(MICA_CLIENT_DATA.PARSED_DATA).from(MICA_CLIENT_DATA)

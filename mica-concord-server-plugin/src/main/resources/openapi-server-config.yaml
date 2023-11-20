@@ -1,0 +1,5 @@
+openAPI:
+  info:
+    version: '1.0'
+    title: Mica Server API
+    description: Mica Server API

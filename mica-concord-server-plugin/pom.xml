@@ -42,6 +42,10 @@
             <artifactId>java-uuid-generator</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.walmartlabs.concord.server</groupId>
             <artifactId>concord-server-impl</artifactId>
             <scope>provided</scope>
@@ -96,6 +100,28 @@
                             <goal>validate</goal>
                         </goals>
                         <phase>process-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-maven-plugin</artifactId>
+                <configuration>
+                    <outputFileName>swagger</outputFileName>
+                    <outputPath>${project.build.directory}/classes/ca/ibodrov/mica/server/swagger</outputPath>
+                    <outputFormat>JSON</outputFormat>
+                    <readAllResources>false</readAllResources>
+                    <resourcePackages>
+                        <package>ca.ibodrov.mica.server</package>
+                    </resourcePackages>
+                    <configurationFilePath>${project.build.directory}/classes/openapi-server-config.yaml</configurationFilePath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>resolve</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

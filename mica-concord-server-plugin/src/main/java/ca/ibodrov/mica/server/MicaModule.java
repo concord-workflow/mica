@@ -1,6 +1,14 @@
 package ca.ibodrov.mica.server;
 
+import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.resources.*;
+import ca.ibodrov.mica.server.data.ClientDataImporter;
+import ca.ibodrov.mica.server.data.DocumentImporter;
+import ca.ibodrov.mica.server.data.ProfileImporter;
+import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
+import ca.ibodrov.mica.server.oidc.OidcResource;
+import ca.ibodrov.mica.server.ui.SwaggerServlet;
+import ca.ibodrov.mica.server.ui.UiServlet;
 import ca.ibodrov.mica.server.ui.WhoamiResource;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -10,13 +18,6 @@ import com.walmartlabs.ollie.config.ConfigurationProcessor;
 import com.walmartlabs.ollie.config.Environment;
 import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
-import ca.ibodrov.mica.db.MicaDatabaseModule;
-import ca.ibodrov.mica.server.data.ClientDataImporter;
-import ca.ibodrov.mica.server.data.ProfileImporter;
-import ca.ibodrov.mica.server.data.DocumentImporter;
-import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
-import ca.ibodrov.mica.server.oidc.OidcResource;
-import ca.ibodrov.mica.server.ui.UiServlet;
 import org.apache.shiro.realm.Realm;
 import org.sonatype.siesta.Component;
 
@@ -56,6 +57,7 @@ public class MicaModule implements Module {
         // servlets
 
         newSetBinder(binder, HttpServlet.class).addBinding().to(UiServlet.class).in(SINGLETON);
+        newSetBinder(binder, HttpServlet.class).addBinding().to(SwaggerServlet.class).in(SINGLETON);
 
         // filter chains
 

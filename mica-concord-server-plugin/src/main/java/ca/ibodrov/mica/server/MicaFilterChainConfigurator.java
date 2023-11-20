@@ -18,6 +18,8 @@ public class MicaFilterChainConfigurator implements FilterChainConfigurator {
 
     @Override
     public void configure(FilterChainManager manager) {
+        manager.createChain("/api/mica/swagger.json", "anon");
+
         manager.addFilter("mica-oidc", new OidcAuthenticatingFilter());
         manager.createChain("/api/mica/ui/**", "mica-oidc");
         manager.createChain("/api/mica/oidc/**", "mica-oidc");

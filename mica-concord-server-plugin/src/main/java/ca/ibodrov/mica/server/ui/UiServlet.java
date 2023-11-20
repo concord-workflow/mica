@@ -31,7 +31,7 @@ public class UiServlet extends HttpServlet {
     }
 
     @Override
-    protected void service(HttpServletRequest req, HttpServletResponse resp) {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
         var path = req.getPathInfo();
 
         if (path == null) {
@@ -72,7 +72,7 @@ public class UiServlet extends HttpServlet {
             return Optional.empty();
         }
         var ext = fileName.substring(extIdx + 1);
-        return Optional.of(switch (ext) {
+        return Optional.ofNullable(switch (ext) {
             case "html" -> "text/html";
             case "css" -> "text/css";
             case "js" -> "text/javascript";
