@@ -1,10 +1,11 @@
 package ca.ibodrov.mica.server.api.resources;
 
-import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
-import ca.ibodrov.mica.server.api.ApiException;
 import ca.ibodrov.mica.api.model.Profile;
 import ca.ibodrov.mica.api.model.ProfileId;
+import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.server.UuidGenerator;
+import ca.ibodrov.mica.server.api.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,29 +13,75 @@ import org.hibernate.validator.constraints.Length;
 import org.jooq.Configuration;
 import org.jooq.JSONB;
 import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
+import javax.validation.Valid;
 import javax.ws.rs.*;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_PROFILES;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.jooq.JSONB.jsonb;
 
 @Tag(name = "profile")
 @Path("/api/mica/v1/profile")
 @Produces(APPLICATION_JSON)
 public class ProfileResource implements Resource {
 
+    private final Logger log = LoggerFactory.getLogger(ProfileResource.class);
+
     private final Configuration cfg;
     private final ObjectMapper objectMapper;
+    private final UuidGenerator uuidGenerator;
 
     @Inject
-    public ProfileResource(@MicaDB Configuration cfg, ObjectMapper objectMapper) {
+    public ProfileResource(@MicaDB Configuration cfg,
+                           ObjectMapper objectMapper,
+                           UuidGenerator uuidGenerator) {
+
         this.cfg = cfg;
         this.objectMapper = objectMapper;
+        this.uuidGenerator = uuidGenerator;
+    }
+
+    @POST
+    @Consumes(APPLICATION_JSON)
+    @Operation(description = "Create a new profile", operationId = "createProfile")
+    public ProfileEntry createProfile(@Valid Profile profile) {
+        if (profile.id().isPresent()) {
+            throw ApiException.badRequest("Trying to save an existing profile as a new one? (the ID is present)");
+        }
+
+        var id = uuidGenerator.generate();
+        cfg.dsl().transaction(tx -> tx.dsl().insertInto(MICA_PROFILES)
+                .columns(MICA_PROFILES.ID, MICA_PROFILES.NAME, MICA_PROFILES.KIND, MICA_PROFILES.SCHEMA)
+                .values(id, profile.name(), Profile.KIND, serializeSchema(profile.schema()))
+                .execute());
+
+        log.info("Created a new profile, id={}, name={}", id, profile.name());
+
+        return new ProfileEntry(new ProfileId(id), profile.name());
+    }
+
+    @PUT
+    @Consumes(APPLICATION_JSON)
+    @Operation(description = "Update an existing profile", operationId = "updateProfile")
+    public ProfileEntry updateProfile(@Valid Profile profile) {
+        var id = profile.id().orElseThrow(() -> ApiException.badRequest("Profile ID is missing"));
+
+        cfg.dsl().transactionResult(tx -> tx.dsl().update(MICA_PROFILES)
+                .set(MICA_PROFILES.NAME, profile.name())
+                .set(MICA_PROFILES.SCHEMA, serializeSchema(profile.schema()))
+                .where(MICA_PROFILES.ID.eq(id.id()))
+                .execute());
+
+        log.info("Updated a profile, id={}, name={}", id, profile.name());
+
+        return new ProfileEntry(id, profile.name());
     }
 
     @GET
@@ -48,7 +95,7 @@ public class ProfileResource implements Resource {
                 .select(MICA_PROFILES.ID, MICA_PROFILES.NAME)
                 .from(MICA_PROFILES)
                 .where(searchCondition)
-                .fetch(r -> new ProfileEntry(r.get(MICA_PROFILES.ID), r.get(MICA_PROFILES.NAME)));
+                .fetch(r -> new ProfileEntry(new ProfileId(r.get(MICA_PROFILES.ID)), r.get(MICA_PROFILES.NAME)));
 
         return new ProfileList(data);
     }
@@ -76,9 +123,17 @@ public class ProfileResource implements Resource {
         }
     }
 
+    private JSONB serializeSchema(ObjectSchemaNode schema) {
+        try {
+            return jsonb(objectMapper.writeValueAsString(schema));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public record ProfileList(List<ProfileEntry> data) {
     }
 
-    public record ProfileEntry(UUID id, String name) {
+    public record ProfileEntry(ProfileId id, String name) {
     }
 }

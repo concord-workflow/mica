@@ -2,13 +2,15 @@ package ca.ibodrov.mica.api.model;
 
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
 public record Profile(Optional<ProfileId> id,
-        String name,
+        @NotEmpty String name,
         Optional<OffsetDateTime> createdAt,
-        ObjectSchemaNode schema) {
+        @NotNull ObjectSchemaNode schema) {
 
     public static String KIND = "MicaProfile/v1";
 

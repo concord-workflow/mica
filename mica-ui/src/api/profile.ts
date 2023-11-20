@@ -12,7 +12,7 @@ export interface ProfileList {
 export interface Profile {
     id: string;
     name: string;
-    schema: object;
+    schema: string;
 }
 
 export const listClientProfiles = (search?: string): Promise<ProfileList> =>
@@ -20,3 +20,17 @@ export const listClientProfiles = (search?: string): Promise<ProfileList> =>
 
 export const getProfile = (name: string): Promise<Profile> =>
     doFetch(`/api/mica/v1/profile/${name}`).then(handleJsonResponse<Profile>);
+
+export const createProfile = (profile: Profile): Promise<ProfileEntry> =>
+    doFetch(`/api/mica/v1/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+    }).then(handleJsonResponse<ProfileEntry>);
+
+export const updateProfile = (profile: Profile): Promise<ProfileEntry> =>
+    doFetch(`/api/mica/v1/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+    }).then(handleJsonResponse<ProfileEntry>);

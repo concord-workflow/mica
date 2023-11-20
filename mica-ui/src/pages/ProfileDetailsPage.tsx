@@ -1,9 +1,23 @@
-import { getProfile } from '../api/profile.ts';
+import { getProfile, updateProfile } from '../api/profile.ts';
+import ActionBar from '../components/ActionBar.tsx';
+import EditableLabel from '../components/EditableLabel.tsx';
 import PageTitle from '../components/PageTitle.tsx';
-import { CircularProgress, Container, Paper, Typography } from '@mui/material';
+import Spacer from '../components/Spacer.tsx';
+import SaveIcon from '@mui/icons-material/Save';
+import {
+    Button,
+    CircularProgress,
+    Container,
+    FormControl,
+    Paper,
+    Snackbar,
+    Typography,
+} from '@mui/material';
+import { editor } from 'monaco-editor';
 
+import Editor, { OnMount } from '@monaco-editor/react';
 import React from 'react';
-import { useQuery } from 'react-query';
+import { useMutation, useQuery } from 'react-query';
 import { useParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
@@ -18,6 +32,8 @@ type RouteParams = {
 
 const ProfileDetailsPage = () => {
     const { profileName } = useParams<RouteParams>();
+    const [editableProfileName, setEditableProfileName] = React.useState<string>(profileName!);
+
     const { data, isFetching } = useQuery(
         ['profile', profileName],
         () => getProfile(profileName!),
@@ -26,20 +42,66 @@ const ProfileDetailsPage = () => {
         },
     );
 
+    const editorRef = React.useRef<editor.IStandaloneCodeEditor | null>(null);
+    const handleEditorOnMount: OnMount = (editor) => {
+        editorRef.current = editor;
+    };
+
+    const { mutateAsync } = useMutation(updateProfile);
+
+    const [openSuccessNotification, setOpenSuccessNotification] = React.useState(false);
+
+    const handleSave = React.useCallback(async () => {
+        const editor = editorRef.current;
+        if (!editor || !data) {
+            return;
+        }
+
+        const value = editor.getValue();
+        await mutateAsync({ ...data, name: editableProfileName, schema: JSON.parse(value) });
+        setOpenSuccessNotification(true);
+    }, [data, editableProfileName, mutateAsync]);
+
     return (
         <>
             <PageTitle help={HELP}>Profile</PageTitle>
-            <Container maxWidth="lg">
+            <Snackbar
+                open={openSuccessNotification}
+                autoHideDuration={5000}
+                onClose={() => setOpenSuccessNotification(false)}
+                message="Profile saved successfully"
+            />
+            <Container maxWidth="xl">
                 <Typography variant="h5" sx={{ marginBottom: 1 }}>
-                    {profileName} {isFetching && <CircularProgress size={16} />}
+                    <EditableLabel
+                        value={editableProfileName}
+                        onChange={(value) => setEditableProfileName(value)}>
+                        {editableProfileName} {isFetching && <CircularProgress size={16} />}
+                    </EditableLabel>
                 </Typography>
                 {data && (
                     <>
                         <Typography variant="h6" sx={{ marginBottom: 1 }}>
                             Schema
                         </Typography>
-                        <Paper sx={{ padding: 2 }}>
-                            <pre>{JSON.stringify(data.schema, null, 2)}</pre>
+                        <ActionBar>
+                            <Spacer />
+                            <FormControl>
+                                <Button
+                                    startIcon={<SaveIcon />}
+                                    variant="contained"
+                                    onClick={handleSave}>
+                                    Save
+                                </Button>
+                            </FormControl>
+                        </ActionBar>
+                        <Paper>
+                            <Editor
+                                height="60vh"
+                                defaultLanguage="yaml"
+                                defaultValue={JSON.stringify(data.schema, null, 2)}
+                                onMount={handleEditorOnMount}
+                            />
                         </Paper>
                     </>
                 )}
