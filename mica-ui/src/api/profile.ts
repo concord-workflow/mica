@@ -15,13 +15,18 @@ export interface Profile {
     schema: string;
 }
 
+export interface NewProfile {
+    name: string;
+    schema: string;
+}
+
 export const listClientProfiles = (search?: string): Promise<ProfileList> =>
     doFetch(`/api/mica/v1/profile?search=${search ?? ''}`).then(handleJsonResponse<ProfileList>);
 
 export const getProfile = (name: string): Promise<Profile> =>
     doFetch(`/api/mica/v1/profile/${name}`).then(handleJsonResponse<Profile>);
 
-export const createProfile = (profile: Profile): Promise<ProfileEntry> =>
+export const createProfile = (profile: NewProfile): Promise<ProfileEntry> =>
     doFetch(`/api/mica/v1/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

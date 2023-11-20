@@ -5,6 +5,7 @@ import RowMenu from '../components/RowMenu.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import ImportDocumentDialog from '../features/ImportDocumentDialog.tsx';
+import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
@@ -27,7 +28,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
@@ -37,6 +38,8 @@ const HELP: React.ReactNode = (
 );
 
 const ProfileListPage = () => {
+    const navigate = useNavigate();
+
     const [openUpload, setOpenUpload] = useState(false);
 
     const [search, setSearch] = useState<string>('');
@@ -70,6 +73,14 @@ const ProfileListPage = () => {
                 message="Profile uploaded successfully"
             />
             <ActionBar>
+                <FormControl>
+                    <Button
+                        startIcon={<AddIcon />}
+                        variant="contained"
+                        onClick={() => navigate('/profile/_new')}>
+                        Create
+                    </Button>
+                </FormControl>
                 <FormControl>
                     <Button
                         startIcon={<CloudUploadIcon />}

@@ -81,9 +81,6 @@ const ProfileDetailsPage = () => {
                 </Typography>
                 {data && (
                     <>
-                        <Typography variant="h6" sx={{ marginBottom: 1 }}>
-                            Schema
-                        </Typography>
                         <ActionBar>
                             <Spacer />
                             <FormControl>
@@ -91,7 +88,7 @@ const ProfileDetailsPage = () => {
                                     startIcon={<SaveIcon />}
                                     variant="contained"
                                     onClick={handleSave}>
-                                    Save
+                                    Update
                                 </Button>
                             </FormControl>
                         </ActionBar>

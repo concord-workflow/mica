@@ -3,6 +3,7 @@ import ApiPage from './pages/ApiPage.tsx';
 import ClientDetailsPage from './pages/ClientDetailsPage.tsx';
 import ClientEndpointListPage from './pages/ClientEndpointListPage.tsx';
 import ClientListPage from './pages/ClientListPage.tsx';
+import NewProfilePage from './pages/NewProfilePage.tsx';
 import ProfileDetailsPage from './pages/ProfileDetailsPage.tsx';
 import ProfileListPage from './pages/ProfileListPage.tsx';
 
@@ -38,6 +39,10 @@ export const createRouter = () =>
                     {
                         path: 'profile/:profileName/details',
                         element: <ProfileDetailsPage />,
+                    },
+                    {
+                        path: 'profile/_new',
+                        element: <NewProfilePage />,
                     },
                 ],
             },

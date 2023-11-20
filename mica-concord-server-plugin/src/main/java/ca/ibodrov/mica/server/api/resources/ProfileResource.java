@@ -19,6 +19,8 @@ import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import java.util.List;
 import java.util.Optional;
@@ -51,20 +53,16 @@ public class ProfileResource implements Resource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Operation(description = "Create a new profile", operationId = "createProfile")
-    public ProfileEntry createProfile(@Valid Profile profile) {
-        if (profile.id().isPresent()) {
-            throw ApiException.badRequest("Trying to save an existing profile as a new one? (the ID is present)");
-        }
-
+    public ProfileEntry createProfile(@Valid NewProfile newProfile) {
         var id = uuidGenerator.generate();
         cfg.dsl().transaction(tx -> tx.dsl().insertInto(MICA_PROFILES)
                 .columns(MICA_PROFILES.ID, MICA_PROFILES.NAME, MICA_PROFILES.KIND, MICA_PROFILES.SCHEMA)
-                .values(id, profile.name(), Profile.KIND, serializeSchema(profile.schema()))
+                .values(id, newProfile.name(), Profile.KIND, serializeSchema(newProfile.schema()))
                 .execute());
 
-        log.info("Created a new profile, id={}, name={}", id, profile.name());
+        log.info("Created a new profile, id={}, name={}", id, newProfile.name());
 
-        return new ProfileEntry(new ProfileId(id), profile.name());
+        return new ProfileEntry(new ProfileId(id), newProfile.name());
     }
 
     @PUT
@@ -129,6 +127,9 @@ public class ProfileResource implements Resource {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public record NewProfile(@NotEmpty String name, @NotNull ObjectSchemaNode schema) {
     }
 
     public record ProfileList(List<ProfileEntry> data) {

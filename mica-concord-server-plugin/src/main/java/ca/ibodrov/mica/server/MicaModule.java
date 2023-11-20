@@ -6,6 +6,7 @@ import ca.ibodrov.mica.server.data.ClientDataImporter;
 import ca.ibodrov.mica.server.data.DocumentImporter;
 import ca.ibodrov.mica.server.data.ProfileImporter;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
+import ca.ibodrov.mica.server.exceptions.ConstraintViolationExceptionMapper;
 import ca.ibodrov.mica.server.oidc.OidcResource;
 import ca.ibodrov.mica.server.ui.SwaggerServlet;
 import ca.ibodrov.mica.server.ui.UiServlet;
@@ -66,6 +67,7 @@ public class MicaModule implements Module {
         // exception mappers
 
         newSetBinder(binder, Component.class).addBinding().to(DataAccessExceptionMapper.class);
+        newSetBinder(binder, Component.class).addBinding().to(ConstraintViolationExceptionMapper.class);
 
         // security realms
 
