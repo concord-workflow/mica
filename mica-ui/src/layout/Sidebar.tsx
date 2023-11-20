@@ -1,3 +1,4 @@
+import ApiIcon from '@mui/icons-material/Api';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LanguageIcon from '@mui/icons-material/Language';
@@ -22,6 +23,16 @@ const Sidebar = ({ open }: { open: boolean }) => {
                     <DashboardIcon />
                 </ListItemIcon>
                 <ListItemText primary="Dashboard" />
+            </ListItemButton>
+
+            {/*API*/}
+            <ListItemButton
+                onClick={() => navigate('/api')}
+                selected={location.pathname === '/api'}>
+                <ListItemIcon>
+                    <ApiIcon />
+                </ListItemIcon>
+                <ListItemText primary="API" />
             </ListItemButton>
 
             {/*Clients*/}

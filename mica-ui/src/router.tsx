@@ -1,4 +1,5 @@
 import App from './App.tsx';
+import ApiPage from './pages/ApiPage.tsx';
 import ClientDetailsPage from './pages/ClientDetailsPage.tsx';
 import ClientEndpointListPage from './pages/ClientEndpointListPage.tsx';
 import ClientListPage from './pages/ClientListPage.tsx';
@@ -14,6 +15,10 @@ export const createRouter = () =>
                 path: '/',
                 element: <App />,
                 children: [
+                    {
+                        path: 'api',
+                        element: <ApiPage />,
+                    },
                     {
                         path: 'client',
                         element: <ClientListPage />,
