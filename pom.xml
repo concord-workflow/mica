@@ -32,14 +32,15 @@
     </developers>
 
     <modules>
-        <module>mica-common</module>
-        <module>mica-db</module>
-        <module>mica-ui</module>
-        <module>mica-schema</module>
+        <module>integration-tests</module>
         <module>mica-api</module>
+        <module>mica-common</module>
         <module>mica-concord-server-plugin</module>
         <module>mica-concord-task</module>
-        <module>integration-tests</module>
+        <module>mica-db</module>
+        <module>mica-schema</module>
+        <module>mica-ui</module>
+        <module>test-support</module>
     </modules>
 
     <properties>
@@ -48,7 +49,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <scm.connection>scm:git:https://github.com/concord-workflow/mica.git</scm.connection>
 
-        <concord.version>2.2.1-SNAPSHOT</concord.version>
+        <concord.version>2.3.0</concord.version>
         <jooq.version>3.14.0</jooq.version>
         <node.version>v20.8.0</node.version>
         <npm.version>10.2.0</npm.version>
@@ -115,15 +116,24 @@
                         <dependency>
                             <groupId>org.junit.jupiter</groupId>
                             <artifactId>junit-jupiter-engine</artifactId>
+                            <version>5.9.1</version>
                         </dependency>
                     </dependencies>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <skip>${skipITs}</skip>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.1.2</version>
-                    <configuration>
-                        <skip>${skipITs}</skip>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>

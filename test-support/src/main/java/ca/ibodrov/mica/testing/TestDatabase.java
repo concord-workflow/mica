@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server;
+package ca.ibodrov.mica.testing;
 
 import ca.ibodrov.mica.db.MicaDatabaseModule;
 import com.codahale.metrics.MetricRegistry;
@@ -15,18 +15,23 @@ import java.time.Duration;
  */
 public class TestDatabase implements AutoCloseable {
 
-    private PostgreSQLContainer<?> db;
+    private PostgreSQLContainer<?> container;
     private DataSource dataSource;
     private Configuration jooqConfiguration;
 
     public void start() {
-        db = new PostgreSQLContainer<>("postgres:15-alpine");
-        db.start();
+        container = new PostgreSQLContainer<>("postgres:15-alpine");
+        container.start();
 
-        var dbCfg = new DatabaseConfigurationImpl(db.getJdbcUrl(), db.getUsername(), db.getPassword(), 3);
+        var dbCfg = new DatabaseConfigurationImpl(container.getJdbcUrl(), container.getUsername(),
+                container.getPassword(), 3);
         var dbModule = new MicaDatabaseModule();
         dataSource = dbModule.dataSource(dbCfg, new MetricRegistry());
         jooqConfiguration = dbModule.jooqConfiguration(dataSource);
+    }
+
+    public PostgreSQLContainer<?> getContainer() {
+        return container;
     }
 
     public Configuration getJooqConfiguration() {
@@ -38,7 +43,7 @@ public class TestDatabase implements AutoCloseable {
         Method m = dataSource.getClass().getMethod("close");
         m.invoke(dataSource);
 
-        db.stop();
+        container.stop();
     }
 
     private static final class DatabaseConfigurationImpl implements DatabaseConfiguration {

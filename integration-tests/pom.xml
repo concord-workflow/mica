@@ -17,11 +17,13 @@
             <groupId>ca.ibodrov.mica</groupId>
             <artifactId>mica-concord-server-plugin</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ca.ibodrov.mica</groupId>
             <artifactId>mica-concord-task</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <!-- we need concord-server/dist for the default config -->
         <dependency>
@@ -34,6 +36,12 @@
             <groupId>com.walmartlabs.concord</groupId>
             <artifactId>concord-client2</artifactId>
             <version>${concord.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ca.ibodrov.mica</groupId>
+            <artifactId>test-support</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -83,6 +91,9 @@
                         <phase>process-sources</phase>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

@@ -1,7 +1,7 @@
 package ca.ibodrov.mica.server.api.resources;
 
-import ca.ibodrov.mica.server.TestData;
-import ca.ibodrov.mica.server.TestDatabase;
+import ca.ibodrov.mica.testing.TestData;
+import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

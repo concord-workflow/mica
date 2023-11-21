@@ -5,8 +5,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.*;
 
 public class ApiException extends WebApplicationException {
 
@@ -23,7 +22,11 @@ public class ApiException extends WebApplicationException {
     }
 
     public static ApiException internalError(String message) {
-        return new ApiException(Status.INTERNAL_SERVER_ERROR, message);
+        return new ApiException(INTERNAL_SERVER_ERROR, message);
+    }
+
+    public static ApiException conflict(String message) {
+        return new ApiException(CONFLICT, message);
     }
 
     public ApiException(Status status, Throwable cause) {
@@ -38,6 +41,10 @@ public class ApiException extends WebApplicationException {
                 .type(APPLICATION_JSON)
                 .entity(new ErrorResponse(message))
                 .build());
+    }
+
+    public Status getStatus() {
+        return Status.fromStatusCode(getResponse().getStatus());
     }
 
     public record ErrorResponse(String message) {

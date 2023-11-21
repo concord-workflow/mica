@@ -1,10 +1,10 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
-import ca.ibodrov.mica.server.TestData;
-import ca.ibodrov.mica.server.TestDatabase;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.api.ApiException;
+import ca.ibodrov.mica.testing.TestData;
+import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.junit.jupiter.api.AfterAll;

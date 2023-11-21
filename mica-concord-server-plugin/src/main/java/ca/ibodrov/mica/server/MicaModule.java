@@ -83,6 +83,7 @@ public class MicaModule implements Module {
         bindJaxRsResource(binder, ProfileResource.class);
         bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, WhoamiResource.class);
+        bindJaxRsResource(binder, EntityResource.class);
 
         // other beans
 

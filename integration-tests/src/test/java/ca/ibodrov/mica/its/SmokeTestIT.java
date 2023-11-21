@@ -1,8 +1,8 @@
 package ca.ibodrov.mica.its;
 
 import ca.ibodrov.mica.api.client.MicaApiClient;
-import ca.ibodrov.mica.api.model.ClientDataEntry;
 import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.testing.TestData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.inject.Key;
@@ -11,7 +11,6 @@ import com.walmartlabs.concord.client2.ApiClientConfiguration;
 import com.walmartlabs.concord.client2.DefaultApiClientFactory;
 import com.walmartlabs.concord.client2.ProcessApi;
 import com.walmartlabs.concord.it.testingserver.TestingConcordAgent;
-import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,10 +23,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
-import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENTS;
-import static ca.ibodrov.mica.db.jooq.Tables.MICA_CLIENT_DATA;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
-import static org.jooq.JSONB.jsonb;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -131,10 +127,10 @@ public class SmokeTestIT {
 
         var dsl = micaServer.getServer().getInjector().getInstance(Key.get(DSLContext.class, MicaDB.class));
         dsl.transaction(tx -> {
-            insertClient(tx, client1Id, client1Name);
-            insertClientData(tx, UUID.randomUUID(), client1Name, "{\"foo\": \"bar\"}");
-            insertClient(tx, client2Id, client2Name);
-            insertClientData(tx, UUID.randomUUID(), client2Name, "{\"baz\": \"qux\"}");
+            TestData.insertClient(tx, client1Id, client1Name);
+            TestData.insertClientData(tx, UUID.randomUUID(), client1Name, "{\"foo\": \"bar\"}");
+            TestData.insertClient(tx, client2Id, client2Name);
+            TestData.insertClientData(tx, UUID.randomUUID(), client2Name, "{\"baz\": \"qux\"}");
         });
 
         // start the process
@@ -190,20 +186,5 @@ public class SmokeTestIT {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static void insertClient(Configuration tx, UUID id, String name) {
-        tx.dsl().insertInto(MICA_CLIENTS)
-                .columns(MICA_CLIENTS.ID, MICA_CLIENTS.NAME)
-                .values(id, name)
-                .execute();
-    }
-
-    private static void insertClientData(Configuration tx, UUID documentId, String externalId, String parsedData) {
-        tx.dsl().insertInto(MICA_CLIENT_DATA)
-                .columns(MICA_CLIENT_DATA.DOCUMENT_ID, MICA_CLIENT_DATA.EXTERNAL_ID, MICA_CLIENT_DATA.KIND,
-                        MICA_CLIENT_DATA.PARSED_DATA)
-                .values(documentId, externalId, ClientDataEntry.KIND, jsonb(parsedData))
-                .execute();
     }
 }

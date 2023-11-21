@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server;
+package ca.ibodrov.mica.testing;
 
 import ca.ibodrov.mica.api.model.ClientDataEntry;
 import ca.ibodrov.mica.api.model.Profile;

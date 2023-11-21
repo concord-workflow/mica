@@ -3,7 +3,7 @@ package ca.ibodrov.mica.server.api.resources;
 import ca.ibodrov.mica.server.api.ApiException;
 import ca.ibodrov.mica.api.model.Document;
 import ca.ibodrov.mica.server.data.DocumentImporter;
-import ca.ibodrov.mica.server.data.InvalidDocumentException;
+import ca.ibodrov.mica.server.exceptions.InvalidDocumentException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
