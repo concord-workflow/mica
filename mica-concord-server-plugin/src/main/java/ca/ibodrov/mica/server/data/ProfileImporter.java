@@ -1,12 +1,13 @@
 package ca.ibodrov.mica.server.data;
 
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
-import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.api.model.Document;
 import ca.ibodrov.mica.api.model.Profile;
+import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.server.UuidGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walmartlabs.concord.db.MainDB;
-import org.jooq.Configuration;
+import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,13 +21,13 @@ public class ProfileImporter implements DocumentImporter {
 
     private static final Logger log = LoggerFactory.getLogger(ProfileImporter.class);
 
-    private final Configuration cfg;
+    private final DSLContext dsl;
     private final UuidGenerator uuidGenerator;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public ProfileImporter(@MainDB Configuration cfg, UuidGenerator uuidGenerator, ObjectMapper objectMapper) {
-        this.cfg = cfg;
+    public ProfileImporter(@MicaDB DSLContext dsl, UuidGenerator uuidGenerator, ObjectMapper objectMapper) {
+        this.dsl = dsl;
         this.uuidGenerator = uuidGenerator;
         this.objectMapper = objectMapper;
     }
@@ -46,7 +47,7 @@ public class ProfileImporter implements DocumentImporter {
         }
 
         var id = uuidGenerator.generate();
-        cfg.dsl().transaction(tx -> tx.dsl()
+        dsl.transaction(tx -> tx.dsl()
                 .insertInto(MICA_PROFILES)
                 .columns(MICA_PROFILES.ID, MICA_PROFILES.NAME, MICA_PROFILES.KIND, MICA_PROFILES.SCHEMA)
                 .values(id, profile.name(), Profile.KIND, serializeAsJsonb(profile.schema()))

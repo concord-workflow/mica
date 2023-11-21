@@ -7,7 +7,7 @@ import ca.ibodrov.mica.server.data.ClientEndpointController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hibernate.validator.constraints.Length;
-import org.jooq.Configuration;
+import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.sonatype.siesta.Resource;
 
@@ -27,12 +27,12 @@ import static org.jooq.impl.DSL.select;
 @Path("/api/mica/v1/clientEndpoint")
 public class ClientEndpointResource implements Resource {
 
-    private final Configuration cfg;
+    private final DSLContext dsl;
     private final ClientEndpointController controller;
 
     @Inject
-    public ClientEndpointResource(@MicaDB Configuration cfg, ClientEndpointController controller) {
-        this.cfg = cfg;
+    public ClientEndpointResource(@MicaDB DSLContext dsl, ClientEndpointController controller) {
+        this.dsl = dsl;
         this.controller = controller;
     }
 
@@ -49,13 +49,12 @@ public class ClientEndpointResource implements Resource {
                         .or(MICA_CLIENT_ENDPOINTS.LAST_KNOWN_STATUS.containsIgnoreCase(substring)))
                 .orElseGet(DSL::noCondition);
 
-        var data = cfg.dsl()
-                .select(MICA_CLIENT_ENDPOINTS.ID,
-                        MICA_CLIENT_ENDPOINTS.CLIENT_ID,
-                        clientName,
-                        MICA_CLIENT_ENDPOINTS.ENDPOINT_URI,
-                        MICA_CLIENT_ENDPOINTS.LAST_KNOWN_STATUS,
-                        MICA_CLIENT_ENDPOINTS.STATUS_UPDATED_AT)
+        var data = dsl.select(MICA_CLIENT_ENDPOINTS.ID,
+                MICA_CLIENT_ENDPOINTS.CLIENT_ID,
+                clientName,
+                MICA_CLIENT_ENDPOINTS.ENDPOINT_URI,
+                MICA_CLIENT_ENDPOINTS.LAST_KNOWN_STATUS,
+                MICA_CLIENT_ENDPOINTS.STATUS_UPDATED_AT)
                 .from(MICA_CLIENT_ENDPOINTS)
                 .where(searchCondition)
                 .fetchInto(ClientEndpoint.class);

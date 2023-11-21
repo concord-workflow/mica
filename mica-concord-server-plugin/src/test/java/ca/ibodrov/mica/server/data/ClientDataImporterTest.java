@@ -1,10 +1,10 @@
 package ca.ibodrov.mica.server.data;
 
-import ca.ibodrov.mica.server.TestDatabase;
-import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.api.model.ClientDataDocument;
 import ca.ibodrov.mica.api.model.ClientDataEntry;
 import ca.ibodrov.mica.api.model.Document;
+import ca.ibodrov.mica.server.TestDatabase;
+import ca.ibodrov.mica.server.UuidGenerator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ public class ClientDataImporterTest {
                                 new ClientDataEntry("id1", Map.of()),
                                 new ClientDataEntry("id2", Map.of()))));
 
-        var importer = new ClientDataImporter(testDatabase.getJooqConfiguration(), new UuidGenerator());
+        var importer = new ClientDataImporter(testDatabase.getJooqConfiguration().dsl(), new UuidGenerator());
         importer.importDocument(document);
     }
 }

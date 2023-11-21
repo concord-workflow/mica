@@ -5,8 +5,8 @@ import ca.ibodrov.mica.server.api.resources.*;
 import ca.ibodrov.mica.server.data.ClientDataImporter;
 import ca.ibodrov.mica.server.data.DocumentImporter;
 import ca.ibodrov.mica.server.data.ProfileImporter;
-import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ConstraintViolationExceptionMapper;
+import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.oidc.OidcResource;
 import ca.ibodrov.mica.server.ui.SwaggerServlet;
 import ca.ibodrov.mica.server.ui.UiServlet;
@@ -81,6 +81,7 @@ public class MicaModule implements Module {
         bindJaxRsResource(binder, DocumentResource.class);
         bindJaxRsResource(binder, OidcResource.class);
         bindJaxRsResource(binder, ProfileResource.class);
+        bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, WhoamiResource.class);
 
         // other beans

@@ -39,6 +39,7 @@
         <module>mica-api</module>
         <module>mica-concord-server-plugin</module>
         <module>mica-concord-task</module>
+        <module>integration-tests</module>
     </modules>
 
     <properties>
@@ -47,10 +48,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <scm.connection>scm:git:https://github.com/concord-workflow/mica.git</scm.connection>
 
+        <concord.version>2.2.1-SNAPSHOT</concord.version>
         <jooq.version>3.14.0</jooq.version>
         <node.version>v20.8.0</node.version>
         <npm.version>10.2.0</npm.version>
-        <concord.version>2.2.0</concord.version>
+
+        <skipITs>true</skipITs>
     </properties>
 
     <dependencyManagement>
@@ -108,10 +111,19 @@
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>3.1.2</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.junit.jupiter</groupId>
+                            <artifactId>junit-jupiter-engine</artifactId>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.1.2</version>
+                    <configuration>
+                        <skip>${skipITs}</skip>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>

@@ -33,7 +33,7 @@ public class MicaTask implements Task {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final URI baseUri;
-    private final String apiKey;
+    private final String sessionToken;
 
     @Inject
     public MicaTask(ObjectMapper objectMapper, Context ctx) {
@@ -46,11 +46,14 @@ public class MicaTask implements Task {
                 .build();
 
         this.baseUri = URI.create(ctx.apiConfiguration().baseUrl());
-        this.apiKey = requireNonNull(ctx.variables().getString("apiKey"), "apiKey is null");
+        this.sessionToken = requireNonNull(ctx.processConfiguration().processInfo().sessionToken(),
+                "sessionToken is null");
     }
 
     @Override
     public TaskResult execute(Variables input) throws Exception {
+        log.info("Using baseUri={}", baseUri);
+
         var action = input.assertString("action");
         if (action.equalsIgnoreCase("listClients")) {
             return listClients(input);
@@ -60,26 +63,39 @@ public class MicaTask implements Task {
 
     private TaskResult listClients(Variables input) throws Exception {
         var filterOutClientsWithoutProps = input.getBoolean("filterOutClientsWithoutProps", false);
-        var props = input.getList("props", List.<String>of());
+        var props = assertListOfStrings(input, "props");
 
-        log.info("Using baseUri={}", baseUri);
-
-        var request = HttpRequest.newBuilder()
-                .uri(baseUri.resolve("/api/mica/v1/client?" + toQueryParam("props", props.stream())))
-                .header("Authorization", apiKey)
+        var request = newRequest("/api/mica/v1/client?" + toQueryParam("props", props.stream()))
                 .build();
 
         var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
         // We don't need Mica API classes to parse the response,
         // the result must be converted into regular Java structures anyway.
-        // But for now we could benefit from extra validation.
+        // But for now we use them to validate the response to be sure that the client
+        // is compatible.
         var clientList = parseResponseAsJson(objectMapper, response, ClientList.class);
         var data = filterOutClientsWithoutProps
                 ? clientList.data().stream().filter(client -> client.properties().keySet().containsAll(props)).toList()
                 : clientList.data();
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(data, List.class));
+    }
+
+    private HttpRequest.Builder newRequest(String path) {
+        return HttpRequest.newBuilder()
+                .uri(baseUri.resolve(path))
+                .header("X-Concord-SessionToken", sessionToken);
+    }
+
+    private static List<String> assertListOfStrings(Variables input, String key) {
+        var raw = input.getList(key, List.of());
+        return raw.stream().map(o -> {
+            if (!(o instanceof String)) {
+                throw new RuntimeException("Expected a list of strings, got: " + raw);
+            }
+            return o.toString();
+        }).toList();
     }
 
     private static String toQueryParam(String key, Stream<String> stream) {

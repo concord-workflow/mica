@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hibernate.validator.constraints.Length;
-import org.jooq.Configuration;
+import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.impl.DSL;
 import org.sonatype.siesta.Resource;
@@ -32,12 +32,12 @@ import static org.jooq.impl.DSL.val;
 @Path("/api/mica/v1/client")
 public class ClientResource implements Resource {
 
-    private final Configuration cfg;
+    private final DSLContext dsl;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public ClientResource(@MicaDB Configuration cfg, ObjectMapper objectMapper) {
-        this.cfg = cfg;
+    public ClientResource(@MicaDB DSLContext dsl, ObjectMapper objectMapper) {
+        this.dsl = dsl;
         this.objectMapper = objectMapper;
     }
 
@@ -58,8 +58,7 @@ public class ClientResource implements Resource {
                         .limit(1)
                         .asField("latest_data");
 
-        var data = cfg.dsl()
-                .select(MICA_CLIENTS.ID, MICA_CLIENTS.NAME, latestData)
+        var data = dsl.select(MICA_CLIENTS.ID, MICA_CLIENTS.NAME, latestData)
                 .from(MICA_CLIENTS)
                 .where(searchCondition)
                 .fetch(r -> new Client(r.get(MICA_CLIENTS.ID), r.get(MICA_CLIENTS.NAME),

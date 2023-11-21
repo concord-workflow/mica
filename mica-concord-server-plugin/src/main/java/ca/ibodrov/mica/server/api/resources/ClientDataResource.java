@@ -5,7 +5,7 @@ import ca.ibodrov.mica.db.MicaDB;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.jooq.Configuration;
+import org.jooq.DSLContext;
 import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
@@ -21,11 +21,11 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("/api/mica/v1/clientData")
 public class ClientDataResource implements Resource {
 
-    private final Configuration cfg;
+    private final DSLContext dsl;
 
     @Inject
-    public ClientDataResource(@MicaDB Configuration cfg) {
-        this.cfg = cfg;
+    public ClientDataResource(@MicaDB DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     @GET
@@ -33,8 +33,7 @@ public class ClientDataResource implements Resource {
     @Produces(APPLICATION_JSON)
     @Operation(description = "Returns the latest client data", operationId = "getLatestData")
     public ClientData getLatestData(@QueryParam("externalId") @ValidClientName String externalId) {
-        return cfg.dsl()
-                .select(MICA_CLIENT_DATA.PARSED_DATA).from(MICA_CLIENT_DATA)
+        return dsl.select(MICA_CLIENT_DATA.PARSED_DATA).from(MICA_CLIENT_DATA)
                 .where(MICA_CLIENT_DATA.EXTERNAL_ID.eq(externalId))
                 .orderBy(MICA_CLIENT_DATA.IMPORTED_AT.desc())
                 .limit(1)

@@ -3,10 +3,10 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.server.TestData;
 import ca.ibodrov.mica.server.TestDatabase;
-import ca.ibodrov.mica.server.TestObjectMapperProvider;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.api.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,8 +36,8 @@ public class ClientEndpointControllerTest {
 
     @BeforeEach
     public void init() {
-        objectMapper = new TestObjectMapperProvider().get();
-        controller = new ClientEndpointController(testDatabase.getJooqConfiguration(), objectMapper,
+        objectMapper = new ObjectMapper().registerModule(new Jdk8Module());
+        controller = new ClientEndpointController(testDatabase.getJooqConfiguration().dsl(), objectMapper,
                 new UuidGenerator());
     }
 
@@ -73,7 +73,7 @@ public class ClientEndpointControllerTest {
 
     private String toJson(Object o) {
         try {
-            return new TestObjectMapperProvider().get().writeValueAsString(o);
+            return objectMapper.writeValueAsString(o);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

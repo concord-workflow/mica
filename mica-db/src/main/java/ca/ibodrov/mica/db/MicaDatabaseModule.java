@@ -10,6 +10,7 @@ import com.walmartlabs.concord.db.DatabaseChangeLogProvider;
 import com.walmartlabs.concord.db.DatabaseConfiguration;
 import com.walmartlabs.concord.db.MainDB;
 import org.jooq.Configuration;
+import org.jooq.DSLContext;
 
 import javax.inject.Singleton;
 import javax.sql.DataSource;
@@ -36,6 +37,12 @@ public class MicaDatabaseModule implements Module {
     @Singleton
     public Configuration jooqConfiguration(@MicaDB DataSource ds) {
         return DataSourceUtils.createJooqConfiguration(ds);
+    }
+
+    @Provides
+    @MicaDB
+    public DSLContext dslContext(@MicaDB Configuration cfg) {
+        return cfg.dsl();
     }
 
     @VisibleForTesting

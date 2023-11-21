@@ -6,7 +6,6 @@ import ca.ibodrov.mica.api.model.Document;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.UuidGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.slf4j.Logger;
@@ -24,13 +23,13 @@ public class ClientDataImporter implements DocumentImporter {
 
     private static final Logger log = LoggerFactory.getLogger(ClientDataImporter.class);
 
-    private final Configuration cfg;
+    private final DSLContext dsl;
     private final UuidGenerator uuidGenerator;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public ClientDataImporter(@MicaDB Configuration cfg, UuidGenerator uuidGenerator) {
-        this.cfg = cfg;
+    public ClientDataImporter(@MicaDB DSLContext dsl, UuidGenerator uuidGenerator) {
+        this.dsl = dsl;
         this.uuidGenerator = uuidGenerator;
         this.objectMapper = new ObjectMapper();
     }
@@ -49,7 +48,7 @@ public class ClientDataImporter implements DocumentImporter {
         var documentId = uuidGenerator.generate();
         log.info("Importing a new client data document with {} client(s), documentId={}", clientList.clients().size(),
                 documentId);
-        cfg.dsl().transaction(cfg -> {
+        dsl.transaction(cfg -> {
             var tx = cfg.dsl();
             clientList.clients()
                     .forEach(client -> insert(tx, documentId, client));

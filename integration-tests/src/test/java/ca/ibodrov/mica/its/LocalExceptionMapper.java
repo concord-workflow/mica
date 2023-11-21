@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server;
+package ca.ibodrov.mica.its;
 
 import org.sonatype.siesta.Component;
 

@@ -30,8 +30,8 @@ public class ClientResourceTest {
 
     @Test
     public void testListClients() {
-        var jooqCfg = testDatabase.getJooqConfiguration();
-        jooqCfg.dsl().transaction(tx -> {
+        var dsl = testDatabase.getJooqConfiguration().dsl();
+        dsl.transaction(tx -> {
             TestData.insertClient(tx, UUID.randomUUID(), "foobar");
             TestData.insertClientData(tx, UUID.randomUUID(), "foobar", "{\"existingProp\": 123}");
 
@@ -40,7 +40,7 @@ public class ClientResourceTest {
         });
 
         var objectMapper = new ObjectMapper();
-        var resource = new ClientResource(jooqCfg, objectMapper);
+        var resource = new ClientResource(dsl, objectMapper);
 
         var result = resource.listClients("foo", Set.of("nonExistingProp"));
         assertEquals(1, result.data().size());

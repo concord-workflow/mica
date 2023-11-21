@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hibernate.validator.constraints.Length;
-import org.jooq.Configuration;
+import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
@@ -36,16 +36,16 @@ public class ProfileResource implements Resource {
 
     private final Logger log = LoggerFactory.getLogger(ProfileResource.class);
 
-    private final Configuration cfg;
+    private final DSLContext dsl;
     private final ObjectMapper objectMapper;
     private final UuidGenerator uuidGenerator;
 
     @Inject
-    public ProfileResource(@MicaDB Configuration cfg,
+    public ProfileResource(@MicaDB DSLContext dsl,
                            ObjectMapper objectMapper,
                            UuidGenerator uuidGenerator) {
 
-        this.cfg = cfg;
+        this.dsl = dsl;
         this.objectMapper = objectMapper;
         this.uuidGenerator = uuidGenerator;
     }
@@ -55,7 +55,7 @@ public class ProfileResource implements Resource {
     @Operation(description = "Create a new profile", operationId = "createProfile")
     public ProfileEntry createProfile(@Valid NewProfile newProfile) {
         var id = uuidGenerator.generate();
-        cfg.dsl().transaction(tx -> tx.dsl().insertInto(MICA_PROFILES)
+        dsl.transaction(tx -> tx.dsl().insertInto(MICA_PROFILES)
                 .columns(MICA_PROFILES.ID, MICA_PROFILES.NAME, MICA_PROFILES.KIND, MICA_PROFILES.SCHEMA)
                 .values(id, newProfile.name(), Profile.KIND, serializeSchema(newProfile.schema()))
                 .execute());
@@ -71,7 +71,7 @@ public class ProfileResource implements Resource {
     public ProfileEntry updateProfile(@Valid Profile profile) {
         var id = profile.id().orElseThrow(() -> ApiException.badRequest("Profile ID is missing"));
 
-        cfg.dsl().transactionResult(tx -> tx.dsl().update(MICA_PROFILES)
+        dsl.transactionResult(tx -> tx.dsl().update(MICA_PROFILES)
                 .set(MICA_PROFILES.NAME, profile.name())
                 .set(MICA_PROFILES.SCHEMA, serializeSchema(profile.schema()))
                 .where(MICA_PROFILES.ID.eq(id.id()))
@@ -89,8 +89,7 @@ public class ProfileResource implements Resource {
                 .map(MICA_PROFILES.NAME::containsIgnoreCase)
                 .orElseGet(DSL::noCondition);
 
-        var data = cfg.dsl()
-                .select(MICA_PROFILES.ID, MICA_PROFILES.NAME)
+        var data = dsl.select(MICA_PROFILES.ID, MICA_PROFILES.NAME)
                 .from(MICA_PROFILES)
                 .where(searchCondition)
                 .fetch(r -> new ProfileEntry(new ProfileId(r.get(MICA_PROFILES.ID)), r.get(MICA_PROFILES.NAME)));
@@ -102,15 +101,13 @@ public class ProfileResource implements Resource {
     @Path("{name}")
     @Operation(description = "Get profile by name", operationId = "getProfile")
     public Profile getProfile(@PathParam("name") String name) {
-        var profile = cfg.dsl()
-                .selectFrom(MICA_PROFILES)
+        return dsl.selectFrom(MICA_PROFILES)
                 .where(MICA_PROFILES.NAME.eq(name))
                 .fetchOptional(r -> new Profile(ProfileId.of(r.getId()),
                         r.getName(),
                         Optional.of(r.getCreatedAt()),
                         parseIntoSchema(r.getSchema())))
                 .orElseThrow(() -> ApiException.notFound("Profile not found: " + name));
-        return profile;
     }
 
     private ObjectSchemaNode parseIntoSchema(JSONB json) {
