@@ -107,7 +107,7 @@ public class SmokeTestIT {
         assertNotNull(response.getInstanceId());
 
         var process = processApi.waitForCompletion(response.getInstanceId(), Duration.ofSeconds(60).toMillis());
-        assertEquals(FINISHED, process.getStatus());
+        assertEquals(FINISHED, process.getStatus(), () -> getProcessLog(process.getInstanceId()));
     }
 
     /**
@@ -173,11 +173,17 @@ public class SmokeTestIT {
         assertNotNull(response.getInstanceId());
 
         var process = processApi.waitForCompletion(response.getInstanceId(), Duration.ofSeconds(60).toMillis());
-        if (process.getStatus() != FINISHED) {
-            var log = processApi.getProcessLog(process.getInstanceId(), null);
-            System.out.println(new String(log.readAllBytes()));
+        assertEquals(FINISHED, process.getStatus(), () -> getProcessLog(process.getInstanceId()));
+    }
+
+    private String getProcessLog(UUID instanceId) {
+        try {
+            var log = new ProcessApi(concordClient)
+                    .getProcessLog(instanceId, null);
+            return new String(log.readAllBytes());
+        } catch (Exception e) {
+            return "Can't show the details, got an error while retrieving the process log: " + e.getMessage();
         }
-        assertEquals(FINISHED, process.getStatus());
     }
 
     private static int getFreePort() {
