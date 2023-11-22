@@ -111,10 +111,10 @@ public class SmokeTestIT {
     }
 
     /**
-     * Test that "mica" task can reach Mica API. It validates: - that there's a
-     * version of "mica" task that matches the version in integration-tests pom.xml
-     * Note: the test requires mica-concord-task artifact to be installed in local
-     * Maven repository.
+     * Test that "mica" task can reach Mica API. It checks the version of "mica"
+     * task if it matches the version in integration-tests pom.xml Note: the test
+     * requires mica-concord-task artifact to be installed in local Maven repository
+     * prior to execution.
      */
     @Test
     public void testConcordAgentCanReachMica() throws Exception {
