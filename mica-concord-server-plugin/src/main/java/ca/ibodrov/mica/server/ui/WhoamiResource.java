@@ -1,7 +1,7 @@
 package ca.ibodrov.mica.server.ui;
 
-import com.walmartlabs.concord.server.security.PrincipalUtils;
 import ca.ibodrov.mica.server.MicaPrincipal;
+import com.walmartlabs.concord.server.security.PrincipalUtils;
 import org.sonatype.siesta.Resource;
 
 import javax.ws.rs.GET;

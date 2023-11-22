@@ -1,9 +1,9 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.model.Profile;
 import ca.ibodrov.mica.schema.Input;
 import ca.ibodrov.mica.schema.ValidatedProperty;
 import ca.ibodrov.mica.schema.Validator;
-import ca.ibodrov.mica.api.model.Profile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.inject.Inject;

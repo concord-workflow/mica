@@ -1,8 +1,8 @@
 package ca.ibodrov.mica.server;
 
+import ca.ibodrov.mica.server.oidc.OidcAuthenticatingFilter;
 import com.walmartlabs.concord.server.boot.FilterChainConfigurator;
 import com.walmartlabs.concord.server.boot.filters.ConcordAuthenticatingFilter;
-import ca.ibodrov.mica.server.oidc.OidcAuthenticatingFilter;
 import org.apache.shiro.web.filter.mgt.FilterChainManager;
 
 import javax.inject.Inject;

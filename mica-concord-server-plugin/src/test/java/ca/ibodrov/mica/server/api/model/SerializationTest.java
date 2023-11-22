@@ -6,8 +6,7 @@ import ca.ibodrov.mica.schema.ValidatedProperty;
 import ca.ibodrov.mica.server.data.ProfileRenderer.EffectiveProfile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -21,9 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SerializationTest {
 
-    private final ObjectMapper mapper = new ObjectMapper()
-            .registerModule(new Jdk8Module())
-            .registerModule(new JavaTimeModule());
+    private final ObjectMapper mapper = new ObjectMapperProvider().get();
 
     @Test
     public void testParseClientDataDocument() throws Exception {
@@ -55,5 +52,18 @@ public class SerializationTest {
         var str = mapper.writeValueAsString(profile1);
         var profile2 = mapper.readValue(str, EffectiveProfile.class);
         assertEquals(profile1, profile2);
+    }
+
+    @Test
+    public void testIdWrappers() throws Exception {
+        var entityId1 = new EntityId(UUID.randomUUID());
+        var json1 = """
+                { "id": "%s" }
+                """.formatted(entityId1.toExternalForm());
+        var entityIdContainer = mapper.readValue(json1, EntityIdContainer.class);
+        assertEquals(entityId1, entityIdContainer.id());
+    }
+
+    public record EntityIdContainer(EntityId id) {
     }
 }

@@ -1,0 +1,11 @@
+---
+name: bar
+kind: MicaRecord/v1
+data:
+  nested:
+    object: "why not?"
+  otherProp: true
+  widgets:
+    - a
+    - b
+    - c

@@ -25,7 +25,8 @@ public class MicaDatabaseModule implements Module {
     @MicaDB
     @Singleton
     public Configuration jooqConfiguration(@MicaDB DataSource ds) {
-        return DataSourceUtils.createJooqConfiguration(ds);
+        var cfg = DataSourceUtils.createJooqConfiguration(ds);
+        return cfg;
     }
 
     @Provides

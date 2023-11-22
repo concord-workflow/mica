@@ -26,6 +26,11 @@ export const handleJsonResponse = async <T>(resp: Response): Promise<T> => {
     return data as T;
 };
 
+export const handleTextResponse = async (resp: Response): Promise<string> => {
+    await handleErrors(resp);
+    return await resp.text();
+};
+
 const parseError = async (resp: Response): Promise<string> => {
     if (!resp.headers.get('content-type')?.includes('application/json')) {
         return `${resp.status} ${resp.statusText}`;

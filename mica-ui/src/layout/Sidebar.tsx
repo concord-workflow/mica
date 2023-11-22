@@ -1,9 +1,7 @@
 import ApiIcon from '@mui/icons-material/Api';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import LanguageIcon from '@mui/icons-material/Language';
 import PublishIcon from '@mui/icons-material/Publish';
-import SourceIcon from '@mui/icons-material/Source';
 import { Collapse, List } from '@mui/material';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -35,52 +33,18 @@ const Sidebar = ({ open }: { open: boolean }) => {
                 <ListItemText primary="API" />
             </ListItemButton>
 
-            {/*Clients*/}
+            {/*Entities*/}
             <ListItemButton
-                onClick={() => navigate('/client')}
-                selected={location.pathname === '/client'}>
+                onClick={() => navigate('/entity')}
+                selected={location.pathname === '/entity'}>
                 <ListItemIcon>
                     <CorporateFareIcon />
                 </ListItemIcon>
-                <ListItemText primary="Clients" />
+                <ListItemText primary="Entities" />
             </ListItemButton>
 
-            {/*Clients/Details*/}
-            {open && /^\/client\/.*\/details$/.test(location.pathname) && (
-                <Collapse in={true} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding>
-                        <ListItemButton sx={{ pl: 4 }} selected={true}>
-                            <ListItemIcon>
-                                <PublishIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Details" />
-                        </ListItemButton>
-                    </List>
-                </Collapse>
-            )}
-
-            {/*Endpoints*/}
-            <ListItemButton
-                onClick={() => navigate('/clientEndpoint')}
-                selected={location.pathname === '/clientEndpoint'}>
-                <ListItemIcon>
-                    <LanguageIcon />
-                </ListItemIcon>
-                <ListItemText primary="Client Endpoints" />
-            </ListItemButton>
-
-            {/*Profiles*/}
-            <ListItemButton
-                onClick={() => navigate('/profile')}
-                selected={location.pathname === '/profile'}>
-                <ListItemIcon>
-                    <SourceIcon />
-                </ListItemIcon>
-                <ListItemText primary="Profiles" />
-            </ListItemButton>
-
-            {/*Profiles/Details*/}
-            {open && /^\/profile\/.*\/details$/.test(location.pathname) && (
+            {/*Entities/Details*/}
+            {open && /^\/entity\/.*\/details$/.test(location.pathname) && (
                 <Collapse in={true} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                         <ListItemButton sx={{ pl: 4 }} selected={true}>

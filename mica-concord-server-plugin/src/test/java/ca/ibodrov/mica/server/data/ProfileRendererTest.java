@@ -1,8 +1,8 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.model.Profile;
 import ca.ibodrov.mica.schema.Input;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
-import ca.ibodrov.mica.api.model.Profile;
 import ca.ibodrov.mica.server.data.ProfileRenderer.EffectiveProfile;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
