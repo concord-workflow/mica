@@ -23,9 +23,10 @@ public class EntityResourceTest {
         testDatabase = new TestDatabase();
         testDatabase.start();
 
+        var dsl = testDatabase.getJooqConfiguration().dsl();
         var uuidGenerator = new UuidGenerator();
-        entityResource = new EntityResource(
-                new EntityController(testDatabase.getJooqConfiguration().dsl(), uuidGenerator));
+        var controller = new EntityController(dsl, uuidGenerator);
+        entityResource = new EntityResource(dsl, controller);
     }
 
     @AfterAll

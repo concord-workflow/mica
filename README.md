@@ -49,6 +49,7 @@ enable integration tests during the build:
   > mvnd formatter:format
   [INFO] Total time:  0.086 s (Wall Clock)
   ```
+
 - re-build the database module to let `mica-concord-server-plugin` use the updated schema:
   ``` 
   ./mvnw -pl :mica-db clean install

@@ -14,7 +14,7 @@
     - `extendsKind` -- string, URI path element, optional. Default is `MicaRecord/v1`;
     - `schemaRef` -- string, URI, optional.
 
-- `Property` -- a property of a `MicaSchema/v1`.
+- `Property` -- a property of a `MicaSchema/v1` or `MicaEntityView/v1`.
     - `type` -- string, URI path element;
     - `value` -- JSONB, optional;
     - `required` -- boolean, optional. Default is `false`;

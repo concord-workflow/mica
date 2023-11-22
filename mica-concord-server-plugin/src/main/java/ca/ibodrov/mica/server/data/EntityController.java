@@ -2,7 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.Entity;
 import ca.ibodrov.mica.api.model.EntityId;
-import ca.ibodrov.mica.api.model.EntityPutResult;
+import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.api.ApiException;
@@ -27,8 +27,17 @@ public class EntityController {
         this.uuidGenerator = requireNonNull(uuidGenerator);
     }
 
-    public EntityPutResult putEntity(Entity entity) {
-        // first, check if there is an entity with the same name
+    /**
+     * The method handles the following cases:
+     * <ul>
+     * <li>insert a new entity if it doesn't exist</li>
+     * <li>update an existing entity if it exists and CREATED_AT matches</li>
+     * <li>throw an exception if the entity exists and CREATED_AT doesn't match</li>
+     * </ul>
+     *
+     * @return new entity version
+     */
+    public EntityVersion putEntity(Entity entity) {
         var existsSameName = dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entity.name()));
         if (existsSameName && entity.id().isEmpty()) {
             throw ApiException.badRequest("Entity with name '%s' already exists".formatted(entity.name()));
@@ -58,6 +67,6 @@ public class EntityController {
             throw ApiException.conflict("Version conflict: " + entity.name());
         }
 
-        return new EntityPutResult(new EntityId(id), row.get().getUpdatedAt());
+        return new EntityVersion(new EntityId(id), row.get().getUpdatedAt());
     }
 }

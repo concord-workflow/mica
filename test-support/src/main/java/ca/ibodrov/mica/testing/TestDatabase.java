@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.testing;
 
+import ca.ibodrov.mica.db.MicaDataSourceProvider;
 import ca.ibodrov.mica.db.MicaDatabaseModule;
 import com.codahale.metrics.MetricRegistry;
 import com.walmartlabs.concord.db.DatabaseConfiguration;
@@ -26,7 +27,7 @@ public class TestDatabase implements AutoCloseable {
         var dbCfg = new DatabaseConfigurationImpl(container.getJdbcUrl(), container.getUsername(),
                 container.getPassword(), 3);
         var dbModule = new MicaDatabaseModule();
-        dataSource = dbModule.dataSource(dbCfg, new MetricRegistry());
+        dataSource = new MicaDataSourceProvider(dbCfg, new MetricRegistry()).get();
         jooqConfiguration = dbModule.jooqConfiguration(dataSource);
     }
 

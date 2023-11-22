@@ -39,11 +39,12 @@ public class LocalMicaServer {
     private static Map<String, String> createConfig() {
         var authServerUri = assertEnvVar("TEST_OIDC_AUTHSERVER");
         return Map.of(
+                "db.changeLogParameters.defaultAdminToken", "mica",
                 "mica.oidc.id", assertEnvVar("TEST_OIDC_CLIENTID"),
                 "mica.oidc.clientSecret", assertEnvVar("TEST_OIDC_SECRET"),
-                "mica.oidc.authorizationEndpoint", "%s/oauth2/v1/authorize".formatted(authServerUri),
-                "mica.oidc.tokenEndpoint", "%s/oauth2/v1/token".formatted(authServerUri),
-                "mica.oidc.userinfoEndpoint", "%s/oauth2/v1/userinfo".formatted(authServerUri),
-                "mica.oidc.logoutEndpoint", "%s/login/signout".formatted(authServerUri));
+                "mica.oidc.authorizationEndpoint", authServerUri + "/oauth2/v1/authorize",
+                "mica.oidc.tokenEndpoint", authServerUri + "/oauth2/v1/token",
+                "mica.oidc.userinfoEndpoint", authServerUri + "/oauth2/v1/userinfo",
+                "mica.oidc.logoutEndpoint", authServerUri + "/login/signout");
     }
 }
