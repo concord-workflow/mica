@@ -19,11 +19,15 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -48,7 +52,9 @@ public class SmokeTestIT {
         micaServer = TestingMicaServer.withFakeOidc(db, getFreePort());
         micaServer.start();
 
-        concordAgent = new TestingConcordAgent(micaServer);
+        concordAgent = new TestingConcordAgent(micaServer,
+                Map.of("runnerV2.path", findRunnerV2Jar()),
+                List.of());
         concordAgent.start();
 
         var objectMapper = new ObjectMapper().registerModule(new Jdk8Module());
@@ -85,7 +91,7 @@ public class SmokeTestIT {
     @Test
     public void testMicaAvailable() {
         // TODO compare commitIds instead
-        var testVersion = new Version().getVersion();
+        var testVersion = new Version().getMicaITsVersion();
         var systemVersion = micaClient.getSystemInfo().version();
         assertEquals(testVersion, systemVersion);
     }
@@ -136,7 +142,7 @@ public class SmokeTestIT {
         // start the process
 
         var processApi = new ProcessApi(concordClient);
-        var taskUri = "mvn://ca.ibodrov.mica:mica-concord-task:%s".formatted(new Version().getVersion());
+        var taskUri = "mvn://ca.ibodrov.mica:mica-concord-task:%s".formatted(new Version().getMicaITsVersion());
         // TODO figure out why passing the result by value doesn't work
         var response = processApi.startProcess(Map.of("concord.yml", """
                 configuration:
@@ -192,5 +198,14 @@ public class SmokeTestIT {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String findRunnerV2Jar() {
+        var pwd = requireNonNull(System.getProperty("user.dir"), "Can't determine user.dir");
+        var path = "%s/target/deps/runner-v2.jar".formatted(pwd);
+        if (!Files.exists(Paths.get(path))) {
+            throw new RuntimeException("Can't find the runner v2 JAR in " + path);
+        }
+        return path;
     }
 }

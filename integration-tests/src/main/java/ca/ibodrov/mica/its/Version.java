@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNull;
 
 public class Version {
 
-    private final String version;
+    private final String micaITsVersion;
 
     public Version() {
         var props = new Properties();
@@ -16,10 +16,10 @@ public class Version {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        this.version = requireNonNull(props.getProperty("mica.its.version"));
+        this.micaITsVersion = requireNonNull(props.getProperty("mica.its.version"));
     }
 
-    public String getVersion() {
-        return version;
+    public String getMicaITsVersion() {
+        return micaITsVersion;
     }
 }

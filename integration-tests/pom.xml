@@ -95,6 +95,31 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.walmartlabs.concord.runtime.v2</groupId>
+                                    <artifactId>concord-runner-v2</artifactId>
+                                    <classifier>jar-with-dependencies</classifier>
+                                    <destFileName>runner-v2.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/deps</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
