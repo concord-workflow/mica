@@ -20,4 +20,4 @@ jobs:
           cache: maven
 
       - run: |
-          ./mvnw --batch-mode --update-snapshots verify -DskipITs=false
+          ./mvnw --batch-mode --update-snapshots install -DskipITs=false
