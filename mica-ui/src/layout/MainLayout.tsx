@@ -4,7 +4,6 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MenuIcon from '@mui/icons-material/Menu';
 import {
     Box,
-    Container,
     Divider,
     IconButton,
     AppBar as MuiAppBar,
@@ -124,14 +123,14 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                         theme.palette.mode === 'light'
                             ? theme.palette.grey[100]
                             : theme.palette.grey[900],
-                    flexGrow: 1,
                     height: '100vh',
                     overflow: 'auto',
+                    display: 'flex',
+                    flexGrow: 1,
+                    flexDirection: 'column',
                 }}>
                 <Toolbar />
-                <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-                    {children}
-                </Container>
+                {children}
             </Box>
         </Box>
     );

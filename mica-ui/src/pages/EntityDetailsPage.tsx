@@ -8,6 +8,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import {
     Button,
     CircularProgress,
+    Container,
     Paper,
     Table,
     TableBody,
@@ -91,7 +92,7 @@ const EntityDetailsPage = () => {
     const navigate = useNavigate();
 
     return (
-        <>
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Grid container>
                 <Grid xs={10}>
                     <PageTitle help={HELP}>Entity Details</PageTitle>
@@ -161,7 +162,7 @@ const EntityDetailsPage = () => {
                     </TableContainer>
                 </>
             )}
-        </>
+        </Container>
     );
 };
 

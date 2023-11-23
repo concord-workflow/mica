@@ -11,6 +11,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import {
     Button,
     CircularProgress,
+    Container,
     FormControl,
     Link,
     MenuItem,
@@ -53,7 +54,7 @@ const EntityListPage = () => {
     };
 
     return (
-        <>
+        <Container sx={{ mt: 2 }} maxWidth="xl">
             <PageTitle help={HELP}>Entities</PageTitle>
             <UploadEntityDialog
                 open={openUpload}
@@ -126,7 +127,7 @@ const EntityListPage = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
-        </>
+        </Container>
     );
 };
 

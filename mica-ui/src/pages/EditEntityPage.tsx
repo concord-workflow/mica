@@ -3,7 +3,7 @@ import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
 import SaveIcon from '@mui/icons-material/Save';
-import { Alert, Button, Container, FormControl, Paper } from '@mui/material';
+import { Alert, Box, Button, FormControl } from '@mui/material';
 import { editor } from 'monaco-editor';
 
 import Editor, { OnMount } from '@monaco-editor/react';
@@ -59,11 +59,10 @@ const EditEntityPage = () => {
     });
 
     return (
-        <>
-            <PageTitle help={HELP}>Entity</PageTitle>
-            <Container maxWidth="xl">
-                {error && <Alert severity="error">{error.message}</Alert>}
+        <Box display="flex" flexDirection="column" height="100%">
+            <Box sx={{ m: 2 }}>
                 <ActionBar>
+                    <PageTitle help={HELP}>Entity</PageTitle>
                     <Spacer />
                     <FormControl>
                         <Button
@@ -75,22 +74,23 @@ const EditEntityPage = () => {
                         </Button>
                     </FormControl>
                 </ActionBar>
+                {error && <Alert severity="error">{error.message}</Alert>}
+            </Box>
+            <Box flexGrow="1">
                 <ErrorBoundary
                     fallback={<b>Something went wrong while trying to render the editor.</b>}>
-                    <Paper>
-                        {ready && defaultValue && (
-                            <Editor
-                                loading={isLoading || isSaving}
-                                height="70vh"
-                                defaultLanguage="yaml"
-                                defaultValue={defaultValue}
-                                onMount={handleEditorOnMount}
-                            />
-                        )}
-                    </Paper>
+                    {ready && defaultValue && (
+                        <Editor
+                            loading={isLoading || isSaving}
+                            height="100%"
+                            defaultLanguage="yaml"
+                            defaultValue={defaultValue}
+                            onMount={handleEditorOnMount}
+                        />
+                    )}
                 </ErrorBoundary>
-            </Container>
-        </>
+            </Box>
+        </Box>
     );
 };
 
