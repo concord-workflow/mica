@@ -16,6 +16,12 @@ type RouteParams = {
     entityId: string;
 };
 
+const NEW_ENTITY_TEMPLATE = `# new entity
+name: myEntity
+kind: MicaRecord/v2
+data:
+  myProperty: true`;
+
 const HELP: React.ReactNode = (
     <>
         <b>Entity Editor</b> -- TODO.
@@ -50,18 +56,19 @@ const EditEntityPage = () => {
         // save and get the new version
         const version = await mutateAsync({ body: editor.getValue() });
 
-        // update the URL, if it's a "_new" entity then the user will be redirected to the created entity
-        navigate(`/entity/${version.id}/edit?success`);
-
-        // if it's an existing entity, we need to re-fetch the data to update the editor
-        const result = await refetch();
-        if (!result.data) {
-            throw new Error('Failed to fetch entity after save');
+        if (entityId === '_new') {
+            // update the URL, if it's a "_new" entity then the user will be redirected to the created entity
+            navigate(`/entity/${version.id}/edit?success`);
+        } else {
+            // if it's an existing entity, we need to re-fetch the data to update the editor
+            const result = await refetch();
+            if (!result.data) {
+                throw new Error('Failed to fetch entity after save');
+            }
+            editor.setValue(result.data);
+            setShowSuccess(true);
         }
-        editor.setValue(result.data);
-
-        setShowSuccess(true);
-    }, [mutateAsync, navigate, refetch]);
+    }, [entityId, mutateAsync, navigate, refetch]);
 
     // because we redirect to the new entity, we need to pass the success state via the search params
     const [searchParams] = useSearchParams();
@@ -70,7 +77,7 @@ const EditEntityPage = () => {
         success !== null && success !== undefined,
     );
 
-    const editorValue = entityId === '_new' ? '# new entity' : data;
+    const editorValue = entityId === '_new' ? NEW_ENTITY_TEMPLATE : data;
 
     // delay the editor rendering as a workaround for monaco-react bug
     const [ready, setReady] = React.useState<boolean>(false);

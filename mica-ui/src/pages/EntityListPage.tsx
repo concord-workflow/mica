@@ -6,6 +6,7 @@ import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import UploadEntityDialog from '../features/UploadEntityDialog.tsx';
+import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
@@ -29,7 +30,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
@@ -53,6 +54,8 @@ const EntityListPage = () => {
         setOpenUpload(false);
     };
 
+    const navigate = useNavigate();
+
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
             <PageTitle help={HELP}>Entities</PageTitle>
@@ -70,8 +73,16 @@ const EntityListPage = () => {
             <ActionBar>
                 <FormControl>
                     <Button
-                        startIcon={<CloudUploadIcon />}
+                        startIcon={<AddIcon />}
                         variant="contained"
+                        onClick={() => navigate('/entity/_new/edit')}>
+                        Create
+                    </Button>
+                </FormControl>
+                <FormControl>
+                    <Button
+                        startIcon={<CloudUploadIcon />}
+                        variant="outlined"
                         onClick={() => setOpenUpload(true)}>
                         Upload
                     </Button>
