@@ -18,7 +18,6 @@ import com.walmartlabs.ollie.config.ConfigurationProcessor;
 import com.walmartlabs.ollie.config.Environment;
 import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
-import org.apache.shiro.realm.Realm;
 import org.sonatype.siesta.Component;
 
 import javax.inject.Named;
@@ -67,10 +66,6 @@ public class MicaModule implements Module {
 
         newSetBinder(binder, Component.class).addBinding().to(DataAccessExceptionMapper.class);
         newSetBinder(binder, Component.class).addBinding().to(ConstraintViolationExceptionMapper.class);
-
-        // security realms
-
-        newSetBinder(binder, Realm.class).addBinding().to(MicaRealm.class);
 
         // jax-rs resources
 
