@@ -71,6 +71,16 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-oidc</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>ca.ibodrov.mica</groupId>
             <artifactId>test-support</artifactId>
             <version>${project.version}</version>

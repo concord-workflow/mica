@@ -2,12 +2,18 @@ package ca.ibodrov.mica.server.ui;
 
 import ca.ibodrov.mica.server.MicaPrincipal;
 import com.walmartlabs.concord.server.security.PrincipalUtils;
+import org.pac4j.core.context.JEEContext;
+import org.pac4j.core.profile.ProfileManager;
+import org.pac4j.oidc.profile.OidcProfile;
 import org.sonatype.siesta.Resource;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
@@ -17,10 +23,13 @@ public class WhoamiResource implements Resource {
 
     @GET
     @Produces(APPLICATION_JSON)
-    public WhoamiResponse whoami() {
+    public WhoamiResponse whoami(@Context HttpServletRequest request, @Context HttpServletResponse response) {
         var principal = PrincipalUtils.getCurrent(MicaPrincipal.class);
         if (principal == null) {
-            throw new WebApplicationException(UNAUTHORIZED);
+            // login via Concord's OIDC
+            var profileManager = new ProfileManager<OidcProfile>(new JEEContext(request, response));
+            var profile = profileManager.get(true).orElseThrow(() -> new WebApplicationException(UNAUTHORIZED));
+            return new WhoamiResponse(profile.getEmail());
         }
         return new WhoamiResponse(principal.username());
     }
