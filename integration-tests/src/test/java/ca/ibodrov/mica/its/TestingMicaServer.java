@@ -6,6 +6,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.it.testingserver.TestingConcordServer;
+import com.walmartlabs.concord.server.plugins.oidc.OidcPluginModule;
 import org.sonatype.siesta.Component;
 import org.testcontainers.containers.PostgreSQLContainer;
 
@@ -36,7 +37,7 @@ public class TestingMicaServer extends TestingConcordServer {
     }
 
     private static List<Function<Config, Module>> extraModules() {
-        return List.of(_cfg -> new LocalServerModule(), MicaModule::new);
+        return List.of(_cfg -> new LocalServerModule(), MicaModule::new, _cfg -> new OidcPluginModule());
     }
 
     public static class LocalServerModule implements Module {
