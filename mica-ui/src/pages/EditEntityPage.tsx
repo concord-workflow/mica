@@ -3,14 +3,14 @@ import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
 import SaveIcon from '@mui/icons-material/Save';
-import { Alert, Box, Button, FormControl } from '@mui/material';
+import { Alert, Box, Button, FormControl, Snackbar } from '@mui/material';
 import { editor } from 'monaco-editor';
 
 import Editor, { OnMount } from '@monaco-editor/react';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'react-query';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 type RouteParams = {
     entityId: string;
@@ -25,7 +25,7 @@ const HELP: React.ReactNode = (
 const EditEntityPage = () => {
     const { entityId } = useParams<RouteParams>();
 
-    const { data, isLoading } = useQuery(
+    const { data, isFetching, refetch } = useQuery(
         ['entity', entityId],
         () => getEntityAsYamlString(entityId!),
         {
@@ -39,6 +39,7 @@ const EditEntityPage = () => {
         editorRef.current = editor;
     };
 
+    const navigate = useNavigate();
     const { mutateAsync, isLoading: isSaving, error } = usePutYamlString();
     const handleSave = React.useCallback(async () => {
         const editor = editorRef.current;
@@ -46,12 +47,32 @@ const EditEntityPage = () => {
             return;
         }
 
-        const value = editor.getValue();
-        await mutateAsync({ body: value });
-    }, [mutateAsync]);
+        // save and get the new version
+        const version = await mutateAsync({ body: editor.getValue() });
 
-    const defaultValue = entityId === '_new' ? '# new entity' : data;
+        // update the URL, if it's a "_new" entity then the user will be redirected to the created entity
+        navigate(`/entity/${version.id}/edit?success`);
 
+        // if it's an existing entity, we need to re-fetch the data to update the editor
+        const result = await refetch();
+        if (!result.data) {
+            throw new Error('Failed to fetch entity after save');
+        }
+        editor.setValue(result.data);
+
+        setShowSuccess(true);
+    }, [mutateAsync, navigate, refetch]);
+
+    // because we redirect to the new entity, we need to pass the success state via the search params
+    const [searchParams] = useSearchParams();
+    const success = searchParams.get('success');
+    const [showSuccess, setShowSuccess] = React.useState<boolean>(
+        success !== null && success !== undefined,
+    );
+
+    const editorValue = entityId === '_new' ? '# new entity' : data;
+
+    // delay the editor rendering as a workaround for monaco-react bug
     const [ready, setReady] = React.useState<boolean>(false);
     useEffect(() => {
         const timer = setTimeout(() => setReady(true), 100);
@@ -59,38 +80,46 @@ const EditEntityPage = () => {
     });
 
     return (
-        <Box display="flex" flexDirection="column" height="100%">
-            <Box sx={{ m: 2 }}>
-                <ActionBar>
-                    <PageTitle help={HELP}>Entity</PageTitle>
-                    <Spacer />
-                    <FormControl>
-                        <Button
-                            disabled={isLoading || isSaving}
-                            startIcon={<SaveIcon />}
-                            variant="contained"
-                            onClick={handleSave}>
-                            Save
-                        </Button>
-                    </FormControl>
-                </ActionBar>
-                {error && <Alert severity="error">{error.message}</Alert>}
+        <>
+            <Snackbar
+                open={showSuccess}
+                autoHideDuration={5000}
+                onClose={() => setShowSuccess(false)}
+                message="Data saved successfully"
+            />
+            <Box display="flex" flexDirection="column" height="100%">
+                <Box sx={{ m: 2 }}>
+                    <ActionBar>
+                        <PageTitle help={HELP}>Entity</PageTitle>
+                        <Spacer />
+                        <FormControl>
+                            <Button
+                                disabled={isFetching || isSaving}
+                                startIcon={<SaveIcon />}
+                                variant="contained"
+                                onClick={handleSave}>
+                                Save
+                            </Button>
+                        </FormControl>
+                    </ActionBar>
+                    {error && <Alert severity="error">{error.message}</Alert>}
+                </Box>
+                <Box flexGrow="1">
+                    <ErrorBoundary
+                        fallback={<b>Something went wrong while trying to render the editor.</b>}>
+                        {ready && editorValue && (
+                            <Editor
+                                loading={isFetching || isSaving}
+                                height="100%"
+                                defaultLanguage="yaml"
+                                defaultValue={editorValue}
+                                onMount={handleEditorOnMount}
+                            />
+                        )}
+                    </ErrorBoundary>
+                </Box>
             </Box>
-            <Box flexGrow="1">
-                <ErrorBoundary
-                    fallback={<b>Something went wrong while trying to render the editor.</b>}>
-                    {ready && defaultValue && (
-                        <Editor
-                            loading={isLoading || isSaving}
-                            height="100%"
-                            defaultLanguage="yaml"
-                            defaultValue={defaultValue}
-                            onMount={handleEditorOnMount}
-                        />
-                    )}
-                </ErrorBoundary>
-            </Box>
-        </Box>
+        </>
     );
 };
 

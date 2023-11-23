@@ -35,6 +35,8 @@ public class EntityController {
             }
         }
 
+        // TODO check if there are any changes, return the same version if not
+
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
 
