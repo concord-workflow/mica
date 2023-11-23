@@ -9,11 +9,13 @@ import org.sonatype.siesta.Resource;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
+import java.util.Optional;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
@@ -28,7 +30,11 @@ public class WhoamiResource implements Resource {
         if (principal == null) {
             // login via Concord's OIDC
             var profileManager = new ProfileManager<OidcProfile>(new JEEContext(request, response));
-            var profile = profileManager.get(true).orElseThrow(() -> new WebApplicationException(UNAUTHORIZED));
+            var profile = profileManager.get(true).orElseThrow(() -> {
+                Optional.ofNullable(request.getSession(false))
+                        .ifPresent(HttpSession::invalidate);
+                return new WebApplicationException(UNAUTHORIZED);
+            });
             return new WhoamiResponse(profile.getEmail());
         }
         return new WhoamiResponse(principal.username());
