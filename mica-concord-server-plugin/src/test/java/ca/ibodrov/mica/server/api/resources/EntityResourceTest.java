@@ -5,7 +5,7 @@ import ca.ibodrov.mica.server.api.ApiException;
 import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.walmartlabs.concord.common.ObjectMapperProvider;
+import com.walmartlabs.concord.server.ObjectMapperProvider;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

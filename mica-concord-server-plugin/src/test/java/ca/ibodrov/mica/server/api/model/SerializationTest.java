@@ -8,7 +8,7 @@ import ca.ibodrov.mica.schema.ValidatedProperty;
 import ca.ibodrov.mica.server.data.ProfileRenderer.EffectiveProfile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.walmartlabs.concord.common.ObjectMapperProvider;
+import com.walmartlabs.concord.server.ObjectMapperProvider;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
