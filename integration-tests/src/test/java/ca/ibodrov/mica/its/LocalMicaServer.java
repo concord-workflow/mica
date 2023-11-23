@@ -40,7 +40,7 @@ public class LocalMicaServer {
         var authServerUri = assertEnvVar("TEST_OIDC_AUTHSERVER");
         return Map.of(
                 "db.changeLogParameters.defaultAdminToken", "mica",
-                "mica.oidc.id", assertEnvVar("TEST_OIDC_CLIENTID"),
+                "mica.oidc.clientId", assertEnvVar("TEST_OIDC_CLIENTID"),
                 "mica.oidc.clientSecret", assertEnvVar("TEST_OIDC_SECRET"),
                 "mica.oidc.authorizationEndpoint", authServerUri + "/oauth2/v1/authorize",
                 "mica.oidc.tokenEndpoint", authServerUri + "/oauth2/v1/token",

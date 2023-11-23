@@ -22,7 +22,7 @@ public class TestingMicaServer extends TestingConcordServer {
     public static TestingMicaServer withFakeOidc(PostgreSQLContainer<?> db, int port) {
         var authServerUri = "http://localhost:12345/fake";
         var config = Map.of(
-                "mica.oidc.id", "fake",
+                "mica.oidc.clientId", "fake",
                 "mica.oidc.clientSecret", "fake",
                 "mica.oidc.authorizationEndpoint", "%s/oauth2/v1/authorize".formatted(authServerUri),
                 "mica.oidc.tokenEndpoint", "%s/oauth2/v1/token".formatted(authServerUri),
