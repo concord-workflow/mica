@@ -4,22 +4,9 @@ configuration:
 
 flows:
   default:
-    - name: Grab all Mica clients and fetch their validationEndpoint property
-      task: mica
+    - task: mica
       in:
-        action: listClients
-        props:
-          - validationEndpoint
-        filterOutClientsWithoutProps: true
-      out: allClients
-
-    - log: "Got ${allClients.data.size()} client(s) with validationEndpoint"
-
-    - try:
-        - task: http
-          in:
-            method: GET
-            url: ${item.properties.validationEndpoint}
-        - log: "SUCCESS: ${item.properties.validationEndpoint}"
-      loop:
-        items: ${allClients.data}
+        action: listEntities
+        search: foo
+      out: result
+    - log: ${result.data}

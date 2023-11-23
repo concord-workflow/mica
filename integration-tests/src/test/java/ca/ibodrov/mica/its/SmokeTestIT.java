@@ -133,17 +133,15 @@ public class SmokeTestIT {
 
         var dsl = micaServer.getServer().getInjector().getInstance(Key.get(DSLContext.class, MicaDB.class));
         dsl.transaction(tx -> {
-            TestData.insertClient(tx, client1Id, client1Name);
-            TestData.insertClientData(tx, UUID.randomUUID(), client1Name, "{\"foo\": \"bar\"}");
-            TestData.insertClient(tx, client2Id, client2Name);
-            TestData.insertClientData(tx, UUID.randomUUID(), client2Name, "{\"baz\": \"qux\"}");
+            TestData.insertEntity(tx, client1Id, client1Name, "client", "{\"foo\": \"bar\"}");
+            TestData.insertEntity(tx, client2Id, client2Name, "client", "{\"baz\": \"qux\"}");
         });
 
         // start the process
 
         var processApi = new ProcessApi(concordClient);
         var taskUri = "mvn://ca.ibodrov.mica:mica-concord-task:%s".formatted(new Version().getMicaITsVersion());
-        // TODO figure out why passing the result by value doesn't work
+
         var response = processApi.startProcess(Map.of("concord.yml", """
                 configuration:
                   runtime: "concord-v2"
@@ -153,25 +151,29 @@ public class SmokeTestIT {
                   default:
                     - task: mica
                       in:
-                        action: listClients
-                        props:
-                          - foo
+                        action: listEntities
                       out: result
 
                     - script: js
                       in:
+                        # TODO figure out why passing the result by value doesn't work
+                        # (I'm using resource.printJson(result.data) as a workaround)
                         json: ${resource.printJson(result.data)}
                       body: |
                         if (!json) {
                           throw new Error('Expected json');
                         }
-                        var expected = JSON.stringify([
-                          {id: '%s', name: '%s', properties: {foo: 'bar'}},
-                          {id: '%s', name: '%s', properties: {}}
-                        ]);
+
                         var data = JSON.parse(json);
-                        var actual = JSON.stringify(data);
-                        if (actual !== expected) {
+
+                        var ok = true;
+                        ok = ok && data.length === 2;
+                        ok = ok && data[0]?.id === '%s';
+                        ok = ok && data[0]?.name === '%s';
+                        ok = ok && data[1]?.id === '%s';
+                        ok = ok && data[1]?.name === '%s';
+
+                        if (!ok) {
                           throw new Error('Unexpected result: ' + json);
                         }
                 """.formatted(taskUri, client1Id, client1Name, client2Id, client2Name)

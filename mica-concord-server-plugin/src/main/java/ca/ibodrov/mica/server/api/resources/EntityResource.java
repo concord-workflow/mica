@@ -1,8 +1,6 @@
 package ca.ibodrov.mica.server.api.resources;
 
-import ca.ibodrov.mica.api.model.EntityId;
-import ca.ibodrov.mica.api.model.EntityVersion;
-import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.api.ApiException;
 import ca.ibodrov.mica.server.data.EntityController;
@@ -30,7 +28,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -79,14 +76,14 @@ public class EntityResource implements Resource {
                 MICA_ENTITIES.UPDATED_AT)
                 .from(MICA_ENTITIES)
                 .where(searchCondition)
-                .fetch(EntityResource::convertToEntityEntry);
+                .fetch(EntityResource::toEntityMetadata);
         return new EntityList(data);
     }
 
     @GET
     @Path("{id}")
     @Operation(description = "Get entity by ID", operationId = "getEntityById")
-    public EntityWithData getEntityById(@PathParam("id") UUID entityId) {
+    public RawEntity getEntityById(@PathParam("id") UUID entityId) {
         return dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -95,7 +92,7 @@ public class EntityResource implements Resource {
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.ID.eq(entityId))
-                .fetchOptional(EntityResource::convertToEntityEntryWithData)
+                .fetchOptional(EntityResource::toRawEntity)
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
     }
 
@@ -136,7 +133,7 @@ public class EntityResource implements Resource {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> convertYamlRepresentableForm(EntityWithData entity) {
+    private Map<String, Object> convertYamlRepresentableForm(RawEntity entity) {
         var map = yamlMapper.convertValue(entity, Map.class);
         var rawData = (String) ((RawValue) map.get("data")).rawValue();
         try {
@@ -148,32 +145,18 @@ public class EntityResource implements Resource {
         return map;
     }
 
-    private static EntityEntry convertToEntityEntry(Record5<UUID, String, String, OffsetDateTime, OffsetDateTime> record) {
+    private static EntityMetadata toEntityMetadata(Record5<UUID, String, String, OffsetDateTime, OffsetDateTime> record) {
         var id = new EntityId(record.value1());
-        return new EntityEntry(id, record.value2(), record.value3(), record.value4(), record.value5());
+        return new EntityMetadata(id, record.value2(), record.value3(), record.value4(), record.value5());
     }
 
-    private static EntityWithData convertToEntityEntryWithData(Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
+    private static RawEntity toRawEntity(Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
         var id = new EntityId(record.value1());
-        return new EntityWithData(id, record.value2(), record.value3(), record.value4(), record.value5(),
+        return new RawEntity(id, record.value2(), record.value3(), record.value4(), record.value5(),
                 record.value6().data());
     }
 
-    public record EntityEntry(EntityId id,
-            String name,
-            String kind,
-            OffsetDateTime createdAt,
-            OffsetDateTime updatedAt) {
-
-        public EntityVersion toVersion() {
-            return new EntityVersion(id, updatedAt);
-        }
-    }
-
-    public record EntityWithData(EntityId id, String name, String kind, OffsetDateTime createdAt,
+    public record RawEntity(EntityId id, String name, String kind, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, @JsonRawValue String data) {
-    }
-
-    public record EntityList(List<EntityEntry> data) {
     }
 }

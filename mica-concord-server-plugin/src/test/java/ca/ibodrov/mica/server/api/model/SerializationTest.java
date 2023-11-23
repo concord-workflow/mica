@@ -1,6 +1,8 @@
 package ca.ibodrov.mica.server.api.model;
 
-import ca.ibodrov.mica.api.model.*;
+import ca.ibodrov.mica.api.model.EntityId;
+import ca.ibodrov.mica.api.model.Profile;
+import ca.ibodrov.mica.api.model.ProfileId;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.schema.ValidatedProperty;
 import ca.ibodrov.mica.server.data.ProfileRenderer.EffectiveProfile;
@@ -11,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,20 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SerializationTest {
 
     private final ObjectMapper mapper = new ObjectMapperProvider().get();
-
-    @Test
-    public void testParseClientDataDocument() throws Exception {
-        var document = new Document(Optional.of(ClientDataDocument.KIND),
-                Map.of("clients",
-                        List.of(
-                                new ClientDataEntry("id1", Map.of("foo", "bar")),
-                                new ClientDataEntry("id2", Map.of("baz", "qux")))));
-
-        var map = mapper.convertValue(document, Map.class);
-        var json = mapper.writeValueAsString(map);
-        var clientList = mapper.readValue(json, ClientDataDocument.class);
-        assertEquals(2, clientList.clients().size());
-    }
 
     @Test
     public void testRoundTripProfiles() throws Exception {

@@ -1,10 +1,9 @@
 package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.db.MicaDatabaseModule;
-import ca.ibodrov.mica.server.api.resources.*;
-import ca.ibodrov.mica.server.data.ClientDataImporter;
-import ca.ibodrov.mica.server.data.DocumentImporter;
-import ca.ibodrov.mica.server.data.ProfileImporter;
+import ca.ibodrov.mica.server.api.resources.EntityResource;
+import ca.ibodrov.mica.server.api.resources.ProfileResource;
+import ca.ibodrov.mica.server.api.resources.SystemResource;
 import ca.ibodrov.mica.server.exceptions.ConstraintViolationExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.oidc.OidcResource;
@@ -75,25 +74,15 @@ public class MicaModule implements Module {
 
         // jax-rs resources
 
-        bindJaxRsResource(binder, ClientDataResource.class);
-        bindJaxRsResource(binder, ClientEndpointResource.class);
-        bindJaxRsResource(binder, ClientResource.class);
-        bindJaxRsResource(binder, DocumentResource.class);
+        bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, OidcResource.class);
         bindJaxRsResource(binder, ProfileResource.class);
         bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, WhoamiResource.class);
-        bindJaxRsResource(binder, EntityResource.class);
 
         // other beans
 
         binder.bind(UuidGenerator.class).in(SINGLETON);
-
-        binder.bind(ClientDataImporter.class).in(SINGLETON);
-        newSetBinder(binder, DocumentImporter.class).addBinding().to(ClientDataImporter.class);
-
-        binder.bind(ProfileImporter.class).in(SINGLETON);
-        newSetBinder(binder, DocumentImporter.class).addBinding().to(ProfileImporter.class);
     }
 
     private static Config loadDefaultConfig() {

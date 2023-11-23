@@ -1,9 +1,0 @@
-name: "remote-client"
-kind: "MicaProfile/v1"
-schema:
-  type: object
-  required:
-    - validationEndpoint
-  properties:
-    validationEndpoint:
-      type: string
