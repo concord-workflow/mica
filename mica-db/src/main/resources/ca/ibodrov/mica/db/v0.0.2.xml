@@ -26,17 +26,17 @@
             </column>
         </createTable>
 
-        <createTable tableName="MICA_ENTITY_TEMPLATES">
+        <createTable tableName="MICA_ENTITY_KINDS">
             <column name="ID" type="UUID">
                 <constraints primaryKey="true"/>
             </column>
             <column name="NAME" type="TEXT">
-                <constraints nullable="false"/>
+                <constraints nullable="false" unique="true"/>
             </column>
             <column name="EXTENDS_KIND" type="TEXT">
                 <constraints nullable="true"/>
             </column>
-            <column name="SCHEMA_REF" type="TEXT">
+            <column name="SCHEMA" type="JSONB">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -52,26 +52,6 @@
                 <constraints nullable="false"/>
             </column>
             <column name="PROPERTIES" type="JSONB">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <changeSet id="mica-0.0.2-001" author="ibodrov@gmail.com">
-        <createTable tableName="MICA_PROFILES">
-            <column name="ID" type="UUID">
-                <constraints primaryKey="true"/>
-            </column>
-            <column name="NAME" type="TEXT">
-                <constraints nullable="false" unique="true"/>
-            </column>
-            <column name="CREATED_AT" type="TIMESTAMPTZ" defaultValueComputed="now()">
-                <constraints nullable="false"/>
-            </column>
-            <column name="KIND" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="SCHEMA" type="JSONB">
                 <constraints nullable="false"/>
             </column>
         </createTable>

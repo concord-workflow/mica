@@ -1,6 +1,8 @@
 package ca.ibodrov.mica.schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.Map;
 import java.util.Optional;
@@ -24,15 +26,32 @@ public record ValidatedProperty(Optional<JsonNode> value,
     }
 
     public static ValidatedProperty unexpectedType(String unexpectedType) {
-        return invalid(new ValidationError(INVALID_SCHEMA, Map.of("unexpectedType", unexpectedType)));
+        return invalid(new ValidationError(INVALID_SCHEMA, Map.of("unexpectedType", TextNode.valueOf(unexpectedType))));
+    }
+
+    public static ValidatedProperty unexpectedValue(String expectedType, JsonNode expectedValue, JsonNode actualValue) {
+        return invalid(new ValidationError(UNEXPECTED_VALUE, Map.of("expectedType", TextNode.valueOf(expectedType),
+                "expectedValue", expectedValue,
+                "actualValue", actualValue)));
     }
 
     public static ValidatedProperty invalidType(String expectedType, Class<?> actualJavaClass) {
         return invalid(new ValidationError(INVALID_TYPE,
-                Map.of("expected", expectedType, "actualJavaClass", actualJavaClass.getName())));
+                Map.of("expected", TextNode.valueOf(expectedType), "actualJavaClass",
+                        TextNode.valueOf(actualJavaClass.getName()))));
     }
 
     public static ValidatedProperty missingProperty(String propertyName) {
-        return invalid(new ValidationError(MISSING_PROPERTY, Map.of("propertyName", propertyName)));
+        return invalid(new ValidationError(MISSING_PROPERTY, Map.of("propertyName", TextNode.valueOf(propertyName))));
+    }
+
+    @JsonIgnore
+    public boolean isValid() {
+        return error().isEmpty();
+    }
+
+    @JsonIgnore
+    public ValidatedProperty withValue(Optional<JsonNode> value) {
+        return new ValidatedProperty(value, this.error, this.properties);
     }
 }

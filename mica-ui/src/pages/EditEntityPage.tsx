@@ -24,7 +24,9 @@ data:
 
 const HELP: React.ReactNode = (
     <>
-        <b>Entity Editor</b> -- TODO.
+        <b>Entity Editor</b> &mdash; edit the entity and click "Save".
+        <p />
+        Remove the <b>id</b> field if you wish to save the document as a new entity.
     </>
 );
 

@@ -2,8 +2,10 @@ package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.resources.EntityResource;
-import ca.ibodrov.mica.server.api.resources.ProfileResource;
 import ca.ibodrov.mica.server.api.resources.SystemResource;
+import ca.ibodrov.mica.server.data.EntityKindStore;
+import ca.ibodrov.mica.server.data.EntityStore;
+import ca.ibodrov.mica.server.data.InitialDataLoader;
 import ca.ibodrov.mica.server.exceptions.ConstraintViolationExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.oidc.OidcResource;
@@ -71,13 +73,16 @@ public class MicaModule implements Module {
 
         bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, OidcResource.class);
-        bindJaxRsResource(binder, ProfileResource.class);
         bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, WhoamiResource.class);
 
         // other beans
 
         binder.bind(UuidGenerator.class).in(SINGLETON);
+        binder.bind(EntityStore.class).in(SINGLETON);
+        binder.bind(EntityKindStore.class).in(SINGLETON);
+
+        binder.bind(InitialDataLoader.class).asEagerSingleton();
     }
 
     private static Config loadDefaultConfig() {

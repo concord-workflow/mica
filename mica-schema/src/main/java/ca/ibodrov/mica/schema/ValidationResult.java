@@ -8,4 +8,8 @@ public record ValidationResult(Map<String, ValidatedProperty> properties) {
     public Optional<ValidatedProperty> getProperty(String key) {
         return Optional.ofNullable(properties().get(key));
     }
+
+    public boolean isValid() {
+        return properties.values().stream().allMatch(ValidatedProperty::isValid);
+    }
 }

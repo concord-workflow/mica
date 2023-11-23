@@ -70,7 +70,7 @@ const EntityListPage = () => {
                 onClose={() => setOpenSuccessNotification(false)}
                 message="Data uploaded successfully"
             />
-            <ActionBar>
+            <ActionBar sx={{ mb: 2 }}>
                 <FormControl>
                     <Button
                         startIcon={<AddIcon />}

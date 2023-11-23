@@ -48,11 +48,6 @@ public class LocalMicaServer {
                 .put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration")
                 .put("oidc.urlBase", "http://localhost:8001")
                 .put("db.changeLogParameters.defaultAdminToken", "mica")
-                .put("mica.oidc.clientId", oidcClientId)
-                .put("mica.oidc.clientSecret", oidcSecret)
-                .put("mica.oidc.authorizationEndpoint", authServerUri + "/oauth2/v1/authorize")
-                .put("mica.oidc.tokenEndpoint", authServerUri + "/oauth2/v1/token")
-                .put("mica.oidc.userinfoEndpoint", authServerUri + "/oauth2/v1/userinfo")
                 .put("mica.oidc.logoutEndpoint", authServerUri + "/login/signout")
                 .build();
     }

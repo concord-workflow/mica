@@ -2,7 +2,7 @@ package ca.ibodrov.mica.server.api.resources;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.server.api.ApiException;
+import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.data.EntityController;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
+import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
+import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.NO_DATA;
 import static com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature.*;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jooq.impl.DSL.noCondition;
@@ -93,7 +95,7 @@ public class EntityResource implements Resource {
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.ID.eq(entityId))
                 .fetchOptional(EntityResource::toRawEntity)
-                .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
+                .orElseThrow(() -> ApiException.notFound(NO_DATA, "Entity not found: " + entityId));
     }
 
     @GET
@@ -119,7 +121,7 @@ public class EntityResource implements Resource {
         try {
             entity = yamlMapper.readValue(in, PartialEntity.class);
         } catch (IOException e) {
-            throw ApiException.badRequest("Error parsing YAML: " + e.getMessage());
+            throw ApiException.badRequest(BAD_DATA, "Error parsing YAML: " + e.getMessage());
         }
         assertValid(entity);
         return controller.createOrUpdate(entity);

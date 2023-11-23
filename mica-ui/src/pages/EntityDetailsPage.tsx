@@ -92,7 +92,7 @@ const EntityDetailsPage = () => {
     const navigate = useNavigate();
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container sx={{ mt: 2 }} maxWidth="xl">
             <Grid container>
                 <Grid xs={10}>
                     <PageTitle help={HELP}>Entity Details</PageTitle>
@@ -124,7 +124,7 @@ const EntityDetailsPage = () => {
             {properties && (
                 <>
                     <Typography variant="h6">Data</Typography>
-                    <ActionBar>
+                    <ActionBar sx={{ mb: 2 }}>
                         <Spacer />
                         <SearchField onChange={(search) => setSearch(search)} />
                     </ActionBar>

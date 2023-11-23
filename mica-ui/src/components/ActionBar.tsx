@@ -1,10 +1,16 @@
-import { Stack } from '@mui/material';
+import { Stack, Theme } from '@mui/material';
+import { SxProps } from '@mui/system';
 
-import { PropsWithChildren } from 'react';
+import React from 'react';
 
-const ActionBar = ({ children }: PropsWithChildren) => {
+interface Props {
+    sx?: SxProps<Theme>;
+    children: React.ReactNode;
+}
+
+const ActionBar = ({ sx, children }: Props) => {
     return (
-        <Stack direction="row" spacing={2} marginBottom={2}>
+        <Stack direction="row" spacing={2} sx={sx}>
             {children}
         </Stack>
     );

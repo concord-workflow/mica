@@ -8,7 +8,7 @@
     - `kind` -- string, URI path element;
     - `data` -- JSONB.
 
-- `EntityTemplate` -- a template for creating new entities.
+- `MicaEntityKind` -- a template for creating new entities (i.e. defining new `kind` types).
     - `id` -- uuid, internal ID;
     - `name` -- string, URI path element, unique;
     - `extendsKind` -- string, URI path element, optional. Default is `MicaRecord/v1`;
@@ -30,7 +30,7 @@ Built-in entity `kinds`:
 
 - `MicaRecord/v1` -- basic data record, no attached behaviors;
 - `MicaSchema/v1` -- entity schema object;
-- `MicaEntityTemplate/v1` -- entity template object;
+- `MicaEntityKind/v1` -- entity template object;
 - `MicaEntityView/v1` -- entity view object.
 
 ## Schemas
@@ -78,7 +78,7 @@ curl -i -d @client-profile-schema.yaml -H 'Content-Type: text/yaml' http://local
 Now create a `EntityTemplate` for `CorporateProfile/v1`:
 
 ```yaml
-kind: MicaEntityTemplate/v1
+kind: MicaEntityKind/v1
 name: CorporateProfile/v1
 extendsKind: MicaRecord/v1
 schemaRef: ClientProfile/v1

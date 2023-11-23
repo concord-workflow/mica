@@ -1,66 +1,68 @@
 package ca.ibodrov.mica.server.data;
 
-import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.api.ApiException;
-import org.jooq.DSLContext;
-import org.jooq.impl.DSL;
+import ca.ibodrov.mica.schema.Validator;
+import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.inject.Inject;
+import java.util.Map;
 
-import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
+import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
+import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.UNKNOWN_ENTITY_KIND;
 import static java.util.Objects.requireNonNull;
-import static org.jooq.JSONB.jsonb;
-import static org.jooq.impl.DSL.currentOffsetDateTime;
 
 public class EntityController {
 
-    private final DSLContext dsl;
-    private final UuidGenerator uuidGenerator;
+    private final EntityStore entityStore;
+    private final EntityKindStore entityKindStore;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    public EntityController(@MicaDB DSLContext dsl, UuidGenerator uuidGenerator) {
-        this.dsl = requireNonNull(dsl);
-        this.uuidGenerator = requireNonNull(uuidGenerator);
+    public EntityController(EntityStore entityStore,
+                            EntityKindStore entityKindStore,
+                            ObjectMapper objectMapper) {
+
+        this.entityStore = requireNonNull(entityStore);
+        this.entityKindStore = requireNonNull(entityKindStore);
+        this.objectMapper = requireNonNull(objectMapper);
     }
 
     public EntityVersion createOrUpdate(PartialEntity entity) {
+        var kind = validateKind(entity.kind());
+
+        var schema = entityKindStore.getSchemaForKind(kind)
+                .orElseThrow(() -> ApiException.badRequest(UNKNOWN_ENTITY_KIND, "Can't find schema for " + kind));
+
+        var input = objectMapper.convertValue(entity, Map.class);
+        var result = new Validator(objectMapper).validateMap(schema, input);
+        if (!result.isValid()) {
+            throw ApiException.badRequest(BAD_DATA, "Validation errors: " + result);
+        }
+
         if (entity.id().isEmpty()) {
-            var alreadyExists = dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entity.name()));
-            if (alreadyExists) {
-                throw ApiException.badRequest("Entity with name '%s' already exists".formatted(entity.name()));
+            if (entityStore.isNameExists(entity.name())) {
+                throw ApiException.badRequest(BAD_DATA,
+                        "Entity with name '%s' already exists".formatted(entity.name()));
             }
         }
 
         // TODO check if there are any changes, return the same version if not
 
-        var id = entity.id().map(EntityId::id)
-                .orElseGet(uuidGenerator::generate);
+        return entityStore.upsert(entity)
+                .orElseThrow(() -> ApiException.conflict(BAD_DATA, "Version conflict: " + entity.name()));
+    }
 
-        var data = jsonb(entity.data().toString());
-
-        var row = dsl.transactionResult(tx -> tx.dsl().insertInto(MICA_ENTITIES)
-                .set(MICA_ENTITIES.ID, id)
-                .set(MICA_ENTITIES.NAME, entity.name())
-                .set(MICA_ENTITIES.KIND, entity.kind())
-                .set(MICA_ENTITIES.DATA, data)
-                .onConflict(MICA_ENTITIES.ID)
-                .doUpdate()
-                .set(MICA_ENTITIES.NAME, entity.name())
-                .set(MICA_ENTITIES.KIND, entity.kind())
-                .set(MICA_ENTITIES.DATA, data)
-                .set(MICA_ENTITIES.UPDATED_AT, currentOffsetDateTime())
-                .where(entity.updatedAt().map(MICA_ENTITIES.UPDATED_AT::eq).orElseGet(DSL::noCondition))
-                .returning(MICA_ENTITIES.UPDATED_AT)
-                .fetchOptional());
-
-        if (row.isEmpty()) {
-            throw ApiException.conflict("Version conflict: " + entity.name());
+    public String validateKind(String kind) {
+        if (kind == null || kind.isBlank()) {
+            throw ApiException.badRequest(BAD_DATA, "Missing 'kind'");
         }
 
-        return new EntityVersion(new EntityId(id), row.get().getUpdatedAt());
+        if (!entityKindStore.isKindExists(kind)) {
+            throw ApiException.badRequest(UNKNOWN_ENTITY_KIND, "Unknown kind: " + kind);
+        }
+
+        return kind;
     }
 }

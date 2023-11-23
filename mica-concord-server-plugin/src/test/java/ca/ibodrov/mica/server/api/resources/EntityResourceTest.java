@@ -1,8 +1,10 @@
 package ca.ibodrov.mica.server.api.resources;
 
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.api.ApiException;
+import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.data.EntityController;
+import ca.ibodrov.mica.server.data.EntityKindStore;
+import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walmartlabs.concord.server.ObjectMapperProvider;
@@ -33,7 +35,9 @@ public class EntityResourceTest {
 
         var dsl = testDatabase.getJooqConfiguration().dsl();
         var uuidGenerator = new UuidGenerator();
-        var controller = new EntityController(dsl, uuidGenerator);
+        var controller = new EntityController(new EntityStore(dsl, uuidGenerator),
+                new EntityKindStore(dsl, objectMapper, uuidGenerator),
+                objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
                 .buildValidatorFactory()
