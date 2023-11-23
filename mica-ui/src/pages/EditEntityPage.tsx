@@ -7,7 +7,7 @@ import { Alert, Button, Container, FormControl, Paper } from '@mui/material';
 import { editor } from 'monaco-editor';
 
 import Editor, { OnMount } from '@monaco-editor/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'react-query';
 import { useParams } from 'react-router-dom';
@@ -52,6 +52,12 @@ const EditEntityPage = () => {
 
     const defaultValue = entityId === '_new' ? '# new entity' : data;
 
+    const [ready, setReady] = React.useState<boolean>(false);
+    useEffect(() => {
+        const timer = setTimeout(() => setReady(true), 100);
+        return () => clearTimeout(timer);
+    });
+
     return (
         <>
             <PageTitle help={HELP}>Entity</PageTitle>
@@ -72,10 +78,10 @@ const EditEntityPage = () => {
                 <ErrorBoundary
                     fallback={<b>Something went wrong while trying to render the editor.</b>}>
                     <Paper>
-                        {defaultValue && (
+                        {ready && defaultValue && (
                             <Editor
                                 loading={isLoading || isSaving}
-                                height="60vh"
+                                height="70vh"
                                 defaultLanguage="yaml"
                                 defaultValue={defaultValue}
                                 onMount={handleEditorOnMount}
