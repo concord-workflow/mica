@@ -3,7 +3,6 @@ package ca.ibodrov.mica.api.model;
 import ca.ibodrov.mica.api.validation.ValidName;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -14,4 +13,8 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
         @NotNull Optional<OffsetDateTime> createdAt,
         @NotNull Optional<OffsetDateTime> updatedAt,
         @NotNull JsonNode data) {
+
+    public static PartialEntity create(String name, String kind, JsonNode data) {
+        return new PartialEntity(Optional.empty(), name, kind, Optional.empty(), Optional.empty(), data);
+    }
 }

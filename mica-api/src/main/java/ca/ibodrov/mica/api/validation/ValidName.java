@@ -9,7 +9,7 @@ import java.lang.annotation.Retention;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @NotEmpty
-@Pattern(regexp = "[a-z0-9][a-z0-9.\\-_/\\\\]{2,256}")
+@Pattern(regexp = "[a-zA-Z0-9][a-zA-Z0-9.\\-_/\\\\]{2,255}")
 @Retention(RUNTIME)
 @Constraint(validatedBy = {})
 public @interface ValidName {

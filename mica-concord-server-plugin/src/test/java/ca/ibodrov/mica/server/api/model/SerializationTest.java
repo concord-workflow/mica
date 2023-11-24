@@ -4,6 +4,7 @@ import ca.ibodrov.mica.api.model.EntityId;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.junit.jupiter.api.Test;
 import org.sonatype.siesta.jackson2.ObjectMapperProvider;
 
@@ -14,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SerializationTest {
 
-    private final ObjectMapper mapper = new ObjectMapperProvider().get();
+    private final ObjectMapper mapper = new ObjectMapperProvider().get()
+            .registerModule(new Jdk8Module());
 
     @Test
     public void testIdWrappers() throws Exception {

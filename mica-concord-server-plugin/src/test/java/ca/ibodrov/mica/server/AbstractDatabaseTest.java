@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.server.data.EntityKindStore;
+import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
 import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,8 +32,9 @@ public class AbstractDatabaseTest {
         uuidGenerator = new UuidGenerator();
 
         var dsl = testDatabase.getJooqConfiguration().dsl();
-        var entityKindStore = new EntityKindStore(dsl, objectMapper, uuidGenerator);
-        new InitialDataLoader(entityKindStore).load();
+        var entityStore = new EntityStore(dsl, objectMapper, uuidGenerator);
+        var entityKindStore = new EntityKindStore(entityStore, objectMapper);
+        new InitialDataLoader(entityKindStore, objectMapper).load();
     }
 
     @AfterAll

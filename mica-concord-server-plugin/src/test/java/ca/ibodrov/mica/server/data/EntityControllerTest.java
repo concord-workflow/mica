@@ -23,9 +23,9 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         yamlMapper = objectMapper.copyWith(new YAMLFactory());
-        var entityStore = new EntityStore(dsl(), uuidGenerator);
-        var entityKindStore = new EntityKindStore(dsl(), yamlMapper, uuidGenerator);
-        controller = new EntityController(entityStore, entityKindStore, yamlMapper);
+        var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
+        var entityKindStore = new EntityKindStore(entityStore, objectMapper);
+        controller = new EntityController(entityStore, entityKindStore, objectMapper);
     }
 
     @Test

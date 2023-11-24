@@ -52,9 +52,10 @@ public class SmokeTestIT {
         micaServer = TestingMicaServer.withFakeOidc(db, getFreePort());
         micaServer.start();
 
-        concordAgent = new TestingConcordAgent(micaServer,
-                Map.of("runnerV2.path", findRunnerV2Jar()),
-                List.of());
+        var tempDir = Files.createTempDirectory("concord-agent");
+        concordAgent = new TestingConcordAgent(micaServer, Map.of(
+                "workDirBase", tempDir.toAbsolutePath().toString(),
+                "runnerV2.path", findRunnerV2Jar()), List.of());
         concordAgent.start();
 
         var objectMapper = new ObjectMapper().registerModule(new Jdk8Module());
@@ -127,9 +128,9 @@ public class SmokeTestIT {
         // prepare some data
 
         var client1Id = UUID.randomUUID();
-        var client1Name = "client1";
+        var client1Name = "smokeClient1";
         var client2Id = UUID.randomUUID();
-        var client2Name = "client2";
+        var client2Name = "smokeClient2";
 
         var dsl = micaServer.getServer().getInjector().getInstance(Key.get(DSLContext.class, MicaDB.class));
         dsl.transaction(tx -> {
@@ -152,6 +153,7 @@ public class SmokeTestIT {
                     - task: mica
                       in:
                         action: listEntities
+                        search: "smoke"
                       out: result
 
                     - script: js
