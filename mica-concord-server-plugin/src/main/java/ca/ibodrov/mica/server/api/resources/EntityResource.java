@@ -2,8 +2,8 @@ package ca.ibodrov.mica.server.api.resources;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.data.EntityController;
+import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

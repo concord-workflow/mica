@@ -1,15 +1,12 @@
 package ca.ibodrov.mica.server.api.resources;
 
+import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
-import ca.ibodrov.mica.testing.TestDatabase;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.walmartlabs.concord.server.ObjectMapperProvider;
+import ca.ibodrov.mica.server.exceptions.ApiException;
 import org.hibernate.validator.HibernateValidator;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -20,34 +17,21 @@ import java.time.OffsetDateTime;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class EntityResourceTest {
+public class EntityResourceTest extends AbstractDatabaseTest {
 
-    private static TestDatabase testDatabase;
-    private static ObjectMapper objectMapper;
     private static EntityResource entityResource;
 
     @BeforeAll
     public static void setUp() {
-        testDatabase = new TestDatabase();
-        testDatabase.start();
-
-        objectMapper = new ObjectMapperProvider().get();
-
-        var dsl = testDatabase.getJooqConfiguration().dsl();
         var uuidGenerator = new UuidGenerator();
-        var controller = new EntityController(new EntityStore(dsl, uuidGenerator),
-                new EntityKindStore(dsl, objectMapper, uuidGenerator),
-                objectMapper);
+        var entityStore = new EntityStore(dsl(), uuidGenerator);
+        var entityKindStore = new EntityKindStore(dsl(), objectMapper, uuidGenerator);
+        var controller = new EntityController(entityStore, entityKindStore, objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
                 .buildValidatorFactory()
                 .getValidator();
-        entityResource = new EntityResource(dsl, controller, objectMapper, validator);
-    }
-
-    @AfterAll
-    public static void tearDown() throws Exception {
-        testDatabase.close();
+        entityResource = new EntityResource(dsl(), controller, objectMapper, validator);
     }
 
     @Test

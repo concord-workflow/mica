@@ -1,15 +1,10 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.server.UuidGenerator;
+import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
-import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -20,32 +15,17 @@ import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.UNKNOWN_E
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class EntityControllerTest {
+public class EntityControllerTest extends AbstractDatabaseTest {
 
-    private static TestDatabase testDatabase;
     private static ObjectMapper yamlMapper;
     private static EntityController controller;
 
     @BeforeAll
     public static void setUp() {
-        testDatabase = new TestDatabase();
-        testDatabase.start();
-
-        yamlMapper = new ObjectMapper(new YAMLFactory())
-                .registerModule(new Jdk8Module())
-                .registerModule(new GuavaModule())
-                .registerModule(new JavaTimeModule());
-
-        var dsl = testDatabase.getJooqConfiguration().dsl();
-        var uuidGenerator = new UuidGenerator();
-        var entityStore = new EntityStore(dsl, uuidGenerator);
-        var entityKindStore = new EntityKindStore(dsl, yamlMapper, uuidGenerator);
+        yamlMapper = objectMapper.copyWith(new YAMLFactory());
+        var entityStore = new EntityStore(dsl(), uuidGenerator);
+        var entityKindStore = new EntityKindStore(dsl(), yamlMapper, uuidGenerator);
         controller = new EntityController(entityStore, entityKindStore, yamlMapper);
-    }
-
-    @AfterAll
-    public static void tearDown() throws Exception {
-        testDatabase.close();
     }
 
     @Test
