@@ -4,8 +4,8 @@ import ca.ibodrov.mica.api.model.EntityId;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.walmartlabs.concord.server.ObjectMapperProvider;
 import org.junit.jupiter.api.Test;
+import org.sonatype.siesta.jackson2.ObjectMapperProvider;
 
 import java.util.Optional;
 import java.util.UUID;
