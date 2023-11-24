@@ -13,13 +13,13 @@ public class LocalMicaServer {
 
     public static void main(String[] args) throws Exception {
         try (var db = new PostgreSQLContainer<>("postgres:15-alpine");
-                var server = new TestingMicaServer(db, 8001, createConfig())) {
+                var server = new TestingMicaServer(db, 8080, createConfig())) {
             db.start();
             server.start();
             System.out.printf("""
                     ==============================================================
 
-                      UI (hosted): http://localhost:8001/mica/
+                      UI (hosted): http://localhost:8080/mica/
                       UI (dev): http://localhost:5173/mica/ (launched separately)
                       DB:
                         JDBC URL: %s
@@ -46,7 +46,7 @@ public class LocalMicaServer {
                 .put("oidc.clientId", oidcClientId)
                 .put("oidc.secret", oidcSecret)
                 .put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration")
-                .put("oidc.urlBase", "http://localhost:8001")
+                .put("oidc.urlBase", "http://localhost:8080")
                 .put("db.changeLogParameters.defaultAdminToken", "mica")
                 .put("mica.oidc.logoutEndpoint", authServerUri + "/login/signout")
                 .build();

@@ -22,7 +22,7 @@ Start `ca.ibodrov.mica.its.LocalMicaServer` with the following environment varia
 - `TEST_OIDC_CLIENTID` - the OIDC client ID;
 - `TEST_OIDC_SECRET` - the OIDC client secret.
 
-You should be able to access the UI by visiting http://localhost:8001/mica
+You should be able to access the UI by visiting http://localhost:8080/mica
 
 ## UI Development
 

@@ -96,7 +96,7 @@ data:
   id: acme
   name: Acme Corp.
   status: active
-  validationEndpoint: https://localhost:8001/api/v1/server/ping
+  validationEndpoint: https://localhost:8080/api/v1/server/ping
 ```
 
 And another one:
@@ -164,7 +164,7 @@ Content-Type: application/json
     {
         "id": "acme",
         "name": "Acme Corp.",
-        "validationEndpoint": "https://localhost:8001/api/v1/server/ping"
+        "validationEndpoint": "https://localhost:8080/api/v1/server/ping"
     },
     {
         "id": "evil",
