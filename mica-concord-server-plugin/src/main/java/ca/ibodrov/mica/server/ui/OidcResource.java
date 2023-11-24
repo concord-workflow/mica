@@ -12,7 +12,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.net.URI;
 
 import static java.util.Objects.requireNonNull;
 
@@ -23,44 +22,29 @@ public class OidcResource implements Resource {
 
     @Inject
     public OidcResource(@Config("mica.oidc.logoutEndpoint") String logoutEndpoint) {
-
         this.logoutEndpoint = requireNonNull(logoutEndpoint);
     }
 
     @GET
     @Path("/login")
-    public Response login(@Context HttpServletRequest request,
-                          @Context UriInfo uriInfo) {
-
+    public Response login(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
+        var from = UriBuilder.fromUri(uriInfo.getBaseUri()).path("/mica/").build();
         var redirectUri = UriBuilder.fromUri(uriInfo.getBaseUri())
                 .path("/api/service/oidc/auth")
-                .queryParam("from", "/mica/")
+                .queryParam("from", from)
                 .build();
-
         return Response.temporaryRedirect(redirectUri).build();
     }
 
     @GET
     @Path("/logout")
-    public Response logout(@Context HttpServletRequest request,
-                           @Context UriInfo uriInfo) {
-
-        // TODO support OIDC SLO with id_token_hint
-
-        var redirectUri = createRedirectUri(uriInfo);
-
-        var logoutUri = UriBuilder.fromUri(logoutEndpoint)
-                .queryParam("fromURI", redirectUri)
-                .build();
-
+    // TODO support OIDC SLO with id_token_hint
+    public Response logout(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
         SecurityUtils.getSubject().logout();
-
-        return Response.temporaryRedirect(logoutUri).build();
-    }
-
-    private URI createRedirectUri(UriInfo uriInfo) {
-        return UriBuilder.fromUri(uriInfo.getBaseUri())
-                .path("/api/mica/oidc/callback")
+        var from = UriBuilder.fromUri(uriInfo.getBaseUri()).path("/mica/").build();
+        var logoutUri = UriBuilder.fromUri(logoutEndpoint)
+                .queryParam("fromURI", from)
                 .build();
+        return Response.temporaryRedirect(logoutUri).build();
     }
 }
