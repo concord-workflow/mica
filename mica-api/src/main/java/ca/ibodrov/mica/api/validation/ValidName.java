@@ -9,13 +9,13 @@ import java.lang.annotation.Retention;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @NotEmpty
-@Pattern(regexp = "[a-z0-9][a-z0-9.\\-_/\\\\]{2,127}")
+@Pattern(regexp = "[a-z0-9][a-z0-9.\\-_/\\\\]{2,256}")
 @Retention(RUNTIME)
 @Constraint(validatedBy = {})
-public @interface ValidClientName {
+public @interface ValidName {
 
-    String message() default "client names must start with a letter or a digit, contain only " +
-            "lowercase letters, digits, dots, dashes and slashes, and be between 3 and 128 characters in length";
+    String message() default "Names should start with a letter or digit, and can include lowercase and uppercase " +
+            "letters (a-z, A-Z), digits, dots, dashes, and slashes. Length must be between 3 and 256 characters..";
 
     Class<?>[] groups() default {};
 

@@ -10,6 +10,7 @@ import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import java.io.ByteArrayInputStream;
 import java.time.OffsetDateTime;
@@ -136,6 +137,50 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                 """.formatted(entityVersion.id().toExternalForm(), format(entityVersion.updatedAt()),
                 format(entityVersion.updatedAt()));
         assertEquals(expectedYaml, response.getEntity());
+    }
+
+    @Test
+    public void testValidation() {
+        // name too short (2 characters)
+        assertThrows(ConstraintViolationException.class,
+                () -> entityResource.putYaml(new ByteArrayInputStream("""
+                        kind: MicaRecord/v1
+                        name: fo
+                        # comments are ignored
+                        data:
+                          x: |
+                            multi
+                            line
+                            text
+                        """.getBytes())));
+
+        // name too long (257 characters)
+        assertThrows(ConstraintViolationException.class,
+                () -> entityResource.putYaml(new ByteArrayInputStream(
+                        """
+                                kind: MicaRecord/v1
+                                name: foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+                                # comments are ignored
+                                data:
+                                  x: |
+                                    multi
+                                    line
+                                    text
+                                """
+                                .getBytes())));
+
+        // not a valid name (starts with a digit)
+        assertThrows(ConstraintViolationException.class,
+                () -> entityResource.putYaml(new ByteArrayInputStream("""
+                        kind: MicaRecord/v1
+                        name: 12345abc
+                        # comments are ignored
+                        data:
+                          x: |
+                            multi
+                            line
+                            text
+                        """.getBytes())));
     }
 
     private String format(OffsetDateTime v) {
