@@ -48,7 +48,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <scm.connection>scm:git:https://github.com/concord-workflow/mica.git</scm.connection>
+        <project.url>https://github.com/concord-workflow/mica.git</project.url>
 
         <concord.version>2.3.0</concord.version>
         <jooq.version>3.14.0</jooq.version>
@@ -202,6 +202,14 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>3.1.1</version>
+                    <configuration>
+                        <deployAtEnd>true</deployAtEnd>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.2.0</version>
                 </plugin>
@@ -253,8 +261,9 @@
     </build>
 
     <scm>
-        <url>${scm.connection}</url>
-        <developerConnection>${scm.connection}</developerConnection>
+        <url>${project.url}</url>
+        <connection>scm:git:${project.scm.url}</connection>
+        <developerConnection>scm:git:${project.url}</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -325,6 +334,33 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <compilerArgs>-proc:full --enable-preview</compilerArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>github-packages</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/concord-workflow/mica</url>
+                </repository>
+                <snapshotRepository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/concord-workflow/mica</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <configuration>
+                            <!-- deploy is done separately -->
+                            <goals>validate</goals>
+                            <arguments>--batch-mode -DskipTests -Pgithub-packages</arguments>
                         </configuration>
                     </plugin>
                 </plugins>
