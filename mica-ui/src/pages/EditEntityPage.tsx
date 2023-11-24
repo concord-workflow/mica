@@ -18,7 +18,7 @@ type RouteParams = {
 
 const NEW_ENTITY_TEMPLATE = `# new entity
 name: myEntity
-kind: MicaRecord/v2
+kind: MicaRecord/v1
 data:
   myProperty: true`;
 
