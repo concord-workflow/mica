@@ -8,7 +8,7 @@ import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
 import ca.ibodrov.mica.server.exceptions.ConstraintViolationExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
-import ca.ibodrov.mica.server.oidc.OidcResource;
+import ca.ibodrov.mica.server.ui.OidcResource;
 import ca.ibodrov.mica.server.ui.SwaggerServlet;
 import ca.ibodrov.mica.server.ui.UiServlet;
 import ca.ibodrov.mica.server.ui.WhoamiResource;

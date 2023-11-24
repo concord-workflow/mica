@@ -30,11 +30,12 @@ public class UiServlet extends HttpServlet {
     private final Map<String, UiResource> resources;
 
     public UiServlet() {
-        // a quick sanity check
         resources = loadResources(CHECKSUMS_FILE);
-        Optional.ofNullable(resources.get(INDEX_HTML))
-                .orElseThrow(() -> new RuntimeException(
-                        "Missing the root UI resource: %s. Classpath issues?".formatted(RESOURCE_ROOT + INDEX_HTML)));
+        // a quick sanity check
+        if (resources.get(INDEX_HTML) == null) {
+            throw new RuntimeException("Missing the root UI resource: %s. Classpath issues?"
+                    .formatted(RESOURCE_ROOT + INDEX_HTML));
+        }
     }
 
     @Override

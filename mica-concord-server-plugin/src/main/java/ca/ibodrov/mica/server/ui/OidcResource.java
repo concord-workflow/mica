@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.oidc;
+package ca.ibodrov.mica.server.ui;
 
 import com.walmartlabs.ollie.config.Config;
 import org.apache.shiro.SecurityUtils;
