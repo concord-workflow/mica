@@ -8,10 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.Map;
-import java.util.Set;
 
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -35,18 +32,8 @@ public class InitialDataLoader {
     }
 
     public void load() {
-        // TODO actual schemas
-        var schema = object(Map.of(
-                "id", string(),
-                "kind", string(),
-                "name", string(),
-                "data", any()),
-                Set.of("name", "kind", "data"));
-
-        insertIfNotExists("MicaRecord/v1", schema);
-        insertIfNotExists("MicaSchema/v1", schema);
-        insertIfNotExists("MicaEntityTemplate/v1", schema);
-        insertIfNotExists("MicaEntityView/v1", schema);
+        insertIfNotExists(BuiltinSchemas.MICA_RECORD_V1, BuiltinSchemas.MICA_RECORD_V1_SCHEMA);
+        insertIfNotExists(BuiltinSchemas.MICA_KIND_V1, BuiltinSchemas.MICA_KIND_V1_SCHEMA);
     }
 
     private void insertIfNotExists(String name, ObjectSchemaNode schema) {

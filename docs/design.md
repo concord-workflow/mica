@@ -8,12 +8,6 @@
     - `kind` -- string, URI path element;
     - `data` -- JSONB.
 
-- `MicaEntityKind` -- a template for creating new entities (i.e. defining new `kind` types).
-    - `id` -- uuid, internal ID;
-    - `name` -- string, URI path element, unique;
-    - `extendsKind` -- string, URI path element, optional. Default is `MicaRecord/v1`;
-    - `schemaRef` -- string, URI, optional.
-
 - `Property` -- a property of a `MicaSchema/v1` or `MicaEntityView/v1`.
     - `type` -- string, URI path element;
     - `value` -- JSONB, optional;

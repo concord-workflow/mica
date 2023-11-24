@@ -40,7 +40,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         // insert the initial version
 
         var yaml = """
-                kind: MicaSchema/v1
+                kind: MicaRecord/v1
                 name: testSchema
                 data:
                   type: object

@@ -128,24 +128,25 @@ public class Validator {
             return ValidatedProperty.unexpectedValue(NULL_TYPE, NullNode.getInstance(), input);
         }
 
-        var expectedValue = property.constant().orElse(NullNode.getInstance());
+        var expectedValue = Optional.ofNullable(property.constant()).orElseGet(NullNode::getInstance);
         if (!expectedValue.isNull()) {
             return ValidatedProperty.invalid(new ValidationError(INVALID_SCHEMA,
                     Map.of("details",
-                            TextNode.valueOf("Type 'null' disallows any 'const' values other than null."))));
+                            TextNode.valueOf("Type 'null' allows only null 'const' values."))));
         }
 
         return ValidatedProperty.valid(NullNode.getInstance());
     }
 
     private static Optional<JsonNode> getConstant(ObjectSchemaNode property) {
-        // deserializing a missing 'const' results in a non-empty Optional with NullNode
-        // value -- we treat those as missing values
-        return property.constant().filter(n -> !n.isNull());
+        // Deserializing missing or null 'const' values always results in a NullNode
+        // value,
+        // even if wrapped into Optional. We treat those as missing values.
+        return Optional.ofNullable(property.constant()).filter(v -> !v.isNull());
     }
 
     private static Optional<String> getTypeFromConst(ObjectSchemaNode property) {
-        return property.constant().map(v -> {
+        return getConstant(property).map(v -> {
             if (v.isTextual()) {
                 return "string";
             } else if (v.isNumber()) {
