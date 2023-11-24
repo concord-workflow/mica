@@ -1,7 +1,8 @@
-package ca.ibodrov.mica.server.api.resources;
+package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
+import ca.ibodrov.mica.server.api.EntityResource;
 import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;

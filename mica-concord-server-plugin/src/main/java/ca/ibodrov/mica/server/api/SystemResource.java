@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.api.resources;
+package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.SystemInfo;
 import org.sonatype.siesta.Resource;

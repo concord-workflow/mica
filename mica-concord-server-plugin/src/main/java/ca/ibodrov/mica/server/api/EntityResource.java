@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.api.resources;
+package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;

@@ -1,8 +1,8 @@
 package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.db.MicaDatabaseModule;
-import ca.ibodrov.mica.server.api.resources.EntityResource;
-import ca.ibodrov.mica.server.api.resources.SystemResource;
+import ca.ibodrov.mica.server.api.EntityResource;
+import ca.ibodrov.mica.server.api.SystemResource;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
