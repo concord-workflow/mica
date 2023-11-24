@@ -13,6 +13,7 @@
 
     <build>
         <plugins>
+            <!-- this handles all NPM-related stuff -->
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
@@ -65,6 +66,36 @@
                     <nodeVersion>${node.version}</nodeVersion>
                     <npmVersion>${npm.version}</npmVersion>
                 </configuration>
+            </plugin>
+
+            <!-- this is used to generate a file with checksums of all UI resources (the file is used by the server) -->
+            <plugin>
+                <groupId>net.nicoulaj.maven.plugins</groupId>
+                <artifactId>checksum-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>create-checksum-file</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>files</goal>
+                        </goals>
+                        <configuration>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${project.build.directory}/classes/META-INF/mica-ui</directory>
+                                    <includes>
+                                        <include>**/*.*</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                            <algorithms>
+                                <algorithm>SHA-1</algorithm>
+                            </algorithms>
+                            <csvSummaryFile>classes/META-INF/mica-ui.checksums.cvs</csvSummaryFile>
+                            <includeRelativePath>true</includeRelativePath>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
