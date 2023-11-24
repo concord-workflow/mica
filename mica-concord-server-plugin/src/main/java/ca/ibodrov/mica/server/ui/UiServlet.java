@@ -94,7 +94,7 @@ public class UiServlet extends HttpServlet {
         });
     }
 
-    private Map<String, UiResource> loadResources(String file) {
+    private static Map<String, UiResource> loadResources(String file) {
         var resources = ImmutableMap.<String, UiResource>builder();
 
         var cl = UiServlet.class.getClassLoader();

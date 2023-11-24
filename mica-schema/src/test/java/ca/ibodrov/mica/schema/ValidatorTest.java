@@ -2,6 +2,7 @@ package ca.ibodrov.mica.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.intellij.lang.annotations.Language;
@@ -18,7 +19,10 @@ public class ValidatorTest {
             .registerModule(new Jdk8Module())
             .setDefaultPropertyInclusion(NON_NULL);
 
-    private final Validator validator = new Validator(objectMapper);
+    private ValidatedProperty validateMap(ObjectSchemaNode schema, Map<String, Object> m) {
+        var input = objectMapper.convertValue(m, JsonNode.class);
+        return Validator.validateObject(schema, input);
+    }
 
     @Test
     public void testSimpleRender() {
@@ -32,10 +36,8 @@ public class ValidatorTest {
                 }
                 """);
 
-        var props = validator.validateMap(schema, Map.of("username", "bob", "role", "builder"))
-                .properties();
-
-        assertValidProperty(props, "username", TextNode.valueOf("bob"));
+        var result = validateMap(schema, Map.of("username", "bob", "role", "builder"));
+        assertValidProperty(result, "username", TextNode.valueOf("bob"));
     }
 
     @Test
@@ -57,11 +59,9 @@ public class ValidatorTest {
                 }
                 """);
 
-        var props = validator.validateMap(schema, Map.of("age", "not a number, clearly"))
-                .properties();
-
-        assertInvalidProperty(props, "age");
-        assertInvalidProperty(props, "username");
+        var result = validateMap(schema, Map.of("age", "not a number, clearly"));
+        assertInvalidProperty(result, "age");
+        assertInvalidProperty(result, "username");
     }
 
     @Test
@@ -89,20 +89,20 @@ public class ValidatorTest {
                 }
                 """);
 
-        var props = validator.validateMap(schema, Map.of("constString", "foo")).properties();
-        assertValidProperty(props, "constString", TextNode.valueOf("foo"));
-        assertInvalidProperty(props, "constObject");
-        assertInvalidProperty(props, "constNumber");
+        var result = validateMap(schema, Map.of("constString", "foo"));
+        assertValidProperty(result, "constString", TextNode.valueOf("foo"));
+        assertInvalidProperty(result, "constObject");
+        assertInvalidProperty(result, "constNumber");
 
-        props = validator.validateMap(schema, Map.of("constString", "bar")).properties();
-        assertInvalidProperty(props, "constString");
-        assertInvalidProperty(props, "constObject");
-        assertInvalidProperty(props, "constNumber");
+        result = validateMap(schema, Map.of("constString", "bar"));
+        assertInvalidProperty(result, "constString");
+        assertInvalidProperty(result, "constObject");
+        assertInvalidProperty(result, "constNumber");
 
-        props = validator.validateMap(schema, Map.of("constObject", Map.of("x", 1, "y", 2))).properties();
-        assertValidProperty(props, "constObject", toJsonNode(Map.of("x", 1, "y", 2)));
-        assertInvalidProperty(props, "constString");
-        assertInvalidProperty(props, "constNumber");
+        result = validateMap(schema, Map.of("constObject", Map.of("x", 1, "y", 2)));
+        assertValidProperty(result, "constObject", toJsonNode(Map.of("x", 1, "y", 2)));
+        assertInvalidProperty(result, "constString");
+        assertInvalidProperty(result, "constNumber");
     }
 
     @Test
@@ -118,19 +118,38 @@ public class ValidatorTest {
                 }
                 """);
 
-        var props = validator.validateMap(schema, Map.of("anyValue", "foo")).properties();
-        assertValidProperty(props, "anyValue", TextNode.valueOf("foo"));
+        var result = validateMap(schema, Map.of("anyValue", "foo"));
+        assertValidProperty(result, "anyValue", TextNode.valueOf("foo"));
     }
 
-    private static void assertInvalidProperty(Map<String, ValidatedProperty> properties, String key) {
+    @Test
+    public void testNull() {
+        var schema = p("""
+                {
+                   "properties": {
+                     "nullValue": {
+                       "type": "null"
+                     }
+                   },
+                   "required": ["nullValue"]
+                }
+                """);
+
+        var result = validateMap(schema, Map.of());
+        assertValidProperty(result, "nullValue", NullNode.getInstance());
+    }
+
+    private static void assertInvalidProperty(ValidatedProperty property, String key) {
+        var properties = property.properties().orElseGet(Map::of);
         assertTrue(properties.containsKey(key));
         assertTrue(properties.get(key).value().isEmpty());
         assertTrue(properties.get(key).error().isPresent());
     }
 
-    private static void assertValidProperty(Map<String, ValidatedProperty> properties,
+    private static void assertValidProperty(ValidatedProperty property,
                                             String key,
                                             JsonNode expectedValue) {
+        var properties = property.properties().orElseGet(Map::of);
         assertTrue(properties.containsKey(key));
         assertTrue(properties.get(key).value().map(v -> v.equals(expectedValue)).orElse(false));
         assertTrue(properties.get(key).error().isEmpty());

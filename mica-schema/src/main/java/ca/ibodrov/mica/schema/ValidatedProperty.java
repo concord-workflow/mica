@@ -35,14 +35,14 @@ public record ValidatedProperty(Optional<JsonNode> value,
                 "actualValue", actualValue)));
     }
 
-    public static ValidatedProperty invalidType(String expectedType, Class<?> actualJavaClass) {
+    public static ValidatedProperty invalidType(String expectedType, JsonNode actualValue) {
         return invalid(new ValidationError(INVALID_TYPE,
-                Map.of("expected", TextNode.valueOf(expectedType), "actualJavaClass",
-                        TextNode.valueOf(actualJavaClass.getName()))));
+                Map.of("expected", TextNode.valueOf(expectedType),
+                        "actualValue", actualValue)));
     }
 
-    public static ValidatedProperty missingProperty(String propertyName) {
-        return invalid(new ValidationError(MISSING_PROPERTY, Map.of("propertyName", TextNode.valueOf(propertyName))));
+    public static ValidatedProperty missingRequiredProperty(JsonNode propertyName) {
+        return invalid(new ValidationError(MISSING_PROPERTY, Map.of("propertyName", propertyName)));
     }
 
     @JsonIgnore

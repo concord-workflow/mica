@@ -4,10 +4,10 @@ import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.inject.Inject;
-import java.util.Map;
 
 import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.UNKNOWN_ENTITY_KIND;
@@ -35,10 +35,11 @@ public class EntityController {
         var schema = entityKindStore.getSchemaForKind(kind)
                 .orElseThrow(() -> ApiException.badRequest(UNKNOWN_ENTITY_KIND, "Can't find schema for " + kind));
 
-        var input = objectMapper.convertValue(entity, Map.class);
-        var result = new Validator(objectMapper).validateMap(schema, input);
-        if (!result.isValid()) {
-            throw ApiException.badRequest(BAD_DATA, "Validation errors: " + result);
+        var input = objectMapper.convertValue(entity, JsonNode.class);
+        var validatedInput = Validator.validateObject(schema, input);
+        if (!validatedInput.isValid()) {
+            // TODO structured errors
+            throw ApiException.badRequest(BAD_DATA, "Validation errors: " + validatedInput);
         }
 
         if (entity.id().isEmpty()) {
