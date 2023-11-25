@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.UuidGenerator;
+import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.DSLContext;
@@ -40,15 +41,17 @@ public class EntityStore {
         this.uuidGenerator = requireNonNull(uuidGenerator);
     }
 
-    public List<EntityMetadata> search(String search) {
+    public List<EntityMetadata> search(String search, String entityName) {
         var searchCondition = search != null ? MICA_ENTITIES.NAME.containsIgnoreCase(search) : noCondition();
+        var nameCondition = entityName != null ? MICA_ENTITIES.NAME.eq(entityName) : noCondition();
+
         return dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT)
                 .from(MICA_ENTITIES)
-                .where(searchCondition)
+                .where(searchCondition.and(nameCondition))
                 .fetch(EntityStore::toEntityMetadata);
     }
 
@@ -64,7 +67,7 @@ public class EntityStore {
                 .fetchOptional(this::toEntity);
     }
 
-    public Optional<Entity> getByNameAndKind(String entityName, String entityKind) {
+    public Optional<Entity> getByName(String entityName) {
         return dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -72,7 +75,7 @@ public class EntityStore {
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.NAME.eq(entityName).and(MICA_ENTITIES.KIND.eq(entityKind)))
+                .where(MICA_ENTITIES.NAME.eq(entityName))
                 .fetchOptional(this::toEntity);
     }
 
@@ -85,6 +88,10 @@ public class EntityStore {
     }
 
     public Optional<EntityVersion> upsert(PartialEntity entity) {
+        if (entity.id().isEmpty() && isNameExists(entity.name())) {
+            throw new StoreException("Entity with name '%s' already exists.".formatted(entity.name()));
+        }
+
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
 
@@ -113,8 +120,7 @@ public class EntityStore {
             var data = objectMapper.readValue(record.value6().data(), JsonNode.class);
             return new Entity(id, record.value2(), record.value3(), record.value4(), record.value5(), data);
         } catch (IOException e) {
-            // TODO do we need anything better here?
-            throw new RuntimeException(e);
+            throw new StoreException("JSON deserialization error, most likely a bug: " + e.getMessage(), e);
         }
     }
 

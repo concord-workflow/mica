@@ -3,6 +3,7 @@ import ApiPage from './pages/ApiPage.tsx';
 import EditEntityPage from './pages/EditEntityPage.tsx';
 import EntityDetailsPage from './pages/EntityDetailsPage.tsx';
 import EntityListPage from './pages/EntityListPage.tsx';
+import RedirectPage from './pages/RedirectPage.tsx';
 
 import { createBrowserRouter } from 'react-router-dom';
 
@@ -16,6 +17,10 @@ export const createRouter = () =>
                     {
                         path: 'api',
                         element: <ApiPage />,
+                    },
+                    {
+                        path: 'redirect',
+                        element: <RedirectPage />,
                     },
                     {
                         path: 'entity',

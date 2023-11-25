@@ -12,5 +12,5 @@ public record Entity(@NotNull EntityId id,
         @NotEmpty String kind,
         @NotNull OffsetDateTime createdAt,
         @NotNull OffsetDateTime updatedAt,
-        @NotNull JsonNode data) {
+        @NotNull JsonNode data) implements WithMetadata {
 }

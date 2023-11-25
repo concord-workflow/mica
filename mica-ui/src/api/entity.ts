@@ -30,8 +30,12 @@ export const getEntity = (id: string): Promise<EntityWithData> =>
 export const getEntityAsYamlString = (id: string): Promise<string> =>
     doFetch(`/api/mica/v1/entity/${id}/yaml`).then(handleTextResponse);
 
-export const listEntities = (search?: string): Promise<EntityList> =>
-    doFetch(`/api/mica/v1/entity?search=${search ?? ''}`).then(handleJsonResponse<EntityList>);
+export const listEntities = (search?: string, entityName?: string): Promise<EntityList> =>
+    doFetch(
+        `/api/mica/v1/entity?search=${search ? encodeURIComponent(search) : ''}&entityName=${
+            entityName ? encodeURIComponent(entityName) : ''
+        }`,
+    ).then(handleJsonResponse<EntityList>);
 
 const putYaml = (file: File): Promise<EntityVersion> =>
     doFetch('/api/mica/v1/entity', {

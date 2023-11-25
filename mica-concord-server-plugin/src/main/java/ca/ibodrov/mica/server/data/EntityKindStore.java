@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.Entity;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.WithMetadata;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -30,7 +31,9 @@ public class EntityKindStore {
     }
 
     public Optional<ObjectSchemaNode> getSchemaForKind(String kind) {
-        return entityStore.getByNameAndKind(kind, BuiltinSchemas.MICA_KIND_V1).map(this::intoSchema);
+        var entity = entityStore.getByName(kind);
+        entity.ifPresent(EntityKindStore::assertKind);
+        return entity.map(this::intoSchema);
     }
 
     public Optional<EntityVersion> upsert(PartialEntity entity) {
@@ -42,10 +45,10 @@ public class EntityKindStore {
         return objectMapper.convertValue(entity.data(), ObjectSchemaNode.class);
     }
 
-    private static void assertKind(PartialEntity entity) {
+    private static void assertKind(WithMetadata entity) {
         if (!BuiltinSchemas.MICA_KIND_V1.equals(entity.kind())) {
-            throw new IllegalArgumentException("Only %s kind is allowed for entity kind definitions"
-                    .formatted(BuiltinSchemas.MICA_KIND_V1));
+            throw new IllegalArgumentException("Expected a %s entity, got something else. Entity '%s' is a %s"
+                    .formatted(BuiltinSchemas.MICA_KIND_V1, entity.name(), entity.kind()));
         }
     }
 }

@@ -9,6 +9,7 @@ import {
     Button,
     CircularProgress,
     Container,
+    Link,
     Paper,
     Table,
     TableBody,
@@ -24,7 +25,7 @@ import { SxProps } from '@mui/system';
 
 import React from 'react';
 import { useQuery } from 'react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
@@ -113,7 +114,17 @@ const EntityDetailsPage = () => {
                     {entityId} {isFetching && <CircularProgress size={16} />}
                 </MetadataItem>
                 <MetadataItem label="Name">{entity ? entity.name : '?'}</MetadataItem>
-                <MetadataItem label="Kind">{entity ? entity.kind : '?'}</MetadataItem>
+                <MetadataItem label="Kind">
+                    {entity ? (
+                        <Link
+                            component={RouterLink}
+                            to={`/redirect?type=entityByName&entityName=${entity.kind}`}>
+                            {highlightSubstring(entity.kind, search)}
+                        </Link>
+                    ) : (
+                        '?'
+                    )}
+                </MetadataItem>
                 <MetadataItem label="Created">
                     {entity ? new Date(entity.createdAt).toLocaleString() : '?'}
                 </MetadataItem>

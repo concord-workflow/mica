@@ -62,8 +62,9 @@ public class EntityResource implements Resource {
 
     @GET
     @Operation(description = "List known entities", operationId = "listEntities")
-    public EntityList listEntities(@Nullable @QueryParam("search") String search) {
-        var data = entityStore.search(search);
+    public EntityList listEntities(@Nullable @QueryParam("search") String search,
+                                   @Nullable @QueryParam("entityName") String entityName) {
+        var data = entityStore.search(nonBlank(search), nonBlank(entityName));
         return new EntityList(data);
     }
 
@@ -109,5 +110,12 @@ public class EntityResource implements Resource {
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
+    }
+
+    private static String nonBlank(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return s;
     }
 }

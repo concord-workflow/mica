@@ -12,7 +12,7 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
         @ValidName String kind,
         @NotNull Optional<OffsetDateTime> createdAt,
         @NotNull Optional<OffsetDateTime> updatedAt,
-        @NotNull JsonNode data) {
+        @NotNull JsonNode data) implements WithMetadata {
 
     public static PartialEntity create(String name, String kind, JsonNode data) {
         return new PartialEntity(Optional.empty(), name, kind, Optional.empty(), Optional.empty(), data);
