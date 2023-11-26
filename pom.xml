@@ -41,6 +41,7 @@
         <module>mica-schema</module>
         <module>mica-ui</module>
         <module>test-support</module>
+        <module>docker</module>
     </modules>
 
     <properties>
@@ -254,6 +255,11 @@
                     <groupId>net.nicoulaj.maven.plugins</groupId>
                     <artifactId>checksum-maven-plugin</artifactId>
                     <version>1.11</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.1.1</version>
                 </plugin>
             </plugins>
         </pluginManagement>
