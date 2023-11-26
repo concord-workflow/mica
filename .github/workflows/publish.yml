@@ -23,12 +23,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish package
+      - name: Publish Docker images
         run: |
           mvn -B -P github-packages -DskipTests \
             -Ddocker.skip=false \
             -Ddocker.loadOrPush=push \
             -Ddocker.image=ghcr.io/concord-workflow/mica-sidecar \
-            deploy
+            package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

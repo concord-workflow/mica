@@ -15,7 +15,7 @@
 
     <properties>
         <docker.skip>true</docker.skip>
-        <docker.image>concord-workflow/mica-sidecar</docker.image>
+        <docker.image>concordworkflow/mica-sidecar</docker.image>
         <docker.platforms>linux/amd64</docker.platforms>
         <docker.loadOrPush>load</docker.loadOrPush>
     </properties>

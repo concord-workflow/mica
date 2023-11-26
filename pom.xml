@@ -196,7 +196,7 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <pushChanges>false</pushChanges>
                         <useReleaseProfile>false</useReleaseProfile>
-                        <goals>deploy</goals>
+                        <goals>package</goals>
                         <arguments>--batch-mode -DskipTests -Pconcord-release</arguments>
                     </configuration>
                 </plugin>
