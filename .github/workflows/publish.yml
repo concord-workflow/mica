@@ -1,8 +1,8 @@
-name: Publish package to GitHub Packages
+name: Publish mica-sidecar
+
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch: { }
+
 jobs:
   publish:
     runs-on: ubuntu-latest

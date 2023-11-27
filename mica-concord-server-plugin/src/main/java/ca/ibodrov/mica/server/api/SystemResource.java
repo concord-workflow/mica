@@ -18,17 +18,18 @@ public class SystemResource implements Resource {
     private final SystemInfo systemInfo;
 
     public SystemResource() {
-        var versionProps = new Properties();
+        var gitProps = new Properties();
         try {
-            versionProps.load(SystemResource.class.getResourceAsStream("/org/acme/mica/server/version.properties"));
+            gitProps.load(SystemResource.class.getResourceAsStream("/ca/ibodrov/mica/server/git.properties"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        var version = versionProps.getProperty("mica.version");
+        var version = gitProps.getProperty("git.commit.id.describe");
         if (version == null || version.isBlank()) {
             throw new IllegalStateException("Missing mica.version property");
         }
+
         systemInfo = new SystemInfo(version);
     }
 

@@ -81,6 +81,27 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
+                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                    <injectAllReactorProjects>true</injectAllReactorProjects>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>git.commit.id.describe</includeOnlyProperty>
+                    </includeOnlyProperties>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
@@ -114,7 +135,7 @@
                                 <argument>buildx</argument>
                                 <argument>build</argument>
                                 <argument>-t</argument>
-                                <argument>${docker.image}:${project.version}</argument>
+                                <argument>${docker.image}:${git.commit.id.describe}</argument>
                                 <argument>--platform=${docker.platforms}</argument>
                                 <argument>--${docker.loadOrPush}</argument>
                                 <argument>-f</argument>
