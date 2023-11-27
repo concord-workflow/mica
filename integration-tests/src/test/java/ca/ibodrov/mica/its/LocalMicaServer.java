@@ -11,6 +11,8 @@ import java.util.Optional;
  */
 public class LocalMicaServer {
 
+    private static final String TEST_ADMIN_TOKEN = "mica";
+
     public static void main(String[] args) throws Exception {
         try (var db = new PostgreSQLContainer<>("postgres:15-alpine");
                 var server = new TestingMicaServer(db, 8080, createConfig())) {
@@ -25,9 +27,13 @@ public class LocalMicaServer {
                         JDBC URL: %s
                         username: %s
                         password: %s
+                      API:
+                        admin key: %s
+
+                      curl -i -H 'Authorization: %s' http://localhost:8080/api/mica/v1/system
 
                     ==============================================================
-                    %n""", db.getJdbcUrl(), db.getUsername(), db.getPassword());
+                    %n""", db.getJdbcUrl(), db.getUsername(), db.getPassword(), TEST_ADMIN_TOKEN, TEST_ADMIN_TOKEN);
             Thread.currentThread().join();
         }
     }
@@ -47,7 +53,7 @@ public class LocalMicaServer {
                 .put("oidc.secret", oidcSecret)
                 .put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration")
                 .put("oidc.urlBase", "http://localhost:8080")
-                .put("db.changeLogParameters.defaultAdminToken", "mica")
+                .put("db.changeLogParameters.defaultAdminToken", TEST_ADMIN_TOKEN)
                 .put("mica.oidc.logoutEndpoint", authServerUri + "/login/signout")
                 .build();
     }
