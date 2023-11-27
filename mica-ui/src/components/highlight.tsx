@@ -9,6 +9,9 @@ const HighlightSpan = styled('span')(({ theme }) => ({
 }));
 
 const highlightSubstring = (s: string, search: string): React.ReactNode => {
+    if (s == undefined) {
+        return null;
+    }
     const searchLower = search.toLowerCase();
     const index = s.toLowerCase().indexOf(searchLower);
     if (index < 0) {
