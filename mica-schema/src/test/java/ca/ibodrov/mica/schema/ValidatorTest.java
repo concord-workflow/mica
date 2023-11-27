@@ -65,21 +65,21 @@ public class ValidatorTest {
     }
 
     @Test
-    public void testConst() {
+    public void testEnum() {
         var schema = p("""
                 {
                    "properties": {
                      "constString": {
-                       "const": "foo"
+                       "enum": ["foo", "bar"]
                      },
                      "constNumber": {
-                       "const": 123
+                       "enum": [123]
                      },
                      "constObject": {
-                       "const": {
+                       "enum": [{
                          "x": 1,
                          "y": 2
-                       }
+                       }, { "a": true, "b":  false }]
                      },
                      "age": {
                        "type": "number"
@@ -94,7 +94,7 @@ public class ValidatorTest {
         assertInvalidProperty(result, "constObject");
         assertInvalidProperty(result, "constNumber");
 
-        result = validateMap(schema, Map.of("constString", "bar"));
+        result = validateMap(schema, Map.of("constString", "baz"));
         assertInvalidProperty(result, "constString");
         assertInvalidProperty(result, "constObject");
         assertInvalidProperty(result, "constNumber");

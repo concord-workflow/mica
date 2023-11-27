@@ -45,6 +45,10 @@ public record ValidatedProperty(Optional<JsonNode> value,
         return invalid(new ValidationError(MISSING_PROPERTY, Map.of("propertyName", propertyName)));
     }
 
+    public static ValidatedProperty invalidSchema(String details) {
+        return invalid(new ValidationError(INVALID_SCHEMA, Map.of("details", TextNode.valueOf(details))));
+    }
+
     @JsonIgnore
     public boolean isValid() {
         return error().isEmpty();
