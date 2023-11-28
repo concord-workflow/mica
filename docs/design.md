@@ -62,6 +62,7 @@ ObjectSchemaNode:
   properties     map of keys -> ObjectSchemaNode
   required       a subset of keys from "properties"
   enum           array of JSON values
+  items          ObjectSchemaNode, schema of an array item
 ```
 
 There are several built-in entity kinds:
@@ -135,10 +136,9 @@ found.
 
 Mica implements a subset of JSON Schema features:
 
-- types: boolean, object, string, number, null, any (see `ca.ibodrov.mica.schema.ValueType`);
+- types: array, boolean, object, string, number, null, any (see `ca.ibodrov.mica.schema.ValueType`);
 - required properties;
 - enum values;
-- _TODO_ types: array;
 - _TODO_ format: uri, email, uuid, date, time, etc;
 
 ## Database Design
