@@ -16,24 +16,27 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 public record ObjectSchemaNode(Optional<String> type,
         Optional<Map<String, ObjectSchemaNode>> properties,
         Optional<Set<String>> required,
-        @JsonProperty("enum") Optional<List<JsonNode>> enumeratedValues) {
+        @JsonProperty("enum") Optional<List<JsonNode>> enumeratedValues,
+        Optional<ObjectSchemaNode> items) {
 
     public static ObjectSchemaNode object(Map<String, ObjectSchemaNode> properties, Set<String> required) {
         return new ObjectSchemaNode(Optional.of(OBJECT.key()), Optional.of(properties), Optional.of(required),
-                Optional.empty());
+                Optional.empty(), Optional.empty());
     }
 
     public static ObjectSchemaNode string() {
-        return new ObjectSchemaNode(Optional.of(STRING.key()), Optional.empty(), Optional.empty(), Optional.empty());
+        return new ObjectSchemaNode(Optional.of(STRING.key()), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty());
     }
 
     public static ObjectSchemaNode enums(JsonNode... values) {
         return new ObjectSchemaNode(Optional.of(STRING.key()), Optional.empty(), Optional.empty(),
-                Optional.of(List.of(values)));
+                Optional.of(List.of(values)), Optional.empty());
     }
 
     public static ObjectSchemaNode any() {
-        return new ObjectSchemaNode(Optional.of(ANY.key()), Optional.empty(), Optional.empty(), Optional.empty());
+        return new ObjectSchemaNode(Optional.of(ANY.key()), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty());
     }
 
     public Optional<ObjectSchemaNode> getProperty(String name) {

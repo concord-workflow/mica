@@ -54,10 +54,11 @@ public class Validator {
 
         return switch (type) {
             case ANY -> validateAny(property, input);
-            case OBJECT -> validateObject(property, input);
+            case ARRAY -> validateArray(property, input);
             case BOOLEAN -> validateBoolean(property, input);
-            case STRING -> validateString(property, input);
             case NUMBER -> validateNumber(property, input);
+            case OBJECT -> validateObject(property, input);
+            case STRING -> validateString(property, input);
             case NULL -> validateNull(property, input);
             // TODO other types
             default -> unexpectedType(type);
@@ -76,6 +77,39 @@ public class Validator {
         } catch (IllegalArgumentException e) {
             return invalidType(ValueType.ANY, input);
         }
+    }
+
+    public static ValidatedProperty validateArray(ObjectSchemaNode property, JsonNode input) {
+        if (!input.isArray()) {
+            return invalidType(ARRAY, input);
+        }
+
+        // validate the enum value
+        var enums = property.enumeratedValues();
+        if (enums.isPresent()) {
+            return validateEnums(enums.get(), ARRAY, input);
+        }
+
+        // check the array items
+        var maybeItems = property.items();
+        if (maybeItems.isEmpty()) {
+            return invalidSchema("'items' must be specified for 'array' type");
+        }
+
+        var validatedItems = new HashMap<String, ValidatedProperty>();
+        var itemSchema = maybeItems.get();
+        for (int i = 0; i < input.size(); i++) {
+            var propertyKey = String.valueOf(i);
+            var validatedItem = validateProperty(propertyKey, itemSchema, false, input.get(i));
+            validatedItems.put(propertyKey, validatedItem);
+        }
+
+        // no array items found, return the current result
+        if (validatedItems.isEmpty()) {
+            return valid(input);
+        }
+
+        return ValidatedProperty.nested(validatedItems).withValue(Optional.of(input));
     }
 
     public static ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {

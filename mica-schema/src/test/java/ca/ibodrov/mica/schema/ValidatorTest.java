@@ -10,10 +10,11 @@ import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ValidatorTest {
     private final ObjectMapper objectMapper = new ObjectMapper()
@@ -38,6 +39,7 @@ public class ValidatorTest {
                 """);
 
         var result = validateMap(schema, Map.of("username", "bob", "role", "builder"));
+        assertTrue(result.isValid());
         assertValidProperty(result, "username", TextNode.valueOf("bob"));
     }
 
@@ -120,6 +122,7 @@ public class ValidatorTest {
                 """);
 
         var result = validateMap(schema, Map.of("anyValue", "foo"));
+        assertTrue(result.isValid());
         assertValidProperty(result, "anyValue", TextNode.valueOf("foo"));
     }
 
@@ -169,6 +172,8 @@ public class ValidatorTest {
                 "maybeFalseValue", false,
                 "alwaysTrueValue", true,
                 "alwaysFalseValue", false));
+        assertTrue(result.isValid());
+
         assertValidProperty(result, "maybeTrueValue", BooleanNode.getTrue());
         assertValidProperty(result, "maybeFalseValue", BooleanNode.getFalse());
         assertValidProperty(result, "alwaysTrueValue", BooleanNode.getTrue());
@@ -179,10 +184,116 @@ public class ValidatorTest {
                 "maybeFalseValue", true,
                 "alwaysTrueValue", false,
                 "alwaysFalseValue", true));
+        assertFalse(result.isValid());
+
         assertValidProperty(result, "maybeTrueValue", BooleanNode.getFalse());
         assertValidProperty(result, "maybeFalseValue", BooleanNode.getTrue());
         assertInvalidProperty(result, "alwaysTrueValue");
         assertInvalidProperty(result, "alwaysFalseValue");
+    }
+
+    @Test
+    public void testArray() {
+        var schema = parseJson(ObjectSchemaNode.class, """
+                {
+                    "properties": {
+                        "arrayOfArbitraryStrings": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "arrayOfEnumStrings": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "foo",
+                                    "bar"
+                                ]
+                            }
+                        },
+                        "arrayOfObjects": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "x": {
+                                        "type": "number"
+                                    },
+                                    "y": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                """);
+
+        // all valid
+        var result = validateMap(schema, Map.of(
+                "arrayOfArbitraryStrings", List.of("abc", "def", "ghi"),
+                "arrayOfEnumStrings", List.of("foo", "bar"),
+                "arrayOfObjects", List.of(Map.of("x", 1, "y", 2), Map.of("x", 3, "y", 4))));
+        assertTrue(result.isValid());
+
+        assertValidProperty(result, "arrayOfArbitraryStrings", toJsonNode(List.of("abc", "def", "ghi")));
+        assertValidProperty(result, "arrayOfEnumStrings", toJsonNode(List.of("foo", "bar")));
+        assertValidProperty(result, "arrayOfObjects",
+                toJsonNode(List.of(Map.of("x", 1, "y", 2), Map.of("x", 3, "y", 4))));
+
+        // array of enum values has an invalid value
+        // array of object has an object with an invalid value
+        result = validateMap(schema, Map.of(
+                "arrayOfArbitraryStrings", List.of("abc", "def", "ghi"),
+                "arrayOfEnumStrings", List.of("baz"),
+                "arrayOfObjects", List.of(Map.of("x", false, "y", true))));
+        assertFalse(result.isValid());
+
+        assertValidProperty(result, "arrayOfArbitraryStrings", toJsonNode(List.of("abc", "def", "ghi")));
+        assertInvalidProperty(result, "arrayOfEnumStrings");
+        assertInvalidProperty(result, "arrayOfObjects");
+
+        schema = parseJson(ObjectSchemaNode.class, """
+                {
+                    "properties": {
+                        "enumArray": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "enum": [
+                                [
+                                    "foo",
+                                    "bar"
+                                ],
+                                [
+                                    "baz",
+                                    "qux"
+                                ]
+                            ]
+                        }
+                    }
+                }
+                """);
+
+        // enum array value
+        result = validateMap(schema, Map.of(
+                "enumArray", List.of("foo", "bar")));
+        assertTrue(result.isValid());
+
+        result = validateMap(schema, Map.of(
+                "enumArray", List.of("baz", "qux")));
+        assertTrue(result.isValid());
+
+        result = validateMap(schema, Map.of(
+                "enumArray", List.of("foo", "qux")));
+        assertFalse(result.isValid());
+
+        result = validateMap(schema, Map.of(
+                "enumArray", List.of("bar", "foo")));
+        assertFalse(result.isValid());
     }
 
     @Test
@@ -201,30 +312,47 @@ public class ValidatorTest {
                     properties:
                       kind:
                         type: string
+                  allowThingamajigs:
+                    type: boolean
                   fields:
-                    type: any
+                    type: array
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        $ref:
+                          type: string
                 """);
 
         var input = parseYaml(Map.class, """
                 kind: MicaEntityView/v1
                 name: whatevs
-                data:
-                  selector:
-                    kind: MicaRecord/v1
-                  fields:
-                    - name: foo
-                      $ref: /properties/foo
+                selector:
+                  kind: MicaRecord/v1
+                allowThingamajigs: true
+                fields:
+                  - name: foo
+                    $ref: /properties/foo
+                  - name: bar
+                    $ref: /properties/bar
                 """);
 
         var result = validateMap(schema, input);
+        assertTrue(result.isValid());
+
         assertValidProperty(result, "name", TextNode.valueOf("whatevs"));
+
+        var properties = result.properties().orElseGet(Map::of);
+        assertEquals(BooleanNode.getTrue(), properties.get("allowThingamajigs").value().orElseThrow());
+        assertEquals("MicaRecord/v1", properties.get("selector").properties().orElseThrow()
+                .get("kind").value().orElseThrow().asText());
+        assertEquals("/properties/foo", properties.get("fields").value().orElseThrow().get(0).get("$ref").asText());
     }
 
     private static void assertInvalidProperty(ValidatedProperty property, String key) {
         var properties = property.properties().orElseGet(Map::of);
         assertTrue(properties.containsKey(key));
-        assertTrue(properties.get(key).value().isEmpty());
-        assertTrue(properties.get(key).error().isPresent());
+        assertTrue(properties.get(key).error().isPresent() || !properties.get(key).isValid());
     }
 
     private static void assertValidProperty(ValidatedProperty property,

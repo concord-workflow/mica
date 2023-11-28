@@ -5,10 +5,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 public enum ValueType {
 
     ANY("any"),
+    ARRAY("array"),
+    BOOLEAN("boolean"),
+    NUMBER("number"),
     OBJECT("object"),
     STRING("string"),
-    NUMBER("number"),
-    BOOLEAN("boolean"),
     NULL("null");
 
     private final String key;
@@ -32,16 +33,18 @@ public enum ValueType {
 
     public static ValueType typeOf(JsonNode v) {
         switch (v.getNodeType()) {
-            case NULL:
-                return ValueType.NULL;
+            case ARRAY:
+                return ValueType.ARRAY;
             case BOOLEAN:
                 return ValueType.BOOLEAN;
             case NUMBER:
                 return ValueType.NUMBER;
-            case STRING:
-                return ValueType.STRING;
             case OBJECT:
                 return ValueType.OBJECT;
+            case STRING:
+                return ValueType.STRING;
+            case NULL:
+                return ValueType.NULL;
             default:
                 throw new IllegalArgumentException("Unsupported node type: " + v.getNodeType());
         }
