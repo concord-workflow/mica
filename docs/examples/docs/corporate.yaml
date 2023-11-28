@@ -1,0 +1,12 @@
+apiVersion: "client.example.com/v1"
+kind: "CorporateClient"
+clients:
+  - id: "acme"
+    name: "Acme Inc."
+    validationUrl: "https://acme.example.com/validate"
+  - id: "wayland"
+    name: "Wayland-Yutani Corp."
+    validationUrl: "https://wayland.example.com/validate"
+shared:
+  - some
+  - stuff

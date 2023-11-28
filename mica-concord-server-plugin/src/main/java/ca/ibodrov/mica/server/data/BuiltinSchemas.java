@@ -30,7 +30,6 @@ public final class BuiltinSchemas {
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
             "name", string(),
-            "extendsKind", string(),
             MICA_KIND_SCHEMA_PROPERTY, any()),
             Set.of("kind", "name", "schema"));
 

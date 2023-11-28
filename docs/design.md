@@ -2,41 +2,89 @@
 
 ## Core Model
 
-- `Entity` -- a data object of a specific `kind`.
-    - `id` -- uuid, internal ID;
-    - `name` -- string, URI path element;
-    - `kind` -- string, URI path element;
-    - `data` -- JSONB, all other properties.
+The primary concept is `Entity` -- a JSON object, validated using rules of the
+declared `kind`:
 
-- `Property` -- a property of a `MicaSchema/v1` or `MicaEntityView/v1`.
-    - `type` -- string, URI path element;
-    - `value` -- JSONB, optional;
-    - `required` -- boolean, optional. Default is `false`;
-    - `enum` -- array of strings, optional.
+```text
+Entity
+  id:        uuid, internal ID;
+  name       string, URI path element;
+  kind       string, URI path element;
+  createdAt  timestamp;
+  updatedAt  timestamp;
+  *          other arbitrary keys.   
+```
 
-- `EntityView` -- a projection of entity data.
-    - `id` -- uuid, internal ID;
-    - `name` -- string, URI path element, unique;
-    - `selectKind` -- string, URI path element;
-    - `fields` -- array of property references.
+The entity's `kind` is a reference to an entity of kind `MicaKind/v1` that
+defines the schema. For example, a `CorporateCustomer` entity may look like
+this:
 
-Built-in entity `kinds`:
+```json
+{
+  "name": "AcmeCorp",
+  "kind": "CorporateCustomer",
+  "details": {
+    "displayName": "Acme Corp",
+    "validationUrl": "https://acme.example.com/validate"
+  }
+}
+```
 
+Which is enforced by the schema stored in a separate `Entity`:
+
+```json
+{
+    "name": "CorporateCustomer",
+    "kind": "MicaKind/v1",
+    "schema": {
+        "properties": {
+            "displayName": {
+                "type": "string",
+                "required": true
+            },
+            "validationUrl": {
+                "type": "string",
+                "required": true
+            }
+        }
+    }
+}
+```
+
+Mica is enforcing schemas every time an entity is created or updated. See
+the validation section below.
+
+The schema defines the keys of the entity, their types, and whether they are
+required. The schema object itself is a recursive type:
+
+```text
+ObjectSchemaNode:
+  type           string
+  properties     map of keys -> ObjectSchemaNode
+  required       a subset of keys from "properties"
+  enum           array of JSON values
+```
+
+There are several built-in entity kinds:
 - `MicaRecord/v1` -- basic data record, no attached behaviors;
-- `MicaSchema/v1` -- entity schema object;
-- `MicaKind/v1` -- a `kind` definition, entity "template" object;
+- `MicaKind/v1` -- a `kind` definition, aka entity "template";
 - `MicaEntityView/v1` -- entity view object.
 
-## Schemas
+## Entity Validation
+
+To validate an entity of kind `K`, Mica looks up the `MicaKind/v1` entity
+with name `K`. An entity cannot be created or updated if the schema is not
+found.
+
+## Supported JSON Schema Features
 
 Mica implements a subset of JSON Schema features:
 
-- types: object, string, number;
+- types: boolean, object, string, number, null, any (see `ca.ibodrov.mica.schema.ValueType`);
 - required properties;
 - enum values;
-- _TODO_ types: array, boolean, etc;
-- _TODO_ formats: uri, email, uuid, date, time, etc;
-- _TODO_ refs
+- _TODO_ types: array;
+- _TODO_ format: uri, email, uuid, date, time, etc;
 
 ## Database Design
 
