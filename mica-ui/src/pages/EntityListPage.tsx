@@ -7,7 +7,9 @@ import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import UploadEntityDialog from '../features/UploadEntityDialog.tsx';
 import AddIcon from '@mui/icons-material/Add';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
     Button,
@@ -24,6 +26,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Tooltip,
 } from '@mui/material';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
@@ -38,6 +41,15 @@ const HELP: React.ReactNode = (
         <b>upload</b> feature to import entities from YAML files.
     </>
 );
+
+const kindToIcon = (kind: string) => {
+    switch (kind) {
+        case 'MicaKind/v1':
+            return <ChecklistIcon />;
+        default:
+            return <DataObjectIcon />;
+    }
+};
 
 const EntityListPage = () => {
     const [openUpload, setOpenUpload] = useState(false);
@@ -94,7 +106,7 @@ const EntityListPage = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell width="10%">Kind</TableCell>
+                            <TableCell width="5%">Kind</TableCell>
                             <TableCell>Name</TableCell>
                             <TableCell align="right">
                                 {isFetching && (
@@ -108,7 +120,9 @@ const EntityListPage = () => {
                             data.length > 0 &&
                             data.map((row) => (
                                 <TableRow key={row.id}>
-                                    <TableCell>{row.kind}</TableCell>
+                                    <TableCell>
+                                        <Tooltip title={row.kind}>{kindToIcon(row.kind)}</Tooltip>
+                                    </TableCell>
                                     <TableCell>
                                         <Link
                                             component={RouterLink}
