@@ -10,9 +10,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ca.ibodrov.mica.schema.StandardTypes.*;
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 
-@JsonInclude(NON_NULL)
+@JsonInclude(NON_ABSENT)
 public record ObjectSchemaNode(Optional<String> type,
         Optional<Map<String, ObjectSchemaNode>> properties,
         Optional<Set<String>> required,

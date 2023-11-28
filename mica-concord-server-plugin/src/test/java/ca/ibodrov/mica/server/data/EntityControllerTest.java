@@ -5,12 +5,14 @@ import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.UUID;
 
+import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.UNKNOWN_ENTITY_KIND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +28,9 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var entityKindStore = new EntityKindStore(entityStore, objectMapper);
         controller = new EntityController(entityStore, entityKindStore, objectMapper);
+
+        // insert the built-in entity kinds
+        new InitialDataLoader(entityKindStore, objectMapper).load();
     }
 
     @Test
@@ -42,7 +47,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     }
 
     @Test
-    public void testUploadBuiltInEntityKind() {
+    public void testUploadBuiltInEntityKinds() {
         controller.createOrUpdate(parse("""
                 kind: MicaRecord/v1
                 name: %s
@@ -53,7 +58,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         controller.createOrUpdate(parse("""
                 kind: MicaKind/v1
                 name: %s
-                data:
+                schema:
                   type: object
                   properties:
                     foo:
@@ -63,16 +68,37 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         controller.createOrUpdate(parse("""
                 kind: MicaEntityView/v1
                 name: %s
-                data:
-                  selector:
-                    kind: MicaRecord/v1
-                  fields:
-                    - name: foo
-                      $ref: /properties/foo
+                selector:
+                  kind: MicaRecord/v1
+                fields:
+                  - name: foo
+                    $ref: /properties/foo
                 """.formatted(randomEntityName())));
     }
 
-    private static PartialEntity parse(String yaml) {
+    @Test
+    public void testUploadInvalidEntity() {
+        // missing property
+        var entity1 = parse("""
+                kind: MicaRecord/v1
+                name: %s
+                randomProp: "foo"
+                """.formatted(randomEntityName()));
+        var error1 = assertThrows(ApiException.class, () -> controller.createOrUpdate(entity1));
+        assertEquals(BAD_DATA, error1.getErrorKind());
+
+        // invalid type
+        // TODO test with numbers, booleans, etc.
+        var entity2 = parse("""
+                kind: MicaRecord/v1
+                name: null
+                data: "foo"
+                """);
+        var error2 = assertThrows(ApiException.class, () -> controller.createOrUpdate(entity2));
+        assertEquals(BAD_DATA, error2.getErrorKind());
+    }
+
+    private static PartialEntity parse(@Language("yaml") String yaml) {
         try {
             return yamlMapper.readValue(yaml, PartialEntity.class);
         } catch (IOException e) {

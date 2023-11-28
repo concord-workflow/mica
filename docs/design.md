@@ -33,13 +33,21 @@ Mica implements a subset of JSON Schema features:
 
 - types: object, string, number;
 - required properties;
+- enum values;
 - _TODO_ types: array, boolean, null, etc;
 - _TODO_ formats: uri, email, uuid, date, time, etc;
-- _TODO_ enum values.
+- _TODO_ refs
+
+## Database Design
+
+Entities are stored in a single table `MICA_ENTITIES`.
+Normally, the backend deserializes the rows as
+`ca.ibodrov.mica.api.model.Entity` with straightforward mapping, where
+`MICA_ENTITIES.DATA` is interpreted  as "the rest of the properties".
 
 ## Examples
 
-_This section is a work in progress. Most of the features are not implemented yet._
+_Somewhat outdated_
 
 Let's define the schema for client profiles as a `MicaSchema/v1` entity:
 

@@ -37,12 +37,21 @@ public class Validator {
             firstEnumValueType = Optional.of(firstNodeType);
         }
 
+        // TODO should be pushed down
+        if (required && input.isNull()) {
+            return ValidatedProperty.missingRequiredProperty(TextNode.valueOf(name));
+        }
+
+        if (!required && input.isNull()) {
+            return ValidatedProperty.valid(input);
+        }
+
         var typeFromEnum = firstEnumValueType;
         var type = property.type()
                 .or(() -> typeFromEnum)
                 .orElse(OBJECT_TYPE);
 
-        var validatedProperty = switch (type) {
+        return switch (type) {
             case ANY_TYPE -> validateAny(property, input);
             case OBJECT_TYPE -> validateObject(property, input);
             case STRING_TYPE -> validateString(property, input);
@@ -51,12 +60,6 @@ public class Validator {
             // TODO other types
             default -> ValidatedProperty.unexpectedType(type);
         };
-
-        if (required && !validatedProperty.isValid()) {
-            return ValidatedProperty.missingRequiredProperty(TextNode.valueOf(name));
-        }
-
-        return validatedProperty;
     }
 
     public static ValidatedProperty validateAny(ObjectSchemaNode property, JsonNode input) {

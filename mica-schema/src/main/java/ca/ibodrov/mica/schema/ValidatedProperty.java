@@ -51,7 +51,18 @@ public record ValidatedProperty(Optional<JsonNode> value,
 
     @JsonIgnore
     public boolean isValid() {
-        return error().isEmpty();
+        if (error().isPresent()) {
+            return false;
+        }
+
+        return properties().map(props -> {
+            for (var prop : props.values()) {
+                if (!prop.isValid()) {
+                    return false;
+                }
+            }
+            return true;
+        }).orElse(true);
     }
 
     @JsonIgnore

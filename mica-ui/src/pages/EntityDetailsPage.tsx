@@ -1,4 +1,4 @@
-import { getEntity } from '../api/entity.ts';
+import { EntityWithData, STANDARD_ENTITY_PROPERTIES, getEntity } from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import SearchField from '../components/SearchField.tsx';
@@ -40,17 +40,11 @@ type RouteParams = {
 const renderPropertyValue = (o: object, key: string): string =>
     JSON.stringify((o as Record<string, object>)[key], null, 2);
 
-// TODO add more supported types, entity's data can be any JSON type
-const convertDataToProperties = (data: object | string): object => {
-    if (typeof data === 'string') {
-        return { text: data };
-    }
-    return data;
-};
-
-const searchProperties = (o: object, search: string): Array<string> => {
+const searchProperties = (entity: EntityWithData, search: string): Array<string> => {
     const searchLower = search.toLowerCase();
-    return Object.keys(o).filter((key) => key.toLowerCase().includes(searchLower));
+    return Object.keys(entity)
+        .filter((key) => !STANDARD_ENTITY_PROPERTIES.includes(key))
+        .filter((key) => key.toLowerCase().includes(searchLower));
 };
 
 interface MetadataGridProps {
@@ -88,7 +82,6 @@ const EntityDetailsPage = () => {
     );
 
     const [search, setSearch] = React.useState<string>('');
-    const properties = entity ? convertDataToProperties(entity.data) : undefined;
 
     const navigate = useNavigate();
 
@@ -132,7 +125,7 @@ const EntityDetailsPage = () => {
                     {entity ? new Date(entity.updatedAt).toLocaleString() : '?'}
                 </MetadataItem>
             </MetadataGrid>
-            {properties && (
+            {entity && (
                 <>
                     <Typography variant="h6">Data</Typography>
                     <ActionBar sx={{ mb: 2 }}>
@@ -148,7 +141,7 @@ const EntityDetailsPage = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {searchProperties(properties, search)
+                                {searchProperties(entity, search)
                                     .sort()
                                     .map((key) => (
                                         <TableRow key={key}>
@@ -164,7 +157,7 @@ const EntityDetailsPage = () => {
                                                     verticalAlign: 'top',
                                                     fontFamily: 'Roboto Mono',
                                                 }}>
-                                                <pre>{renderPropertyValue(properties, key)}</pre>
+                                                <pre>{renderPropertyValue(entity, key)}</pre>
                                             </TableCell>
                                         </TableRow>
                                     ))}

@@ -1,15 +1,17 @@
 package ca.ibodrov.mica.server.data;
 
-import ca.ibodrov.mica.api.model.Entity;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.WithMetadata;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.inject.Inject;
 import java.util.Optional;
 
+import static ca.ibodrov.mica.schema.StandardTypes.OBJECT_TYPE;
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_SCHEMA_PROPERTY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -31,24 +33,31 @@ public class EntityKindStore {
     }
 
     public Optional<ObjectSchemaNode> getSchemaForKind(String kind) {
-        var entity = entityStore.getByName(kind);
-        entity.ifPresent(EntityKindStore::assertKind);
-        return entity.map(this::intoSchema);
+        return entityStore.getByName(kind)
+                .map(EntityKindStore::assertKind)
+                .flatMap(e -> Optional.ofNullable(e.getProperty(MICA_KIND_SCHEMA_PROPERTY)))
+                .map(v -> objectMapper.convertValue(v, ObjectSchemaNode.class))
+                .map(EntityKindStore::sanityCheck);
     }
 
     public Optional<EntityVersion> upsert(PartialEntity entity) {
-        assertKind(entity);
-        return entityStore.upsert(entity);
+        return entityStore.upsert(assertKind(entity));
     }
 
-    private ObjectSchemaNode intoSchema(Entity entity) {
-        return objectMapper.convertValue(entity.data(), ObjectSchemaNode.class);
-    }
-
-    private static void assertKind(WithMetadata entity) {
+    private static <T extends WithMetadata> T assertKind(T entity) {
         if (!BuiltinSchemas.MICA_KIND_V1.equals(entity.kind())) {
-            throw new IllegalArgumentException("Expected a %s entity, got something else. Entity '%s' is a %s"
+            throw new StoreException("Expected a %s entity, got something else. Entity '%s' is a %s"
                     .formatted(BuiltinSchemas.MICA_KIND_V1, entity.name(), entity.kind()));
         }
+        return entity;
+    }
+
+    private static ObjectSchemaNode sanityCheck(ObjectSchemaNode schema) {
+        if (schema.type().orElse(OBJECT_TYPE).equals(OBJECT_TYPE)
+                && schema.enumeratedValues().isEmpty()
+                && schema.properties().isEmpty()) {
+            throw new StoreException("Schema cannot be used, it doesn't have any properties or enum values: " + schema);
+        }
+        return schema;
     }
 }

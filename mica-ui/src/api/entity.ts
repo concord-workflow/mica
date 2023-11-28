@@ -20,9 +20,13 @@ export interface EntityVersion {
     updatedAt: string;
 }
 
+export type JsonNode = object | string | number | boolean | null;
+
 export interface EntityWithData extends EntityEntry {
-    data: object;
+    [key: string]: JsonNode;
 }
+
+export const STANDARD_ENTITY_PROPERTIES = ['id', 'name', 'kind', 'createdAt', 'updatedAt'];
 
 export const getEntity = (id: string): Promise<EntityWithData> =>
     doFetch(`/api/mica/v1/entity/${id}`).then(handleJsonResponse<EntityWithData>);

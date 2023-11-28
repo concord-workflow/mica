@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,8 +42,8 @@ public class InitialDataLoader {
         if (entityKindStore.isKindExists(name)) {
             return;
         }
-        var data = objectMapper.convertValue(schema, JsonNode.class);
-        entityKindStore.upsert(PartialEntity.create(name, BuiltinSchemas.MICA_KIND_V1, data));
+        entityKindStore.upsert(PartialEntity.create(name, BuiltinSchemas.MICA_KIND_V1,
+                Map.of("schema", objectMapper.convertValue(schema, JsonNode.class))));
         log.info("Inserted an entity kind: {}", name);
     }
 }

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.inject.Inject;
 
+import static ca.ibodrov.mica.schema.StandardTypes.OBJECT_TYPE;
 import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.UNKNOWN_ENTITY_KIND;
 import static java.util.Objects.requireNonNull;

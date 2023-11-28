@@ -25,12 +25,13 @@ public final class BuiltinSchemas {
      * MicaKind/v1 - use to declare new entity kinds.
      */
     public static final String MICA_KIND_V1 = "MicaKind/v1";
+    public static final String MICA_KIND_SCHEMA_PROPERTY = "schema";
     public static ObjectSchemaNode MICA_KIND_V1_SCHEMA = object(Map.of(
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
             "name", string(),
             "extendsKind", string(),
-            "schema", any()),
+            MICA_KIND_SCHEMA_PROPERTY, any()),
             Set.of("kind", "name", "schema"));
 
     /**

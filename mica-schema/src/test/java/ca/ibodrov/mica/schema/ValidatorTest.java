@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ public class ValidatorTest {
 
     @Test
     public void testSimpleRender() {
-        var schema = p("""
+        var schema = parseJson(ObjectSchemaNode.class, """
                 {
                     "properties": {
                         "username": {
@@ -42,7 +43,7 @@ public class ValidatorTest {
 
     @Test
     public void testValidationErrors() {
-        var schema = p("""
+        var schema = parseJson(ObjectSchemaNode.class, """
                 {
                    "properties": {
                      "username": {
@@ -66,7 +67,7 @@ public class ValidatorTest {
 
     @Test
     public void testEnum() {
-        var schema = p("""
+        var schema = parseJson(ObjectSchemaNode.class, """
                 {
                    "properties": {
                      "constString": {
@@ -107,7 +108,7 @@ public class ValidatorTest {
 
     @Test
     public void testAny() {
-        var schema = p("""
+        var schema = parseJson(ObjectSchemaNode.class, """
                 {
                    "properties": {
                      "anyValue": {
@@ -124,7 +125,8 @@ public class ValidatorTest {
 
     @Test
     public void testNull() {
-        var schema = p("""
+        // null types cannot be a required property
+        var schema = parseJson(ObjectSchemaNode.class, """
                 {
                    "properties": {
                      "nullValue": {
@@ -136,7 +138,42 @@ public class ValidatorTest {
                 """);
 
         var result = validateMap(schema, Map.of());
-        assertValidProperty(result, "nullValue", NullNode.getInstance());
+        assertInvalidProperty(result, "nullValue");
+    }
+
+    @Test
+    public void testComplex() {
+        var schema = parseYaml(ObjectSchemaNode.class, """
+                type: object
+                properties:
+                  id:
+                    type: string
+                  kind:
+                    enum: [MicaEntityView/v1]
+                  name:
+                    type: string
+                  selector:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                  fields:
+                    type: any
+                """);
+
+        var input = parseYaml(Map.class, """
+                kind: MicaEntityView/v1
+                name: whatevs
+                data:
+                  selector:
+                    kind: MicaRecord/v1
+                  fields:
+                    - name: foo
+                      $ref: /properties/foo
+                """);
+
+        var result = validateMap(schema, input);
+        assertValidProperty(result, "name", TextNode.valueOf("whatevs"));
     }
 
     private static void assertInvalidProperty(ValidatedProperty property, String key) {
@@ -155,9 +192,18 @@ public class ValidatorTest {
         assertTrue(properties.get(key).error().isEmpty());
     }
 
-    private ObjectSchemaNode p(@Language("JSON") String s) {
+    private <T> T parseJson(Class<T> klass, @Language("JSON") String s) {
         try {
-            return objectMapper.readValue(s, ObjectSchemaNode.class);
+            return objectMapper.readValue(s, klass);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T> T parseYaml(Class<T> klass, @Language("yaml") String s) {
+        try {
+            return objectMapper.copyWith(new YAMLFactory())
+                    .readValue(s, klass);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

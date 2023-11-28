@@ -4,6 +4,7 @@ import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.exceptions.StoreException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.DSLContext;
@@ -16,6 +17,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +28,9 @@ import static org.jooq.impl.DSL.currentOffsetDateTime;
 import static org.jooq.impl.DSL.noCondition;
 
 public class EntityStore {
+
+    private static final TypeReference<Map<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
+    };
 
     private final DSLContext dsl;
     private final ObjectMapper objectMapper;
@@ -95,7 +100,7 @@ public class EntityStore {
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
 
-        var data = jsonb(entity.data().toString());
+        var data = serializeData(entity.data());
 
         return dsl.transactionResult(tx -> tx.dsl().insertInto(MICA_ENTITIES)
                 .set(MICA_ENTITIES.ID, id)
@@ -117,7 +122,7 @@ public class EntityStore {
     private Entity toEntity(Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
         var id = new EntityId(record.value1());
         try {
-            var data = objectMapper.readValue(record.value6().data(), JsonNode.class);
+            var data = objectMapper.readValue(record.value6().data(), PROPERTIES_TYPE);
             return new Entity(id, record.value2(), record.value3(), record.value4(), record.value5(), data);
         } catch (IOException e) {
             throw new StoreException("JSON deserialization error, most likely a bug: " + e.getMessage(), e);
@@ -127,5 +132,13 @@ public class EntityStore {
     private static EntityMetadata toEntityMetadata(Record5<UUID, String, String, OffsetDateTime, OffsetDateTime> record) {
         var id = new EntityId(record.value1());
         return new EntityMetadata(id, record.value2(), record.value3(), record.value4(), record.value5());
+    }
+
+    private JSONB serializeData(Map<String, JsonNode> data) {
+        try {
+            return jsonb(objectMapper.writeValueAsString(data));
+        } catch (IOException e) {
+            throw new StoreException("JSON serialization error, most likely a bug: " + e.getMessage(), e);
+        }
     }
 }
