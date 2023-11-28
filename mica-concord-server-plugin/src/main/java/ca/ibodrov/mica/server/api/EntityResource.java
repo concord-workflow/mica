@@ -62,9 +62,11 @@ public class EntityResource implements Resource {
 
     @GET
     @Operation(description = "List known entities", operationId = "listEntities")
-    public EntityList listEntities(@Nullable @QueryParam("search") String search,
-                                   @Nullable @QueryParam("entityName") String entityName) {
-        var data = entityStore.search(nonBlank(search), nonBlank(entityName));
+    public EntityList listEntities(@QueryParam("search") String search,
+                                   @Nullable @QueryParam("entityName") String entityName,
+                                   @Nullable @QueryParam("entityKind") String entityKind) {
+        // TODO validate entityName and entityKind
+        var data = entityStore.search(nonBlank(search), nonBlank(entityName), nonBlank(entityKind));
         return new EntityList(data);
     }
 

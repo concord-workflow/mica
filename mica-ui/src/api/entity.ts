@@ -3,6 +3,9 @@ import { doFetch, handleJsonResponse, handleTextResponse } from './common.ts';
 import { useMutation } from 'react-query';
 import { UseMutationOptions } from 'react-query/types/react/types';
 
+export const MICA_KIND_KIND = 'MicaKind/v1';
+export const MICA_RECORD_KIND = 'MicaRecord/v1';
+
 export interface EntityEntry {
     id: string;
     name: string;
@@ -34,11 +37,15 @@ export const getEntity = (id: string): Promise<EntityWithData> =>
 export const getEntityAsYamlString = (id: string): Promise<string> =>
     doFetch(`/api/mica/v1/entity/${id}/yaml`).then(handleTextResponse);
 
-export const listEntities = (search?: string, entityName?: string): Promise<EntityList> =>
+export const listEntities = (
+    search?: string,
+    entityName?: string,
+    entityKind?: string,
+): Promise<EntityList> =>
     doFetch(
         `/api/mica/v1/entity?search=${search ? encodeURIComponent(search) : ''}&entityName=${
             entityName ? encodeURIComponent(entityName) : ''
-        }`,
+        }${entityKind ? `&entityKind=${encodeURIComponent(entityKind)}` : ''}`,
     ).then(handleJsonResponse<EntityList>);
 
 const putYaml = (file: File): Promise<EntityVersion> =>

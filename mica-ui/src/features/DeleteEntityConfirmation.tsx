@@ -16,7 +16,7 @@ const DeleteEntityConfirmation = ({ entry, open, onSuccess, onClose }: Props) =>
     const client = useQueryClient();
     const { mutateAsync, isLoading, error } = useDeleteById({
         onSuccess: async () => {
-            await client.invalidateQueries(['entity'], { refetchActive: false });
+            await client.invalidateQueries(['entity', 'list']);
         },
     });
 

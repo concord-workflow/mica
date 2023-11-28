@@ -5,9 +5,9 @@ import RowMenu from '../components/RowMenu.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
+import CreateEntityButton from '../features/CreateEntityButton.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
 import UploadEntityDialog from '../features/UploadEntityDialog.tsx';
-import AddIcon from '@mui/icons-material/Add';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DataObjectIcon from '@mui/icons-material/DataObject';
@@ -34,7 +34,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import React from 'react';
 import { useQuery } from 'react-query';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
@@ -82,8 +82,6 @@ const EntityListPage = () => {
         setOpenDeleteConfirmation(false);
     }, []);
 
-    const navigate = useNavigate();
-
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
             <PageTitle help={HELP}>Entities</PageTitle>
@@ -108,12 +106,7 @@ const EntityListPage = () => {
             />
             <ActionBar sx={{ mb: 2 }}>
                 <FormControl>
-                    <Button
-                        startIcon={<AddIcon />}
-                        variant="contained"
-                        onClick={() => navigate('/entity/_new/edit')}>
-                        Create
-                    </Button>
+                    <CreateEntityButton />
                 </FormControl>
                 <FormControl>
                     <Button

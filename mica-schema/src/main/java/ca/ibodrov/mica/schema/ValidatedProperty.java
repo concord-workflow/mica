@@ -57,6 +57,8 @@ public record ValidatedProperty(Optional<JsonNode> value,
 
     @JsonIgnore
     public boolean isValid() {
+        // TODO non-recursive version
+
         if (error().isPresent()) {
             return false;
         }

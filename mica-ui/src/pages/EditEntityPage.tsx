@@ -1,4 +1,4 @@
-import { getEntityAsYamlString, usePutYamlString } from '../api/entity.ts';
+import { MICA_RECORD_KIND, getEntityAsYamlString, usePutYamlString } from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
@@ -18,7 +18,7 @@ type RouteParams = {
 
 const NEW_ENTITY_TEMPLATE = `# new entity
 name: myEntity
-kind: MicaRecord/v1
+kind: %%KIND%%
 data:
   myProperty: true`;
 
@@ -31,6 +31,9 @@ const HELP: React.ReactNode = (
 );
 
 const EditEntityPage = () => {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
     const { entityId } = useParams<RouteParams>();
 
     const { data, isFetching, refetch } = useQuery(
@@ -47,7 +50,6 @@ const EditEntityPage = () => {
         editorRef.current = editor;
     };
 
-    const navigate = useNavigate();
     const { mutateAsync, isLoading: isSaving, error } = usePutYamlString();
     const handleSave = React.useCallback(async () => {
         const editor = editorRef.current;
@@ -60,7 +62,7 @@ const EditEntityPage = () => {
 
         if (entityId === '_new') {
             // update the URL, if it's a "_new" entity then the user will be redirected to the created entity
-            navigate(`/entity/${version.id}/edit?success`);
+            navigate(`/entity/${version.id}/edit?success`, { replace: true });
         } else {
             // if it's an existing entity, we need to re-fetch the data to update the editor
             const result = await refetch();
@@ -73,13 +75,14 @@ const EditEntityPage = () => {
     }, [entityId, mutateAsync, navigate, refetch]);
 
     // because we redirect to the new entity, we need to pass the success state via the search params
-    const [searchParams] = useSearchParams();
     const success = searchParams.get('success');
     const [showSuccess, setShowSuccess] = React.useState<boolean>(
         success !== null && success !== undefined,
     );
 
-    const editorValue = entityId === '_new' ? NEW_ENTITY_TEMPLATE : data;
+    const selectedKind = searchParams.get('kind') ?? MICA_RECORD_KIND;
+    const editorValue =
+        entityId === '_new' ? NEW_ENTITY_TEMPLATE.replace('%%KIND%%', selectedKind) : data;
 
     // delay the editor rendering as a workaround for monaco-react bug
     const [ready, setReady] = React.useState<boolean>(false);

@@ -86,7 +86,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                   multiline
                   text
                 """.getBytes()));
-        var entities = entityResource.listEntities("testRecord", null);
+        var entities = entityResource.listEntities("testRecord", null, null);
         assertEquals(1, entities.data().size());
         var entity1 = entities.data().get(0);
         assertEquals(entity1Version, entity1.toVersion());
@@ -100,9 +100,9 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                   nested:
                     object: "why not?"
                 """.getBytes()));
-        entities = entityResource.listEntities("testRecord", null);
+        entities = entityResource.listEntities("testRecord", null, null);
         assertEquals(2, entities.data().size());
-        entities = entityResource.listEntities("anotherTestRecord", null);
+        entities = entityResource.listEntities("anotherTestRecord", null, null);
         assertEquals(1, entities.data().size());
         var entity2 = entities.data().get(0);
         assertEquals(entity2Version, entity2.toVersion());
@@ -148,13 +148,13 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                 data: "foo"
                 """.getBytes()));
 
-        var entityList = entityResource.listEntities(null, "someRecord");
+        var entityList = entityResource.listEntities(null, "someRecord", null);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).anyMatch(createdVersion::equals));
 
         var deletedVersion = entityResource.deleteById(createdVersion.id().id());
         assertEquals(createdVersion, deletedVersion);
 
-        entityList = entityResource.listEntities(null, "someRecord");
+        entityList = entityResource.listEntities(null, "someRecord", null);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).noneMatch(createdVersion::equals));
     }
 

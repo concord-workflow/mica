@@ -46,9 +46,10 @@ public class EntityStore {
         this.uuidGenerator = requireNonNull(uuidGenerator);
     }
 
-    public List<EntityMetadata> search(String search, String entityName) {
+    public List<EntityMetadata> search(String search, String entityName, String entityKind) {
         var searchCondition = search != null ? MICA_ENTITIES.NAME.containsIgnoreCase(search) : noCondition();
         var nameCondition = entityName != null ? MICA_ENTITIES.NAME.eq(entityName) : noCondition();
+        var entityKindCondition = entityKind != null ? MICA_ENTITIES.KIND.eq(entityKind) : noCondition();
 
         return dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
@@ -56,7 +57,7 @@ public class EntityStore {
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT)
                 .from(MICA_ENTITIES)
-                .where(searchCondition.and(nameCondition))
+                .where(searchCondition.and(nameCondition).and(entityKindCondition))
                 .fetch(EntityStore::toEntityMetadata);
     }
 
