@@ -17,18 +17,16 @@ jobs:
           distribution: 'temurin'
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Log in to the Container registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.MICA_DOCKER_USERNAME }}
+          password: ${{ secrets.MICA_DOCKER_PASSWORD }}
       - name: Publish Docker images
         run: |
           mvn -B -P github-packages -DskipTests \
             -Ddocker.skip=false \
             -Ddocker.loadOrPush=push \
-            -Ddocker.image=ghcr.io/concord-workflow/mica-sidecar \
             package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
