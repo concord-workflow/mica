@@ -2,6 +2,7 @@ package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.EntityResource;
+import ca.ibodrov.mica.server.api.EntityUploadResource;
 import ca.ibodrov.mica.server.api.SystemResource;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
@@ -72,6 +73,7 @@ public class MicaModule implements Module {
         // jax-rs resources
 
         bindJaxRsResource(binder, EntityResource.class);
+        bindJaxRsResource(binder, EntityUploadResource.class);
         bindJaxRsResource(binder, OidcResource.class);
         bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, WhoamiResource.class);

@@ -48,32 +48,6 @@ export const listEntities = (
         }${entityKind ? `&entityKind=${encodeURIComponent(entityKind)}` : ''}`,
     ).then(handleJsonResponse<EntityList>);
 
-const putYaml = (file: File): Promise<EntityVersion> =>
-    doFetch('/api/mica/v1/entity', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': file.type,
-        },
-        body: file,
-    }).then(handleJsonResponse<EntityVersion>);
-
-const putYamlString = (body: string): Promise<EntityVersion> =>
-    doFetch('/api/mica/v1/entity', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'text/yaml',
-        },
-        body,
-    }).then(handleJsonResponse<EntityVersion>);
-
-export const usePutYaml = (options?: UseMutationOptions<EntityVersion, Error, { file: File }>) =>
-    useMutation<EntityVersion, Error, { file: File }>(({ file }) => putYaml(file), options);
-
-export const usePutYamlString = (
-    options?: UseMutationOptions<EntityVersion, Error, { body: string }>,
-) =>
-    useMutation<EntityVersion, Error, { body: string }>(({ body }) => putYamlString(body), options);
-
 const deleteById = (entityId: string): Promise<EntityVersion> =>
     doFetch(`/api/mica/v1/entity/${entityId}`, {
         method: 'DELETE',

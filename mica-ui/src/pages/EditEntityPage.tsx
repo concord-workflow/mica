@@ -1,4 +1,5 @@
-import { MICA_RECORD_KIND, getEntityAsYamlString, usePutYamlString } from '../api/entity.ts';
+import { MICA_RECORD_KIND, getEntityAsYamlString } from '../api/entity.ts';
+import { usePutYamlString } from '../api/upload.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import Spacer from '../components/Spacer.tsx';

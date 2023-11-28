@@ -85,11 +85,13 @@ const EntityListPage = () => {
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
             <PageTitle help={HELP}>Entities</PageTitle>
-            <UploadEntityDialog
-                open={openUpload}
-                onSuccess={handleSuccessfulUpload}
-                onClose={() => setOpenUpload(false)}
-            />
+            {openUpload && (
+                <UploadEntityDialog
+                    open={true}
+                    onSuccess={handleSuccessfulUpload}
+                    onClose={() => setOpenUpload(false)}
+                />
+            )}
             {selectedEntry && (
                 <DeleteEntityConfirmation
                     entry={selectedEntry}

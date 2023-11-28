@@ -13,6 +13,10 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @implNote the changes in fields and annotations here must be synchronized
+ *           with {@link PartialEntity}
+ */
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 public record Entity(@NotNull EntityId id,
         @ValidName String name,

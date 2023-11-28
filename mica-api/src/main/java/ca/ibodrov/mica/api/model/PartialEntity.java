@@ -14,7 +14,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * TODO feels hacky, records should be immutable
+ * @implNote the changes in fields and annotations here must be synchronized
+ *           with {@link Entity} TODO feels hacky, records should be immutable
  */
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 public record PartialEntity(@NotNull Optional<EntityId> id,

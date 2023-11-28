@@ -1,6 +1,16 @@
-import { usePutYaml } from '../api/entity.ts';
+import { usePutPartialYaml } from '../api/upload.ts';
 import { LoadingButton } from '@mui/lab';
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import {
+    Alert,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    FormLabel,
+    TextField,
+} from '@mui/material';
 
 import React, { useRef } from 'react';
 import { useQueryClient } from 'react-query';
@@ -13,13 +23,15 @@ interface Props {
 
 const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
     const client = useQueryClient();
-    const { mutateAsync, isLoading, error } = usePutYaml({
+    const { mutateAsync, isLoading, error } = usePutPartialYaml({
         onSuccess: async () => {
             await client.invalidateQueries(['entity']);
         },
     });
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [entityName, setEntityName] = React.useState<string>('');
+
     const handleUpload = React.useCallback(async () => {
         const input = fileInputRef.current;
         if (!input || !input.files || input.files.length < 1) {
@@ -29,10 +41,10 @@ const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
         if (!file) {
             return;
         }
-        await mutateAsync({ file });
+        await mutateAsync({ file, entityName });
         input.value = '';
         onSuccess();
-    }, [mutateAsync, onSuccess]);
+    }, [mutateAsync, onSuccess, entityName]);
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -43,7 +55,19 @@ const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
                         {error.message}
                     </Alert>
                 )}
-                <input type="file" ref={fileInputRef} />
+                <FormControl sx={{ mb: 2 }} fullWidth={true}>
+                    <FormLabel>YAML file</FormLabel>
+                    <input type="file" ref={fileInputRef} />
+                </FormControl>
+                <TextField
+                    fullWidth={true}
+                    size="small"
+                    variant="outlined"
+                    label="Entity name"
+                    helperText="Optional. If not specified, the 'name' field from the file will be used."
+                    value={entityName}
+                    onChange={(ev) => setEntityName(ev.target.value)}
+                />
             </DialogContent>
             <DialogActions>
                 <Button variant="contained" color="primary" onClick={onClose}>

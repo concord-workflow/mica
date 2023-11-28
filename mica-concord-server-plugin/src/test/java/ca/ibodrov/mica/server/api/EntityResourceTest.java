@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class EntityResourceTest extends AbstractDatabaseTest {
 
+    private static EntityUploadResource entityUploadResource;
     private static EntityResource entityResource;
 
     @BeforeAll
@@ -33,7 +34,9 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                 .configure()
                 .buildValidatorFactory()
                 .getValidator();
-        entityResource = new EntityResource(entityStore, controller, objectMapper, validator);
+
+        entityResource = new EntityResource(entityStore, objectMapper);
+        entityUploadResource = new EntityUploadResource(controller, validator, objectMapper);
     }
 
     @Test
@@ -53,7 +56,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                       type: string
                       required: true
                 """;
-        var result1 = entityResource.putYaml(new ByteArrayInputStream(yaml.getBytes()));
+        var result1 = entityUploadResource.putYaml(new ByteArrayInputStream(yaml.getBytes()));
         assertNotNull(result1.id());
         assertNotNull(result1.updatedAt());
 
@@ -61,7 +64,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         var yamlWithId = "id: %s\nupdatedAt: %s\n%s".formatted(result1.id().toExternalForm(), result1.updatedAt(),
                 yaml);
-        var result2 = entityResource.putYaml(new ByteArrayInputStream(yamlWithId.getBytes()));
+        var result2 = entityUploadResource.putYaml(new ByteArrayInputStream(yamlWithId.getBytes()));
         assertNotNull(result2.id());
         assertNotNull(result2.updatedAt());
         assertEquals(result1.id(), result2.id());
@@ -70,7 +73,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         // try updating a stale version
 
         var error = assertThrows(ApiException.class,
-                () -> entityResource.putYaml(new ByteArrayInputStream(yamlWithId.getBytes())));
+                () -> entityUploadResource.putYaml(new ByteArrayInputStream(yamlWithId.getBytes())));
         assertEquals(CONFLICT, error.getStatus());
     }
 
@@ -78,7 +81,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     public void testList() {
         // insert an entity
 
-        var entity1Version = entityResource.putYaml(new ByteArrayInputStream("""
+        var entity1Version = entityUploadResource.putYaml(new ByteArrayInputStream("""
                 kind: MicaRecord/v1
                 name: testRecord
                 data: |
@@ -93,7 +96,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         // insert another entity with a similar name and try finding them both
 
-        var entity2Version = entityResource.putYaml(new ByteArrayInputStream("""
+        var entity2Version = entityUploadResource.putYaml(new ByteArrayInputStream("""
                 kind: MicaRecord/v1
                 name: anotherTestRecord
                 data:
@@ -110,7 +113,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
     @Test
     public void testPutAndGetAsYaml() {
-        var entityVersion = entityResource.putYaml(new ByteArrayInputStream("""
+        var entityVersion = entityUploadResource.putYaml(new ByteArrayInputStream("""
                 kind: MicaRecord/v1
                 name: yamlRecord
                 # comments are ignored
@@ -142,7 +145,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
     @Test
     public void testPutListDelete() {
-        var createdVersion = entityResource.putYaml(new ByteArrayInputStream("""
+        var createdVersion = entityUploadResource.putYaml(new ByteArrayInputStream("""
                 kind: MicaRecord/v1
                 name: someRecord
                 data: "foo"
@@ -162,7 +165,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     public void testValidation() {
         // name too short (2 characters)
         assertThrows(ConstraintViolationException.class,
-                () -> entityResource.putYaml(new ByteArrayInputStream("""
+                () -> entityUploadResource.putYaml(new ByteArrayInputStream("""
                         kind: MicaRecord/v1
                         name: fo
                         # comments are ignored
@@ -175,7 +178,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         // name too long (257 characters)
         assertThrows(ConstraintViolationException.class,
-                () -> entityResource.putYaml(new ByteArrayInputStream(
+                () -> entityUploadResource.putYaml(new ByteArrayInputStream(
                         """
                                 kind: MicaRecord/v1
                                 name: foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
@@ -190,7 +193,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         // not a valid name (starts with a digit)
         assertThrows(ConstraintViolationException.class,
-                () -> entityResource.putYaml(new ByteArrayInputStream("""
+                () -> entityUploadResource.putYaml(new ByteArrayInputStream("""
                         kind: MicaRecord/v1
                         name: /foobar/
                         # comments are ignored

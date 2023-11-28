@@ -3,8 +3,6 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.model.Entity;
 import ca.ibodrov.mica.api.model.EntityList;
 import ca.ibodrov.mica.api.model.EntityVersion;
-import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,15 +15,11 @@ import org.sonatype.siesta.Resource;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.UUID;
 
-import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.NO_DATA;
 import static com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature.*;
 import static java.util.Objects.requireNonNull;
@@ -39,19 +33,11 @@ public class EntityResource implements Resource {
     private static final Logger log = LoggerFactory.getLogger(EntityResource.class);
 
     private final EntityStore entityStore;
-    private final EntityController controller;
-    private final Validator validator;
     private final ObjectMapper yamlMapper;
 
     @Inject
-    public EntityResource(EntityStore entityStore,
-                          EntityController controller,
-                          ObjectMapper objectMapper,
-                          Validator validator) {
-
+    public EntityResource(EntityStore entityStore, ObjectMapper objectMapper) {
         this.entityStore = requireNonNull(entityStore);
-        this.controller = requireNonNull(controller);
-        this.validator = requireNonNull(validator);
         this.yamlMapper = objectMapper.copyWith(YAMLFactory.builder()
                 .enable(MINIMIZE_QUOTES)
                 .disable(SPLIT_LINES)
@@ -93,33 +79,12 @@ public class EntityResource implements Resource {
         }
     }
 
-    @PUT
-    @Consumes("*/yaml")
-    @Operation(description = "Upload an entity in YAML format", operationId = "putYaml")
-    public EntityVersion putYaml(InputStream in) {
-        PartialEntity entity;
-        try {
-            entity = yamlMapper.readValue(in, PartialEntity.class);
-        } catch (IOException e) {
-            throw ApiException.badRequest(BAD_DATA, "Error parsing YAML: " + e.getMessage());
-        }
-        assertValid(entity);
-        return controller.createOrUpdate(entity);
-    }
-
     @DELETE
     @Path("{id}")
     @Operation(description = "Delete an existing entity by its ID", operationId = "deleteById")
     public EntityVersion deleteById(@PathParam("id") UUID entityId) {
         return entityStore.deleteById(entityId)
                 .orElseThrow(() -> ApiException.notFound(NO_DATA, "Entity not found: " + entityId));
-    }
-
-    private void assertValid(PartialEntity entity) {
-        var violations = validator.validate(entity);
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(violations);
-        }
     }
 
     private static String nonBlank(String s) {
