@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.api;
 
+import ca.ibodrov.mica.api.model.EntityMetadata;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.data.EntityController;
@@ -137,6 +138,24 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                 """.formatted(entityVersion.id().toExternalForm(), format(entityVersion.updatedAt()),
                 format(entityVersion.updatedAt()));
         assertEquals(expectedYaml, response.getEntity());
+    }
+
+    @Test
+    public void testPutListDelete() {
+        var createdVersion = entityResource.putYaml(new ByteArrayInputStream("""
+                kind: MicaRecord/v1
+                name: someRecord
+                data: "foo"
+                """.getBytes()));
+
+        var entityList = entityResource.listEntities(null, "someRecord");
+        assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).anyMatch(createdVersion::equals));
+
+        var deletedVersion = entityResource.deleteById(createdVersion.id().id());
+        assertEquals(createdVersion, deletedVersion);
+
+        entityList = entityResource.listEntities(null, "someRecord");
+        assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).noneMatch(createdVersion::equals));
     }
 
     @Test

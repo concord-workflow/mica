@@ -105,6 +105,14 @@ public class EntityResource implements Resource {
         return controller.createOrUpdate(entity);
     }
 
+    @DELETE
+    @Path("{id}")
+    @Operation(description = "Delete an existing entity by its ID", operationId = "deleteById")
+    public EntityVersion deleteById(@PathParam("id") UUID entityId) {
+        return entityStore.deleteById(entityId)
+                .orElseThrow(() -> ApiException.notFound(NO_DATA, "Entity not found: " + entityId));
+    }
+
     private void assertValid(PartialEntity entity) {
         var violations = validator.validate(entity);
         if (!violations.isEmpty()) {

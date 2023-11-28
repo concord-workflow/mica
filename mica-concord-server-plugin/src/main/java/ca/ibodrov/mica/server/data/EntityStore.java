@@ -84,6 +84,15 @@ public class EntityStore {
                 .fetchOptional(this::toEntity);
     }
 
+    public Optional<EntityVersion> deleteById(UUID entityId) {
+        return dsl.transactionResult(tx -> tx.dsl()
+                .deleteFrom(MICA_ENTITIES)
+                .where(MICA_ENTITIES.ID.eq(entityId))
+                .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT)
+                .fetchOptional()
+                .map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)), r.get(MICA_ENTITIES.UPDATED_AT))));
+    }
+
     public boolean isNameExists(String entityName) {
         return dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName));
     }

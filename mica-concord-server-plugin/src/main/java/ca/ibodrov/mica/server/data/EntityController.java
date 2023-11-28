@@ -55,7 +55,7 @@ public class EntityController {
                 .orElseThrow(() -> ApiException.conflict(BAD_DATA, "Version conflict: " + entity.name()));
     }
 
-    public String validateKind(String kind) {
+    private String validateKind(String kind) {
         if (kind == null || kind.isBlank()) {
             throw ApiException.badRequest(BAD_DATA, "Missing 'kind'");
         }
