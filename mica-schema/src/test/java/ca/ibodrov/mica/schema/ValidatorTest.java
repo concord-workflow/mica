@@ -2,7 +2,7 @@ package ca.ibodrov.mica.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -139,6 +139,50 @@ public class ValidatorTest {
 
         var result = validateMap(schema, Map.of());
         assertInvalidProperty(result, "nullValue");
+    }
+
+    @Test
+    public void testBoolean() {
+        var schema = parseJson(ObjectSchemaNode.class, """
+                {
+                   "properties": {
+                     "maybeTrueValue": {
+                       "type": "boolean"
+                     },
+                     "maybeFalseValue": {
+                       "type": "boolean"
+                     },
+                     "alwaysTrueValue": {
+                       "type": "boolean",
+                       "enum": [true]
+                     },
+                     "alwaysFalseValue": {
+                       "type": "boolean",
+                       "enum": [false]
+                     }
+                   }
+                }
+                """);
+
+        var result = validateMap(schema, Map.of(
+                "maybeTrueValue", true,
+                "maybeFalseValue", false,
+                "alwaysTrueValue", true,
+                "alwaysFalseValue", false));
+        assertValidProperty(result, "maybeTrueValue", BooleanNode.getTrue());
+        assertValidProperty(result, "maybeFalseValue", BooleanNode.getFalse());
+        assertValidProperty(result, "alwaysTrueValue", BooleanNode.getTrue());
+        assertValidProperty(result, "alwaysFalseValue", BooleanNode.getFalse());
+
+        result = validateMap(schema, Map.of(
+                "maybeTrueValue", false,
+                "maybeFalseValue", true,
+                "alwaysTrueValue", false,
+                "alwaysFalseValue", true));
+        assertValidProperty(result, "maybeTrueValue", BooleanNode.getFalse());
+        assertValidProperty(result, "maybeFalseValue", BooleanNode.getTrue());
+        assertInvalidProperty(result, "alwaysTrueValue");
+        assertInvalidProperty(result, "alwaysFalseValue");
     }
 
     @Test

@@ -31,14 +31,19 @@ public enum ValueType {
     }
 
     public static ValueType typeOf(JsonNode v) {
-        if (v.isTextual()) {
-            return ValueType.STRING;
-        } else if (v.isNumber()) {
-            return ValueType.NUMBER;
-        } else if (v.isObject()) {
-            return ValueType.OBJECT;
-        } else {
-            throw new IllegalArgumentException("Unsupported 'enum' node type: " + v.getNodeType());
+        switch (v.getNodeType()) {
+            case NULL:
+                return ValueType.NULL;
+            case BOOLEAN:
+                return ValueType.BOOLEAN;
+            case NUMBER:
+                return ValueType.NUMBER;
+            case STRING:
+                return ValueType.STRING;
+            case OBJECT:
+                return ValueType.OBJECT;
+            default:
+                throw new IllegalArgumentException("Unsupported node type: " + v.getNodeType());
         }
     }
 }

@@ -55,6 +55,7 @@ public class Validator {
         return switch (type) {
             case ANY -> validateAny(property, input);
             case OBJECT -> validateObject(property, input);
+            case BOOLEAN -> validateBoolean(property, input);
             case STRING -> validateString(property, input);
             case NUMBER -> validateNumber(property, input);
             case NULL -> validateNull(property, input);
@@ -104,6 +105,16 @@ public class Validator {
         }
 
         return ValidatedProperty.nested(validatedProperties).withValue(Optional.of(input));
+    }
+
+    public static ValidatedProperty validateBoolean(ObjectSchemaNode property, JsonNode input) {
+        if (!input.isBoolean()) {
+            return invalidType(BOOLEAN, input);
+        }
+
+        return property.enumeratedValues()
+                .map(enums -> validateEnums(enums, BOOLEAN, input))
+                .orElseGet(() -> valid(input));
     }
 
     public static ValidatedProperty validateString(ObjectSchemaNode property, JsonNode input) {
