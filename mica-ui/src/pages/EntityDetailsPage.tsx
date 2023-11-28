@@ -114,6 +114,11 @@ const EntityDetailsPage = () => {
         setOpenDeleteConfirmation(true);
     }, [entity]);
 
+    const visibleProperties = React.useMemo(
+        () => (entity ? searchProperties(entity, search).sort() : []),
+        [entity, search],
+    );
+
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
             {selectedEntry && (
@@ -162,7 +167,7 @@ const EntityDetailsPage = () => {
                         <Link
                             component={RouterLink}
                             to={`/redirect?type=entityByName&entityName=${entity.kind}`}>
-                            {highlightSubstring(entity.kind, search)}
+                            {entity.kind}
                         </Link>
                     ) : (
                         '?'
@@ -191,26 +196,24 @@ const EntityDetailsPage = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {searchProperties(entity, search)
-                                    .sort()
-                                    .map((key) => (
-                                        <TableRow key={key}>
-                                            <TableCell
-                                                sx={{
-                                                    verticalAlign: 'top',
-                                                    fontFamily: 'Roboto Mono',
-                                                }}>
-                                                {highlightSubstring(key, search)}
-                                            </TableCell>
-                                            <TableCell
-                                                sx={{
-                                                    verticalAlign: 'top',
-                                                    fontFamily: 'Roboto Mono',
-                                                }}>
-                                                <pre>{renderPropertyValue(entity, key)}</pre>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                {visibleProperties.map((key) => (
+                                    <TableRow key={key}>
+                                        <TableCell
+                                            sx={{
+                                                verticalAlign: 'top',
+                                                fontFamily: 'Roboto Mono',
+                                            }}>
+                                            {highlightSubstring(key, search)}
+                                        </TableCell>
+                                        <TableCell
+                                            sx={{
+                                                verticalAlign: 'top',
+                                                fontFamily: 'Roboto Mono',
+                                            }}>
+                                            <pre>{renderPropertyValue(entity, key)}</pre>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
                             </TableBody>
                         </Table>
                     </TableContainer>

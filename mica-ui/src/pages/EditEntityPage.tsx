@@ -37,7 +37,7 @@ const EditEntityPage = () => {
     const { entityId } = useParams<RouteParams>();
 
     const { data, isFetching, refetch } = useQuery(
-        ['entity', entityId],
+        ['entity', 'yaml', entityId],
         () => getEntityAsYamlString(entityId!),
         {
             keepPreviousData: false,
