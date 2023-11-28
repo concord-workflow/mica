@@ -1,10 +1,11 @@
-import { listEntities } from '../api/entity.ts';
+import { EntityEntry, listEntities } from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import RowMenu from '../components/RowMenu.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
+import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
 import UploadEntityDialog from '../features/UploadEntityDialog.tsx';
 import AddIcon from '@mui/icons-material/Add';
 import ChecklistIcon from '@mui/icons-material/Checklist';
@@ -31,7 +32,7 @@ import {
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from 'react-query';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
@@ -52,19 +53,34 @@ const kindToIcon = (kind: string) => {
 };
 
 const EntityListPage = () => {
-    const [openUpload, setOpenUpload] = useState(false);
+    const [openUpload, setOpenUpload] = React.useState(false);
 
-    const [search, setSearch] = useState<string>('');
+    const [search, setSearch] = React.useState<string>('');
     const { data, isFetching } = useQuery(['entity', 'list', search], () => listEntities(search), {
         keepPreviousData: true,
         select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),
     });
 
-    const [openSuccessNotification, setOpenSuccessNotification] = useState(false);
-    const handleSuccessfulUpload = () => {
-        setOpenSuccessNotification(true);
+    const [successNotification, setSuccessNotification] = React.useState<string | undefined>();
+    const handleSuccessfulUpload = React.useCallback(() => {
+        setSuccessNotification('Data uploaded successfully');
         setOpenUpload(false);
-    };
+    }, []);
+
+    const [selectedEntry, setSelectedEntry] = React.useState<EntityEntry | undefined>();
+    const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
+    const handleDelete = React.useCallback((entry: EntityEntry) => {
+        setSelectedEntry(entry);
+        setOpenDeleteConfirmation(true);
+    }, []);
+    const handleCancelDelete = React.useCallback(() => {
+        setSelectedEntry(undefined);
+        setOpenDeleteConfirmation(false);
+    }, []);
+    const handleSuccessfulDelete = React.useCallback(() => {
+        setSuccessNotification('Entity deleted successfully');
+        setOpenDeleteConfirmation(false);
+    }, []);
 
     const navigate = useNavigate();
 
@@ -76,11 +92,19 @@ const EntityListPage = () => {
                 onSuccess={handleSuccessfulUpload}
                 onClose={() => setOpenUpload(false)}
             />
+            {selectedEntry && (
+                <DeleteEntityConfirmation
+                    entry={selectedEntry}
+                    open={openDeleteConfirmation}
+                    onSuccess={handleSuccessfulDelete}
+                    onClose={handleCancelDelete}
+                />
+            )}
             <Snackbar
-                open={openSuccessNotification}
+                open={successNotification != undefined}
                 autoHideDuration={5000}
-                onClose={() => setOpenSuccessNotification(false)}
-                message="Data uploaded successfully"
+                onClose={() => setSuccessNotification(undefined)}
+                message={successNotification}
             />
             <ActionBar sx={{ mb: 2 }}>
                 <FormControl>
@@ -132,7 +156,7 @@ const EntityListPage = () => {
                                     </TableCell>
                                     <TableCell align="right">
                                         <RowMenu>
-                                            <MenuItem disabled={true}>
+                                            <MenuItem onClick={() => handleDelete(row)}>
                                                 <ListItemIcon>
                                                     <DeleteIcon fontSize="small" />
                                                 </ListItemIcon>

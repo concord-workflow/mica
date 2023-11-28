@@ -1,16 +1,25 @@
-import { EntityWithData, STANDARD_ENTITY_PROPERTIES, getEntity } from '../api/entity.ts';
+import {
+    EntityEntry,
+    EntityWithData,
+    STANDARD_ENTITY_PROPERTIES,
+    getEntity,
+} from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
+import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
+import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {
     Button,
     CircularProgress,
     Container,
+    FormControl,
     Link,
     Paper,
+    Stack,
     Table,
     TableBody,
     TableCell,
@@ -85,21 +94,56 @@ const EntityDetailsPage = () => {
 
     const navigate = useNavigate();
 
+    const [selectedEntry, setSelectedEntry] = React.useState<EntityEntry | undefined>();
+    const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
+    const handleCancelDelete = React.useCallback(() => {
+        setSelectedEntry(undefined);
+        setOpenDeleteConfirmation(false);
+    }, []);
+    const handleDelete = React.useCallback(() => {
+        if (!entity) {
+            return;
+        }
+        setSelectedEntry(entity);
+        setOpenDeleteConfirmation(true);
+    }, [entity]);
+
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
+            {selectedEntry && (
+                <DeleteEntityConfirmation
+                    entry={selectedEntry}
+                    open={openDeleteConfirmation}
+                    onSuccess={() => navigate('/entity')}
+                    onClose={handleCancelDelete}
+                />
+            )}
+
             <Grid container>
                 <Grid xs={10}>
                     <PageTitle help={HELP}>Entity Details</PageTitle>
                 </Grid>
                 <Grid xs={2} display="flex" justifyContent="flex-end">
-                    <div>
-                        <Button
-                            startIcon={<EditIcon />}
-                            variant="contained"
-                            onClick={() => navigate(`/entity/${entityId}/edit`)}>
-                            Edit
-                        </Button>
-                    </div>
+                    <Stack direction="row" spacing={2}>
+                        <FormControl>
+                            <Button
+                                startIcon={<DeleteIcon />}
+                                variant="outlined"
+                                color="error"
+                                onClick={handleDelete}
+                                disabled={isFetching}>
+                                Delete
+                            </Button>
+                        </FormControl>
+                        <FormControl>
+                            <Button
+                                startIcon={<EditIcon />}
+                                variant="contained"
+                                onClick={() => navigate(`/entity/${entityId}/edit`)}>
+                                Edit
+                            </Button>
+                        </FormControl>
+                    </Stack>
                 </Grid>
             </Grid>
             <MetadataGrid sx={{ marginBottom: 2 }}>

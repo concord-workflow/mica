@@ -66,3 +66,16 @@ export const usePutYamlString = (
     options?: UseMutationOptions<EntityVersion, Error, { body: string }>,
 ) =>
     useMutation<EntityVersion, Error, { body: string }>(({ body }) => putYamlString(body), options);
+
+const deleteById = (entityId: string): Promise<EntityVersion> =>
+    doFetch(`/api/mica/v1/entity/${entityId}`, {
+        method: 'DELETE',
+    }).then(handleJsonResponse<EntityVersion>);
+
+export const useDeleteById = (
+    options?: UseMutationOptions<EntityVersion, Error, { entityId: string }>,
+) =>
+    useMutation<EntityVersion, Error, { entityId: string }>(
+        ({ entityId }) => deleteById(entityId),
+        options,
+    );

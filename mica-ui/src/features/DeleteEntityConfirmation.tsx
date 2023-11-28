@@ -1,49 +1,40 @@
-import { usePutYaml } from '../api/entity.ts';
+import { EntityEntry, useDeleteById } from '../api/entity.ts';
 import { LoadingButton } from '@mui/lab';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { useQueryClient } from 'react-query';
 
 interface Props {
+    entry: EntityEntry;
     open: boolean;
     onSuccess: () => void;
     onClose: () => void;
 }
 
-const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
+const DeleteEntityConfirmation = ({ entry, open, onSuccess, onClose }: Props) => {
     const client = useQueryClient();
-    const { mutateAsync, isLoading, error } = usePutYaml({
+    const { mutateAsync, isLoading, error } = useDeleteById({
         onSuccess: async () => {
-            await client.invalidateQueries(['entity']);
+            await client.invalidateQueries(['entity'], { refetchActive: false });
         },
     });
 
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const handleUpload = React.useCallback(async () => {
-        const input = fileInputRef.current;
-        if (!input || !input.files || input.files.length < 1) {
-            return;
-        }
-        const file = input.files.item(0);
-        if (!file) {
-            return;
-        }
-        await mutateAsync({ file });
-        input.value = '';
+    const handleDelete = React.useCallback(async () => {
+        await mutateAsync({ entityId: entry.id });
         onSuccess();
-    }, [mutateAsync, onSuccess]);
+    }, [entry.id, mutateAsync, onSuccess]);
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Upload Entities</DialogTitle>
+            <DialogTitle>Delete entity?</DialogTitle>
             <DialogContent sx={{ padding: 3 }}>
                 {error && (
                     <Alert severity="error" sx={{ marginBottom: 1 }}>
                         {error.message}
                     </Alert>
                 )}
-                <input type="file" ref={fileInputRef} />
+                Are you sure you want to delete entity <b>{entry.name}</b> (ID: {entry.id})?
             </DialogContent>
             <DialogActions>
                 <Button variant="contained" color="primary" onClick={onClose}>
@@ -53,12 +44,12 @@ const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
                     loading={isLoading}
                     variant="text"
                     color="error"
-                    onClick={handleUpload}>
-                    Upload
+                    onClick={handleDelete}>
+                    Delete
                 </LoadingButton>
             </DialogActions>
         </Dialog>
     );
 };
 
-export default UploadEntityDialog;
+export default DeleteEntityConfirmation;
