@@ -42,20 +42,20 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                   some text
                 """;
 
-        var error = assertThrows(ApiException.class, () -> controller.createOrUpdate(parse(yaml)));
+        var error = assertThrows(ApiException.class, () -> controller.createOrUpdate(parseYaml(yaml)));
         assertEquals(UNKNOWN_ENTITY_KIND, error.getErrorKind());
     }
 
     @Test
     public void testUploadBuiltInEntityKinds() {
-        controller.createOrUpdate(parse("""
+        controller.createOrUpdate(parseYaml("""
                 kind: MicaRecord/v1
                 name: %s
                 data: |
                   some text
                 """.formatted(randomEntityName())));
 
-        controller.createOrUpdate(parse("""
+        controller.createOrUpdate(parseYaml("""
                 kind: MicaKind/v1
                 name: %s
                 schema:
@@ -65,21 +65,20 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                       type: string
                 """.formatted(randomEntityName())));
 
-        controller.createOrUpdate(parse("""
-                kind: MicaEntityView/v1
+        controller.createOrUpdate(parseYaml("""
+                kind: MicaView/v1
                 name: %s
                 selector:
                   kind: MicaRecord/v1
-                fields:
-                  - name: foo
-                    $ref: /properties/foo
+                data:
+                  jsonPath: $.data
                 """.formatted(randomEntityName())));
     }
 
     @Test
     public void testUploadInvalidEntity() {
         // missing property
-        var entity1 = parse("""
+        var entity1 = parseYaml("""
                 kind: MicaRecord/v1
                 name: %s
                 randomProp: "foo"
@@ -89,7 +88,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
         // invalid type
         // TODO test with numbers, booleans, etc.
-        var entity2 = parse("""
+        var entity2 = parseYaml("""
                 kind: MicaRecord/v1
                 name: null
                 data: "foo"
@@ -98,7 +97,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertEquals(BAD_DATA, error2.getErrorKind());
     }
 
-    private static PartialEntity parse(@Language("yaml") String yaml) {
+    private static PartialEntity parseYaml(@Language("yaml") String yaml) {
         try {
             return yamlMapper.readValue(yaml, PartialEntity.class);
         } catch (IOException e) {

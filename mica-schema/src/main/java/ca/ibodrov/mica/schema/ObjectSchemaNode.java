@@ -19,6 +19,11 @@ public record ObjectSchemaNode(Optional<String> type,
         @JsonProperty("enum") Optional<List<JsonNode>> enumeratedValues,
         Optional<ObjectSchemaNode> items) {
 
+    public static ObjectSchemaNode array(ObjectSchemaNode items) {
+        return new ObjectSchemaNode(Optional.of(ARRAY.key()), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.of(items));
+    }
+
     public static ObjectSchemaNode object(Map<String, ObjectSchemaNode> properties, Set<String> required) {
         return new ObjectSchemaNode(Optional.of(OBJECT.key()), Optional.of(properties), Optional.of(required),
                 Optional.empty(), Optional.empty());

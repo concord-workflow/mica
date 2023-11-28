@@ -15,7 +15,7 @@ import java.util.Optional;
 
 /**
  * @implNote the changes in fields and annotations here must be synchronized
- *           with {@link Entity} TODO feels hacky, records should be immutable
+ *           with {@link Entity}
  */
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 public record PartialEntity(@NotNull Optional<EntityId> id,
@@ -24,7 +24,7 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
         @NotNull Optional<OffsetDateTime> createdAt,
         @NotNull Optional<OffsetDateTime> updatedAt,
         @JsonProperty("__data") @JsonAnySetter @JsonAnyGetter @NotNull Map<String, JsonNode> data)
-        implements WithMetadata {
+        implements EntityLike {
 
     public static PartialEntity create(String name, String kind, Map<String, JsonNode> data) {
         return new PartialEntity(Optional.empty(), name, kind, Optional.empty(), Optional.empty(), data);

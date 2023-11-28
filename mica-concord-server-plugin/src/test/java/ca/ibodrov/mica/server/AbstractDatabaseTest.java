@@ -5,13 +5,10 @@ import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
 import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.sonatype.siesta.jackson2.ObjectMapperProvider;
 
 public class AbstractDatabaseTest {
 
@@ -24,10 +21,7 @@ public class AbstractDatabaseTest {
         testDatabase = new TestDatabase();
         testDatabase.start();
 
-        objectMapper = new ObjectMapperProvider().get()
-                .registerModule(new JavaTimeModule())
-                .registerModule(new Jdk8Module())
-                .registerModule(new GuavaModule());
+        objectMapper = new ObjectMapperProvider().get();
 
         uuidGenerator = new UuidGenerator();
 

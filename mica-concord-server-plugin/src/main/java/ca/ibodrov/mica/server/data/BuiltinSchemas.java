@@ -34,16 +34,16 @@ public final class BuiltinSchemas {
             Set.of("kind", "name", "schema"));
 
     /**
-     * MicaEntityView/v1 - use to declare entity views.
+     * MicaView/v1 - use to declare entity views.
      */
-    public static final String MICA_ENTITY_VIEW_V1 = "MicaEntityView/v1";
-    public static ObjectSchemaNode MICA_ENTITY_VIEW_V1_SCHEMA = object(Map.of(
+    public static final String MICA_VIEW_V1 = "MicaView/v1";
+    public static ObjectSchemaNode MICA_VIEW_V1_SCHEMA = object(Map.of(
             "id", string(),
-            "kind", enums(TextNode.valueOf(MICA_ENTITY_VIEW_V1)),
+            "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
             "name", string(),
             "selector", object(Map.of("kind", string()), Set.of("kind")),
-            "fields", any()),
-            Set.of("kind", "name", "selector", "fields"));
+            "data", object(Map.of("jsonPath", string()), Set.of("jsonPath"))),
+            Set.of("kind", "name", "selector", "data"));
 
     private BuiltinSchemas() {
     }

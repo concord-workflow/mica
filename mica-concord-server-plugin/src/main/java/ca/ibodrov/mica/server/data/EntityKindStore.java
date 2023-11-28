@@ -2,7 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.api.model.WithMetadata;
+import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.schema.ValueType;
 import ca.ibodrov.mica.server.exceptions.StoreException;
@@ -45,7 +45,7 @@ public class EntityKindStore {
         return entityStore.upsert(assertKind(entity));
     }
 
-    private static <T extends WithMetadata> T assertKind(T entity) {
+    private static <T extends EntityLike> T assertKind(T entity) {
         if (!BuiltinSchemas.MICA_KIND_V1.equals(entity.kind())) {
             throw new StoreException("Expected a %s entity, got something else. Entity '%s' is a %s"
                     .formatted(BuiltinSchemas.MICA_KIND_V1, entity.name(), entity.kind()));

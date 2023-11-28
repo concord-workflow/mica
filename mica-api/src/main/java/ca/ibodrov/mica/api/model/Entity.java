@@ -24,7 +24,7 @@ public record Entity(@NotNull EntityId id,
         @NotNull OffsetDateTime createdAt,
         @NotNull OffsetDateTime updatedAt,
         @JsonProperty("__data") @JsonAnySetter @JsonAnyGetter @NotNull Map<String, JsonNode> data)
-        implements WithMetadata {
+        implements EntityLike {
 
     public Entity {
         data = new HashMap<>(data != null ? data : Map.of()); // has to be mutable to support @JsonAnySetter
