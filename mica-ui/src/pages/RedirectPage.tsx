@@ -1,5 +1,5 @@
 import { listEntities } from '../api/entity.ts';
-import { CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -38,7 +38,12 @@ const RedirectPage = () => {
         doIt();
     }, [navigate, searchParams]);
 
-    return <CircularProgress />;
+    return (
+        <Box width="100%" height="100%" display="flex" alignItems="center" justifyContent="center">
+            Redirecting...
+            <CircularProgress sx={{ ml: 2 }} size="24px" />
+        </Box>
+    );
 };
 
 export default RedirectPage;
