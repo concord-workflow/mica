@@ -43,16 +43,33 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
     @Test
     public void testUploadBuiltInEntityKind() {
-        // TODO add other build-in kinds
-
-        var yaml = """
+        controller.createOrUpdate(parse("""
                 kind: MicaRecord/v1
                 name: %s
                 data: |
                   some text
-                """.formatted(randomEntityName());
+                """.formatted(randomEntityName())));
 
-        controller.createOrUpdate(parse(yaml));
+        controller.createOrUpdate(parse("""
+                kind: MicaKind/v1
+                name: %s
+                data:
+                  type: object
+                  properties:
+                    foo:
+                      type: string
+                """.formatted(randomEntityName())));
+
+        controller.createOrUpdate(parse("""
+                kind: MicaEntityView/v1
+                name: %s
+                data:
+                  selector:
+                    kind: MicaRecord/v1
+                  fields:
+                    - name: foo
+                      $ref: /properties/foo
+                """.formatted(randomEntityName())));
     }
 
     private static PartialEntity parse(String yaml) {

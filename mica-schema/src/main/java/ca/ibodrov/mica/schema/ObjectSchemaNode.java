@@ -3,7 +3,6 @@ package ca.ibodrov.mica.schema;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.List;
 import java.util.Map;
@@ -28,9 +27,9 @@ public record ObjectSchemaNode(Optional<String> type,
         return new ObjectSchemaNode(Optional.of(STRING_TYPE), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
-    public static ObjectSchemaNode constString(String value) {
+    public static ObjectSchemaNode enums(JsonNode... values) {
         return new ObjectSchemaNode(Optional.of(STRING_TYPE), Optional.empty(), Optional.empty(),
-                Optional.of(List.of(TextNode.valueOf(value))));
+                Optional.of(List.of(values)));
     }
 
     public static ObjectSchemaNode any() {

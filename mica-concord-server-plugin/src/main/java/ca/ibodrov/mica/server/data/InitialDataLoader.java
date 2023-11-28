@@ -32,8 +32,9 @@ public class InitialDataLoader {
     }
 
     public void load() {
-        insertIfNotExists(BuiltinSchemas.MICA_RECORD_V1, BuiltinSchemas.MICA_RECORD_V1_SCHEMA);
         insertIfNotExists(BuiltinSchemas.MICA_KIND_V1, BuiltinSchemas.MICA_KIND_V1_SCHEMA);
+        insertIfNotExists(BuiltinSchemas.MICA_RECORD_V1, BuiltinSchemas.MICA_RECORD_V1_SCHEMA);
+        insertIfNotExists(BuiltinSchemas.MICA_ENTITY_VIEW_V1, BuiltinSchemas.MICA_ENTITY_VIEW_V1_SCHEMA);
     }
 
     private void insertIfNotExists(String name, ObjectSchemaNode schema) {
