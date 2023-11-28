@@ -7,17 +7,16 @@ declared `kind`:
 
 ```text
 Entity
-  id:        uuid, internal ID;
-  name       string, URI path element;
-  kind       string, URI path element;
-  createdAt  timestamp;
-  updatedAt  timestamp;
-  *          other arbitrary keys.   
+  id:           uuid, internal ID
+  name          string, URI path element
+  kind          string, URI path element
+  createdAt     timestamp;
+  updatedAt     timestamp
+  *             other arbitrary keys
 ```
 
-The entity's `kind` is a reference to an entity of kind `MicaKind/v1` that
-defines the schema. For example, a `CorporateCustomer` entity may look like
-this:
+The entity's `kind` is a reference to a `MicaKind/v1` entity that provides
+the schema. For example, a `CorporateCustomer` entity may look like this:
 
 ```json
 {
@@ -68,7 +67,63 @@ ObjectSchemaNode:
 There are several built-in entity kinds:
 - `MicaRecord/v1` -- basic data record, no attached behaviors;
 - `MicaKind/v1` -- a `kind` definition, aka entity "template";
-- `MicaEntityView/v1` -- entity view object.
+- `MicaView/v1` -- entity view object.
+
+## Views
+
+Use Mica Views to create projections of data.
+
+For example, given an entity (a list of clients of Acme Corp):
+
+```yaml
+name: clients-20240101
+kind: AcmeClient
+clients:
+  - id: foo
+    status: active
+    validationUrl: "http://foo.example.org"
+  - id: bar
+    status: retired
+    validationUrl: "http://bar.example.org"
+  - id: baz
+    status: active
+    validationUrl: "http://baz.example.org"
+```
+
+Plus a view definition:
+
+```yaml
+kind: MicaView/v1
+name: ActiveClients
+selector:
+  entityKind: AcmeClient
+data:
+  jsonPath: $.clients[?(@.status='active')].["id", "validationUrl"]
+```
+
+Equals:
+
+```
+curl 'http://localhost:8080/api/mica/v1/view?viewName=ActiveClients'
+```
+
+```json
+{
+    "data": [
+        {
+            "id": "foo",
+            "validationUrl": "http://foo.example.org"
+        },
+        {
+            "id": "baz",
+            "validationUrl": "http://baz.example.org"
+        }
+    ]
+}
+```
+
+TODO:
+- parameterized views
 
 ## Entity Validation
 
