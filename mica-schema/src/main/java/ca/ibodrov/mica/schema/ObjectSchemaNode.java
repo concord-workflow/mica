@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static ca.ibodrov.mica.schema.StandardTypes.*;
+import static ca.ibodrov.mica.schema.ValueType.*;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 
 @JsonInclude(NON_ABSENT)
@@ -19,21 +19,21 @@ public record ObjectSchemaNode(Optional<String> type,
         @JsonProperty("enum") Optional<List<JsonNode>> enumeratedValues) {
 
     public static ObjectSchemaNode object(Map<String, ObjectSchemaNode> properties, Set<String> required) {
-        return new ObjectSchemaNode(Optional.of(OBJECT_TYPE), Optional.of(properties), Optional.of(required),
+        return new ObjectSchemaNode(Optional.of(OBJECT.key()), Optional.of(properties), Optional.of(required),
                 Optional.empty());
     }
 
     public static ObjectSchemaNode string() {
-        return new ObjectSchemaNode(Optional.of(STRING_TYPE), Optional.empty(), Optional.empty(), Optional.empty());
+        return new ObjectSchemaNode(Optional.of(STRING.key()), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public static ObjectSchemaNode enums(JsonNode... values) {
-        return new ObjectSchemaNode(Optional.of(STRING_TYPE), Optional.empty(), Optional.empty(),
+        return new ObjectSchemaNode(Optional.of(STRING.key()), Optional.empty(), Optional.empty(),
                 Optional.of(List.of(values)));
     }
 
     public static ObjectSchemaNode any() {
-        return new ObjectSchemaNode(Optional.of(ANY_TYPE), Optional.empty(), Optional.empty(), Optional.empty());
+        return new ObjectSchemaNode(Optional.of(ANY.key()), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public Optional<ObjectSchemaNode> getProperty(String name) {

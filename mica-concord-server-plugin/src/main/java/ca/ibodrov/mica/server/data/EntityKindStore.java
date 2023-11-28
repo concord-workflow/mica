@@ -4,13 +4,14 @@ import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.WithMetadata;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.schema.ValueType;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.inject.Inject;
 import java.util.Optional;
 
-import static ca.ibodrov.mica.schema.StandardTypes.OBJECT_TYPE;
+import static ca.ibodrov.mica.schema.ValueType.OBJECT;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_SCHEMA_PROPERTY;
 import static java.util.Objects.requireNonNull;
 
@@ -53,7 +54,7 @@ public class EntityKindStore {
     }
 
     private static ObjectSchemaNode sanityCheck(ObjectSchemaNode schema) {
-        if (schema.type().orElse(OBJECT_TYPE).equals(OBJECT_TYPE)
+        if (schema.type().map(ValueType::ofKey).orElse(OBJECT).equals(OBJECT)
                 && schema.enumeratedValues().isEmpty()
                 && schema.properties().isEmpty()) {
             throw new StoreException("Schema cannot be used, it doesn't have any properties or enum values: " + schema);

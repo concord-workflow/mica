@@ -9,9 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static ca.ibodrov.mica.schema.StandardTypes.*;
+import static ca.ibodrov.mica.schema.ValidatedProperty.*;
 import static ca.ibodrov.mica.schema.ValidationError.Kind.INVALID_SCHEMA;
+import static ca.ibodrov.mica.schema.ValueType.*;
 
+// TODO non-recursive depth-first traversal of the schema
+//  (using a command queue)
 public class Validator {
 
     private static ValidatedProperty validateProperty(String name,
@@ -19,72 +22,70 @@ public class Validator {
                                                       boolean required,
                                                       JsonNode input) {
 
-        // TODO non-recursive depth-first traversal of the schema (using a command
-        // queue)
-
-        Optional<String> firstEnumValueType = Optional.empty();
+        // looks ugly
+        Optional<ValueType> firstEnumValueType = Optional.empty();
         var enums = property.enumeratedValues();
         if (enums.isPresent()) {
             var enumValues = enums.get();
             if (enumValues.isEmpty()) {
-                return ValidatedProperty.invalidSchema("'enum' must not be empty");
+                return invalidSchema("'enum' must not be empty");
             }
             // check if all "enum" values are of the same type
-            var firstNodeType = typeOf(enumValues.get(0));
-            if (enumValues.stream().map(Validator::typeOf).anyMatch(t -> !t.equals(firstNodeType))) {
+            var firstNodeType = ValueType.typeOf(enumValues.get(0));
+            if (enumValues.stream().map(ValueType::typeOf).anyMatch(t -> !t.equals(firstNodeType))) {
                 throw new IllegalArgumentException("'enum' values must be of the same type");
             }
             firstEnumValueType = Optional.of(firstNodeType);
         }
 
-        // TODO should be pushed down
         if (required && input.isNull()) {
-            return ValidatedProperty.missingRequiredProperty(TextNode.valueOf(name));
+            return missingRequiredProperty(name);
         }
 
         if (!required && input.isNull()) {
-            return ValidatedProperty.valid(input);
+            return valid(input);
         }
 
         var typeFromEnum = firstEnumValueType;
         var type = property.type()
+                .map(ValueType::ofKey)
                 .or(() -> typeFromEnum)
-                .orElse(OBJECT_TYPE);
+                .orElse(OBJECT);
 
         return switch (type) {
-            case ANY_TYPE -> validateAny(property, input);
-            case OBJECT_TYPE -> validateObject(property, input);
-            case STRING_TYPE -> validateString(property, input);
-            case NUMBER_TYPE -> validateNumber(property, input);
-            case NULL_TYPE -> validateNull(property, input);
+            case ANY -> validateAny(property, input);
+            case OBJECT -> validateObject(property, input);
+            case STRING -> validateString(property, input);
+            case NUMBER -> validateNumber(property, input);
+            case NULL -> validateNull(property, input);
             // TODO other types
-            default -> ValidatedProperty.unexpectedType(type);
+            default -> unexpectedType(type);
         };
     }
 
     public static ValidatedProperty validateAny(ObjectSchemaNode property, JsonNode input) {
         // "any" does not allow properties
         if (!property.properties().map(Map::isEmpty).orElse(true)) {
-            return ValidatedProperty.invalid(new ValidationError(INVALID_SCHEMA,
+            return invalid(new ValidationError(INVALID_SCHEMA,
                     Map.of("details", TextNode.valueOf("'any' does not allow 'properties'"))));
         }
 
         try {
-            return ValidatedProperty.valid(input);
+            return valid(input);
         } catch (IllegalArgumentException e) {
-            return ValidatedProperty.invalidType("any", input);
+            return invalidType(ValueType.ANY, input);
         }
     }
 
     public static ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {
         if (!input.isObject()) {
-            return ValidatedProperty.invalidType("object", input);
+            return invalidType(OBJECT, input);
         }
 
         // validate the enum value
         var enums = property.enumeratedValues();
         if (enums.isPresent()) {
-            return validateEnums(enums.get(), OBJECT_TYPE, input);
+            return validateEnums(enums.get(), OBJECT, input);
         }
 
         // check the nested properties
@@ -99,7 +100,7 @@ public class Validator {
 
         // no nested properties found, return the current result
         if (validatedProperties.isEmpty()) {
-            return ValidatedProperty.valid(input);
+            return valid(input);
         }
 
         return ValidatedProperty.nested(validatedProperties).withValue(Optional.of(input));
@@ -107,44 +108,44 @@ public class Validator {
 
     public static ValidatedProperty validateString(ObjectSchemaNode property, JsonNode input) {
         if (!input.isTextual()) {
-            return ValidatedProperty.invalidType(STRING_TYPE, input);
+            return invalidType(STRING, input);
         }
 
         return property.enumeratedValues()
-                .map(enums -> validateEnums(enums, STRING_TYPE, input))
-                .orElseGet(() -> ValidatedProperty.valid(input));
+                .map(enums -> validateEnums(enums, STRING, input))
+                .orElseGet(() -> valid(input));
     }
 
     public static ValidatedProperty validateNumber(ObjectSchemaNode property, JsonNode input) {
         if (!input.isNumber()) {
-            return ValidatedProperty.invalidType("number", input);
+            return invalidType(NUMBER, input);
         }
 
         return property.enumeratedValues()
-                .map(enums -> validateEnums(enums, NUMBER_TYPE, input))
-                .orElseGet(() -> ValidatedProperty.valid(input));
+                .map(enums -> validateEnums(enums, NUMBER, input))
+                .orElseGet(() -> valid(input));
     }
 
     public static ValidatedProperty validateNull(ObjectSchemaNode property, JsonNode input) {
         if (!input.isNull()) {
-            return ValidatedProperty.unexpectedValue(NULL_TYPE, NullNode.getInstance(), input);
+            return ValidatedProperty.unexpectedValue(NULL, NullNode.getInstance(), input);
         }
 
         var expectedValues = property.enumeratedValues().orElseGet(List::of);
         if (!expectedValues.isEmpty()) {
-            return ValidatedProperty.invalid(new ValidationError(INVALID_SCHEMA,
+            return invalid(new ValidationError(INVALID_SCHEMA,
                     Map.of("details",
                             TextNode.valueOf("Type 'null' does not allow 'enum' values."))));
         }
 
-        return ValidatedProperty.valid(NullNode.getInstance());
+        return valid(NullNode.getInstance());
     }
 
-    private static ValidatedProperty validateEnums(List<JsonNode> enums, String expectedType, JsonNode input) {
+    private static ValidatedProperty validateEnums(List<JsonNode> enums, ValueType expectedType, JsonNode input) {
         assert !enums.isEmpty();
         var firstExpectedValue = enums.get(0);
         if (!expectedType.equals(typeOf(firstExpectedValue))) {
-            return ValidatedProperty.invalidType(OBJECT_TYPE, firstExpectedValue);
+            return invalidType(expectedType, firstExpectedValue);
         }
 
         // TODO in case of error report all 'enum' values, not just the first one
@@ -152,17 +153,5 @@ public class Validator {
                 .findFirst()
                 .map(ValidatedProperty::valid)
                 .orElseGet(() -> ValidatedProperty.unexpectedValue(expectedType, firstExpectedValue, input));
-    }
-
-    private static String typeOf(JsonNode v) {
-        if (v.isTextual()) {
-            return "string";
-        } else if (v.isNumber()) {
-            return "number";
-        } else if (v.isObject()) {
-            return "object";
-        } else {
-            throw new RuntimeException("Unsupported 'enum' node type: " + v.getNodeType());
-        }
     }
 }

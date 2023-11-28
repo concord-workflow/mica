@@ -25,28 +25,34 @@ public record ValidatedProperty(Optional<JsonNode> value,
         return new ValidatedProperty(Optional.empty(), Optional.of(error), Optional.empty());
     }
 
-    public static ValidatedProperty unexpectedType(String unexpectedType) {
-        return invalid(new ValidationError(INVALID_SCHEMA, Map.of("unexpectedType", TextNode.valueOf(unexpectedType))));
+    public static ValidatedProperty unexpectedType(ValueType unexpectedType) {
+        return invalid(
+                new ValidationError(INVALID_SCHEMA, Map.of("unexpectedType", TextNode.valueOf(unexpectedType.key()))));
     }
 
-    public static ValidatedProperty unexpectedValue(String expectedType, JsonNode expectedValue, JsonNode actualValue) {
-        return invalid(new ValidationError(UNEXPECTED_VALUE, Map.of("expectedType", TextNode.valueOf(expectedType),
-                "expectedValue", expectedValue,
-                "actualValue", actualValue)));
-    }
-
-    public static ValidatedProperty invalidType(String expectedType, JsonNode actualValue) {
-        return invalid(new ValidationError(INVALID_TYPE,
-                Map.of("expected", TextNode.valueOf(expectedType),
+    public static ValidatedProperty unexpectedValue(ValueType expectedType,
+                                                    JsonNode expectedValue,
+                                                    JsonNode actualValue) {
+        return invalid(new ValidationError(UNEXPECTED_VALUE,
+                Map.of("expectedType", TextNode.valueOf(expectedType.key()),
+                        "expectedValue", expectedValue,
                         "actualValue", actualValue)));
     }
 
-    public static ValidatedProperty missingRequiredProperty(JsonNode propertyName) {
-        return invalid(new ValidationError(MISSING_PROPERTY, Map.of("propertyName", propertyName)));
+    public static ValidatedProperty invalidType(ValueType expectedType, JsonNode actualValue) {
+        return invalid(new ValidationError(INVALID_TYPE,
+                Map.of("expected", TextNode.valueOf(expectedType.key()),
+                        "actualValue", actualValue)));
+    }
+
+    public static ValidatedProperty missingRequiredProperty(String propertyName) {
+        return invalid(new ValidationError(MISSING_PROPERTY,
+                Map.of("propertyName", TextNode.valueOf(propertyName))));
     }
 
     public static ValidatedProperty invalidSchema(String details) {
-        return invalid(new ValidationError(INVALID_SCHEMA, Map.of("details", TextNode.valueOf(details))));
+        return invalid(new ValidationError(INVALID_SCHEMA,
+                Map.of("details", TextNode.valueOf(details))));
     }
 
     @JsonIgnore
