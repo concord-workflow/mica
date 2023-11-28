@@ -46,8 +46,13 @@ type RouteParams = {
     entityId: string;
 };
 
-const renderPropertyValue = (o: object, key: string): string =>
-    JSON.stringify((o as Record<string, object>)[key], null, 2);
+const renderPropertyValue = (o: object, key: string) => {
+    let json = JSON.stringify((o as Record<string, object>)[key], null, 2);
+    if (json.length > 1000) {
+        json = json.substring(0, 1000) + '...[cut]';
+    }
+    return json;
+};
 
 const searchProperties = (entity: EntityWithData, search: string): Array<string> => {
     const searchLower = search.toLowerCase();
@@ -86,6 +91,7 @@ const EntityDetailsPage = () => {
         ['entity', entityId],
         () => getEntity(entityId!),
         {
+            keepPreviousData: false,
             enabled: entityId !== undefined,
         },
     );

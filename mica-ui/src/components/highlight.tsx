@@ -9,6 +9,9 @@ const HighlightSpan = styled('span')(({ theme }) => ({
 }));
 
 const highlightSubstring = (s: string, search: string): React.ReactNode => {
+    if (search == undefined || search == '') {
+        return <>{s}</>;
+    }
     if (s == undefined) {
         return null;
     }
