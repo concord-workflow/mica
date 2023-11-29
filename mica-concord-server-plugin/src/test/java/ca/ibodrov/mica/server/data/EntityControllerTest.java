@@ -69,7 +69,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 kind: MicaView/v1
                 name: %s
                 selector:
-                  kind: MicaRecord/v1
+                  entityKind: MicaRecord/v1
                 data:
                   jsonPath: $.data
                 """.formatted(randomEntityName())));
