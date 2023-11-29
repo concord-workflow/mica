@@ -1,6 +1,8 @@
 import { MICA_KIND_KIND, listEntities } from '../api/entity.ts';
+import entityKindToIcon from '../components/entityKindToIcon.tsx';
 import AddIcon from '@mui/icons-material/Add';
 import { Button, Menu, MenuItem } from '@mui/material';
+import ListItemIcon from '@mui/material/ListItemIcon';
 
 import React from 'react';
 import { useQuery } from 'react-query';
@@ -39,6 +41,7 @@ const CreateEntityButton = () => {
                         <MenuItem
                             key={row.id}
                             onClick={() => navigate(`/entity/_new/edit?kind=${row.name}`)}>
+                            <ListItemIcon>{entityKindToIcon(row.name)}</ListItemIcon>
                             {row.name}
                         </MenuItem>
                     ))}
