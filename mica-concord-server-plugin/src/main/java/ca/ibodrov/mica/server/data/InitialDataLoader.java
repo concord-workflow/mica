@@ -4,6 +4,7 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +21,12 @@ public class InitialDataLoader {
 
     private static final Logger log = LoggerFactory.getLogger(InitialDataLoader.class);
 
-    private final EntityKindStore entityKindStore;
+    private final EntityStore entityStore;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public InitialDataLoader(EntityKindStore entityKindStore, ObjectMapper objectMapper) {
-        this.entityKindStore = requireNonNull(entityKindStore);
+    public InitialDataLoader(EntityStore entityStore, ObjectMapper objectMapper) {
+        this.entityStore = requireNonNull(entityStore);
         this.objectMapper = requireNonNull(objectMapper);
 
         // no out of the box support for @PostConstruct in Guice
@@ -33,17 +34,44 @@ public class InitialDataLoader {
     }
 
     public void load() {
-        insertIfNotExists(BuiltinSchemas.MICA_KIND_V1, BuiltinSchemas.MICA_KIND_V1_SCHEMA);
-        insertIfNotExists(BuiltinSchemas.MICA_RECORD_V1, BuiltinSchemas.MICA_RECORD_V1_SCHEMA);
-        insertIfNotExists(BuiltinSchemas.MICA_VIEW_V1, BuiltinSchemas.MICA_VIEW_V1_SCHEMA);
+        // built-in entity kinds
+        createOrReplace(schema(BuiltinSchemas.MICA_KIND_V1, BuiltinSchemas.MICA_KIND_V1_SCHEMA));
+        createOrReplace(schema(BuiltinSchemas.MICA_RECORD_V1, BuiltinSchemas.MICA_RECORD_V1_SCHEMA));
+        createOrReplace(schema(BuiltinSchemas.MICA_VIEW_V1, BuiltinSchemas.MICA_VIEW_V1_SCHEMA));
+
+        // examples
+        createOrReplace(view("example-view", BuiltinSchemas.MICA_RECORD_V1, "$.data"));
+        createOrReplace(record("example-record-a", TextNode.valueOf("hello!")));
+        createOrReplace(record("example-record-b", TextNode.valueOf("bye!")));
     }
 
-    private void insertIfNotExists(String name, ObjectSchemaNode schema) {
-        if (entityKindStore.isKindExists(name)) {
-            return;
-        }
-        entityKindStore.upsert(PartialEntity.create(name, BuiltinSchemas.MICA_KIND_V1,
-                Map.of("schema", objectMapper.convertValue(schema, JsonNode.class))));
-        log.info("Inserted an entity kind: {}", name);
+    private void createOrReplace(PartialEntity entity) {
+        entityStore.getByName(entity.name())
+                .flatMap(existingEntity -> entityStore.deleteById(existingEntity.id()))
+                .ifPresent(deleted -> log.info("Removed old version of {}: {}", entity.name(), deleted));
+
+        entityStore.upsert(entity);
+
+        log.info("Created or replaced an entity: {}", entity.name());
+    }
+
+    private PartialEntity schema(String name, ObjectSchemaNode schema) {
+        return PartialEntity.create(name, BuiltinSchemas.MICA_KIND_V1,
+                Map.of("schema", objectMapper.convertValue(schema, JsonNode.class)));
+    }
+
+    private PartialEntity view(String name, String selectorEntityKind, String dataJsonPath) {
+        return PartialEntity.create(name, BuiltinSchemas.MICA_VIEW_V1,
+                Map.of("selector", objectMapper.convertValue(Map.of("entityKind", selectorEntityKind), JsonNode.class),
+                        "data", objectMapper.convertValue(Map.of("jsonPath", dataJsonPath), JsonNode.class)));
+    }
+
+    private PartialEntity record(String name, JsonNode data) {
+        return PartialEntity.create(name, BuiltinSchemas.MICA_RECORD_V1,
+                Map.of("data", data));
+    }
+
+    private void createOrReplaceView() {
+
     }
 }

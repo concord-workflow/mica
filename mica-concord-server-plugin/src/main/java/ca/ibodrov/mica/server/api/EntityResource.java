@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.Entity;
+import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.EntityList;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.server.data.EntityStore;
@@ -83,7 +84,7 @@ public class EntityResource implements Resource {
     @Path("{id}")
     @Operation(description = "Delete an existing entity by its ID", operationId = "deleteById")
     public EntityVersion deleteById(@PathParam("id") UUID entityId) {
-        return entityStore.deleteById(entityId)
+        return entityStore.deleteById(new EntityId(entityId))
                 .orElseThrow(() -> ApiException.notFound(NO_DATA, "Entity not found: " + entityId));
     }
 

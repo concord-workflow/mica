@@ -30,7 +30,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         controller = new EntityController(entityStore, entityKindStore, objectMapper);
 
         // insert the built-in entity kinds
-        new InitialDataLoader(entityKindStore, objectMapper).load();
+        new InitialDataLoader(entityStore, objectMapper).load();
     }
 
     @Test

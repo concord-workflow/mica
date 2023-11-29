@@ -4,19 +4,20 @@ import PageTitle from '../components/PageTitle.tsx';
 import RowMenu from '../components/RowMenu.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
+import entityKindToIcon from '../components/entityKindToIcon.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import CreateEntityButton from '../features/CreateEntityButton.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
+import EntityKindSelect from '../features/EntityKindSelect.tsx';
 import UploadEntityDialog from '../features/UploadEntityDialog.tsx';
-import ChecklistIcon from '@mui/icons-material/Checklist';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DataObjectIcon from '@mui/icons-material/DataObject';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
     Button,
     CircularProgress,
     Container,
     FormControl,
+    InputLabel,
     Link,
     MenuItem,
     Paper,
@@ -43,23 +44,19 @@ const HELP: React.ReactNode = (
     </>
 );
 
-const kindToIcon = (kind: string) => {
-    switch (kind) {
-        case 'MicaKind/v1':
-            return <ChecklistIcon />;
-        default:
-            return <DataObjectIcon />;
-    }
-};
-
 const EntityListPage = () => {
     const [openUpload, setOpenUpload] = React.useState(false);
 
     const [search, setSearch] = React.useState<string>('');
-    const { data, isFetching } = useQuery(['entity', 'list', search], () => listEntities(search), {
-        keepPreviousData: true,
-        select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),
-    });
+    const [entityKindFilter, setEntityKindFilter] = React.useState<string | undefined>();
+    const { data, isFetching } = useQuery(
+        ['entity', 'list', entityKindFilter, search],
+        () => listEntities(search, undefined, entityKindFilter),
+        {
+            keepPreviousData: true,
+            select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),
+        },
+    );
 
     const [successNotification, setSuccessNotification] = React.useState<string | undefined>();
     const handleSuccessfulUpload = React.useCallback(() => {
@@ -119,6 +116,10 @@ const EntityListPage = () => {
                     </Button>
                 </FormControl>
                 <Spacer />
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Kind</InputLabel>
+                    <EntityKindSelect value={entityKindFilter} onChange={setEntityKindFilter} />
+                </FormControl>
                 <SearchField onChange={(value) => setSearch(value)} />
             </ActionBar>
             <TableContainer component={Paper}>
@@ -140,7 +141,9 @@ const EntityListPage = () => {
                             data.map((row) => (
                                 <TableRow key={row.id}>
                                     <TableCell>
-                                        <Tooltip title={row.kind}>{kindToIcon(row.kind)}</Tooltip>
+                                        <Tooltip title={row.kind}>
+                                            {entityKindToIcon(row.kind)}
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell>
                                         <Link

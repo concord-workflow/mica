@@ -64,6 +64,18 @@ public class EntityStore {
                 .fetch(EntityStore::toEntityMetadata);
     }
 
+    public List<Entity> getAllByKind(String entityKind) {
+        return dsl.select(MICA_ENTITIES.ID,
+                MICA_ENTITIES.NAME,
+                MICA_ENTITIES.KIND,
+                MICA_ENTITIES.CREATED_AT,
+                MICA_ENTITIES.UPDATED_AT,
+                MICA_ENTITIES.DATA)
+                .from(MICA_ENTITIES)
+                .where(MICA_ENTITIES.KIND.eq(entityKind))
+                .fetch(this::toEntity);
+    }
+
     public Optional<Entity> getById(UUID entityId) {
         return dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
@@ -88,10 +100,10 @@ public class EntityStore {
                 .fetchOptional(this::toEntity);
     }
 
-    public Optional<EntityVersion> deleteById(UUID entityId) {
+    public Optional<EntityVersion> deleteById(EntityId entityId) {
         return dsl.transactionResult(tx -> tx.dsl()
                 .deleteFrom(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(entityId))
+                .where(MICA_ENTITIES.ID.eq(entityId.id()))
                 .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT)
                 .fetchOptional()
                 .map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)), r.get(MICA_ENTITIES.UPDATED_AT))));

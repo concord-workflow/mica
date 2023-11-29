@@ -39,4 +39,8 @@ public record Entity(@NotNull EntityId id,
     public void setProperty(String name, JsonNode value) {
         data.put(name, value);
     }
+
+    public EntityLike asEntityLike() {
+        return this;
+    }
 }

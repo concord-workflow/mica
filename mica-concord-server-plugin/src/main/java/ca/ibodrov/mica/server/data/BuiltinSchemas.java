@@ -47,7 +47,7 @@ public final class BuiltinSchemas {
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
             "name", string(),
-            "selector", object(Map.of("kind", string()), Set.of("kind")),
+            "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
             "data", object(Map.of("jsonPath", string()), Set.of("jsonPath"))),
             Set.of("kind", "name", "selector", "data"));
 

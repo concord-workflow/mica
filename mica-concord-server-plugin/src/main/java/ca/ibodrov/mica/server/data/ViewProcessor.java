@@ -53,6 +53,7 @@ public class ViewProcessor {
     public PartialEntity render(ViewLike view, Stream<EntityLike> entities) {
         var data = entities.filter(entity -> entity.kind().equals(view.selector().entityKind()))
                 .map(entity -> applyJsonPath(entity.data(), view.data().jsonPath()))
+                .flatMap(Optional::stream)
                 .toList();
 
         return PartialEntity.create(view.name(), RESULT_ENTITY_KIND,

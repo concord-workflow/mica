@@ -8,6 +8,7 @@ import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.sonatype.siesta.Resource;
 
 import javax.annotation.Nullable;
@@ -22,6 +23,7 @@ import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "Entity Upload")
 @Path("/api/mica/v1/upload")
 @Produces(APPLICATION_JSON)
 public class EntityUploadResource implements Resource {

@@ -5,6 +5,7 @@ import { UseMutationOptions } from 'react-query/types/react/types';
 
 export const MICA_KIND_KIND = 'MicaKind/v1';
 export const MICA_RECORD_KIND = 'MicaRecord/v1';
+export const MICA_VIEW_KIND = 'MicaView/v1';
 
 export interface EntityEntry {
     id: string;

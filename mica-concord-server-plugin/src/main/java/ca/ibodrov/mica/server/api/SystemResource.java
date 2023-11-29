@@ -1,6 +1,8 @@
 package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.SystemInfo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.sonatype.siesta.Resource;
 
 import javax.ws.rs.GET;
@@ -11,6 +13,7 @@ import java.util.Properties;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "System")
 @Path("/api/mica/v1/system")
 @Produces(APPLICATION_JSON)
 public class SystemResource implements Resource {
@@ -34,6 +37,7 @@ public class SystemResource implements Resource {
     }
 
     @GET
+    @Operation(description = "Returns Mica's system info (e.g. version)", operationId = "getSystemInfo")
     public SystemInfo getSystemInfo() {
         return systemInfo;
     }
