@@ -34,7 +34,7 @@ public class ViewResource implements Resource {
     }
 
     @GET
-    @Path("{viewId}/render")
+    @Path("render/{viewId}")
     @Operation(description = "Render a view", operationId = "render")
     public PartialEntity render(@PathParam("viewId") UUID viewId,
                                 @QueryParam("limit") @DefaultValue("-1") int limit) {
@@ -47,5 +47,22 @@ public class ViewResource implements Resource {
                 .map(Entity::asEntityLike);
 
         return viewProcessor.render(view, entities);
+    }
+
+    @POST
+    @Path("/preview")
+    @Consumes(APPLICATION_JSON)
+    @Operation(description = "Preview a view", operationId = "preview")
+    public PartialEntity preview(PreviewRequest request) {
+        // TODO better validation
+        var view = BuiltinSchemas.asView(request.view());
+
+        var entities = entityStore.getAllByKind(view.selector().entityKind(), request.limit).stream()
+                .map(Entity::asEntityLike);
+
+        return viewProcessor.render(view, entities);
+    }
+
+    public record PreviewRequest(PartialEntity view, int limit) {
     }
 }

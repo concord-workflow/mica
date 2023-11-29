@@ -7,6 +7,14 @@ export default defineConfig({
     base: '/mica/',
     build: {
         outDir: 'target/classes/META-INF/mica-ui',
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'monaco-editor': ['monaco-editor'],
+                    yaml: ['yaml'],
+                },
+            },
+        },
     },
     plugins: [react()],
     server: {

@@ -1,26 +1,16 @@
-import {
-    EntityWithData,
-    MICA_VIEW_KIND,
-    STANDARD_ENTITY_PROPERTIES,
-    getEntity,
-} from '../api/entity.ts';
+import { Entity, MICA_VIEW_KIND, STANDARD_ENTITY_PROPERTIES, getEntity } from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
-import RenderedView from '../features/RenderedView.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import PreviewIcon from '@mui/icons-material/Preview';
 import {
     Button,
     CircularProgress,
     Container,
-    Dialog,
-    DialogContent,
-    DialogTitle,
     FormControl,
     Link,
     Paper,
@@ -31,7 +21,6 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Tooltip,
     Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -69,7 +58,7 @@ const renderPropertyValue = (o: object, key: string) => {
     return json;
 };
 
-const searchProperties = (entity: EntityWithData, search: string): Array<string> => {
+const searchProperties = (entity: Entity, search: string): Array<string> => {
     const searchLower = search.toLowerCase();
     return Object.keys(entity)
         .filter((key) => !STANDARD_ENTITY_PROPERTIES.includes(key))
@@ -121,14 +110,6 @@ const EntityDetailsPage = () => {
             return;
         }
         setOpenDeleteConfirmation(true);
-    }, [entity]);
-
-    const [openPreview, setOpenPreview] = React.useState(false);
-    const handlePreview = React.useCallback(() => {
-        if (!entity) {
-            return;
-        }
-        setOpenPreview(true);
     }, [entity]);
 
     const visibleProperties = React.useMemo(
@@ -198,25 +179,7 @@ const EntityDetailsPage = () => {
                 </MetadataItem>
             </MetadataGrid>
             {entity && entity.kind == MICA_VIEW_KIND && (
-                <>
-                    <FormControl sx={{ mt: 2, mb: 2 }}>
-                        <Tooltip title="Render the view using a small subset of data.">
-                            <Button
-                                startIcon={<PreviewIcon />}
-                                variant="outlined"
-                                onClick={handlePreview}>
-                                Preview Data
-                            </Button>
-                        </Tooltip>
-                    </FormControl>
-
-                    <Dialog open={openPreview} onClose={() => setOpenPreview(false)}>
-                        <DialogTitle>Preview</DialogTitle>
-                        <DialogContent>
-                            <RenderedView viewId={entity.id} />
-                        </DialogContent>
-                    </Dialog>
-                </>
+                <FormControl sx={{ mt: 2, mb: 2 }}>TODO</FormControl>
             )}
             {entity && (
                 <>

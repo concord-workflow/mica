@@ -23,8 +23,10 @@ public class MicaFilterChainConfigurator implements FilterChainConfigurator {
 
         // whoami must be accessible without authentication
         manager.createChain("/api/mica/ui/whoami", "anon");
-        // OIDC login redirect should also be accessible for anyone
+
+        // OIDC login redirect and the logout URL should also be accessible for anyone
         manager.createChain("/api/mica/oidc/login", "anon");
+        manager.createChain("/api/mica/oidc/logout", "anon");
 
         manager.addFilter("mica", concordDelegate);
         manager.createChain("/api/mica/oidc/**", "mica");
