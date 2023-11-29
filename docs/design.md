@@ -105,7 +105,7 @@ data:
 Equals:
 
 ```
-curl 'http://localhost:8080/api/mica/v1/view?viewName=ActiveClients'
+curl 'http://localhost:8080/api/mica/v1/view/ActiveClients/render'
 ```
 
 ```json

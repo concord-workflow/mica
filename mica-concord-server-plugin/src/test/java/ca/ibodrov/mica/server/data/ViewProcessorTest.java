@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.ViewLike;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.asView;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -36,7 +38,7 @@ public class ViewProcessorTest {
                 data: Some data from B
                 """);
 
-        var result = processor.process(view, Stream.of(entityA, entityB));
+        var result = processor.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals("Some data from A", result.data().get("data").get(0).asText());
         assertEquals("Some data from B", result.data().get("data").get(1).asText());
@@ -67,7 +69,7 @@ public class ViewProcessorTest {
                     name: Alice
                 """);
 
-        var result = processor.process(view, Stream.of(entityA, entityB));
+        var result = processor.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals("John", result.data().get("data").get(0).get(0).asText());
         assertEquals("Jane", result.data().get("data").get(0).get(1).asText());
@@ -83,14 +85,14 @@ public class ViewProcessorTest {
         }
     }
 
-    private static PartialEntity view(String viewName, String selectorEntityKind, String dataJsonPath) {
-        return parseYaml("""
+    private static ViewLike view(String viewName, String selectorEntityKind, String dataJsonPath) {
+        return asView(parseYaml("""
                 kind: MicaView/v1
                 name: %s
                 selector:
                   entityKind: %s
                 data:
                   jsonPath: %s
-                """.formatted(viewName, selectorEntityKind, dataJsonPath));
+                """.formatted(viewName, selectorEntityKind, dataJsonPath)));
     }
 }

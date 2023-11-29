@@ -27,6 +27,9 @@ import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.currentOffsetDateTime;
 import static org.jooq.impl.DSL.noCondition;
 
+/**
+ * TODO use name + kind as unique key
+ */
 public class EntityStore {
 
     private static final TypeReference<Map<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {

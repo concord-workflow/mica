@@ -1,12 +1,18 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.model.EntityLike;
+import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
+import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 
 public final class BuiltinSchemas {
 
@@ -44,6 +50,41 @@ public final class BuiltinSchemas {
             "selector", object(Map.of("kind", string()), Set.of("kind")),
             "data", object(Map.of("jsonPath", string()), Set.of("jsonPath"))),
             Set.of("kind", "name", "selector", "data"));
+
+    public static ViewLike asView(EntityLike entity) {
+        if (!entity.kind().equals(BuiltinSchemas.MICA_VIEW_V1)) {
+            throw ApiException.badRequest(BAD_DATA, "Expected a MicaView/v1 entity, got: " + entity.kind());
+        }
+
+        var name = entity.name();
+
+        var selectorEntityKind = Optional.ofNullable(entity.data().get("selector"))
+                .map(n -> n.get("entityKind"))
+                .map(JsonNode::asText)
+                .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing selector.entityKind"));
+
+        var dataJsonPath = Optional.ofNullable(entity.data().get("data"))
+                .map(n -> n.get("jsonPath"))
+                .map(JsonNode::asText)
+                .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing data.jsonPath"));
+
+        return new ViewLike() {
+            @Override
+            public String name() {
+                return name;
+            }
+
+            @Override
+            public Selector selector() {
+                return () -> selectorEntityKind;
+            }
+
+            @Override
+            public Data data() {
+                return () -> dataJsonPath;
+            }
+        };
+    }
 
     private BuiltinSchemas() {
     }

@@ -2,6 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.ViewLike;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,7 +24,9 @@ public class ViewProcessor {
 
     public ViewProcessor(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+
         this.parseContext = JsonPath.using(Configuration.builder()
+                // a custom JsonProvider that supports both JsonNode and Map
                 .jsonProvider(new JacksonJsonNodeJsonProvider(objectMapper) {
                     @Override
                     public boolean isMap(Object obj) {
@@ -45,35 +48,15 @@ public class ViewProcessor {
     }
 
     /**
-     * Materializes a MicaView/v1
+     * Materialize (or "render") a MicaView/v1 using the given entities.
      */
-    public PartialEntity process(EntityLike view, Stream<EntityLike> entities) {
-        if (!view.kind().equals(BuiltinSchemas.MICA_VIEW_V1)) {
-            throw new ViewProcessorException("Expected a MicaView/v1 entity, got: " + view.kind());
-        }
-
-        var selectorEntityKind = assertSelectorEntityKind(view);
-        var jsonPath = assertJsonPath(view);
-        var data = entities.filter(entity -> entity.kind().equals(selectorEntityKind))
-                .map(entity -> applyJsonPath(entity.data(), jsonPath))
+    public PartialEntity render(ViewLike view, Stream<EntityLike> entities) {
+        var data = entities.filter(entity -> entity.kind().equals(view.selector().entityKind()))
+                .map(entity -> applyJsonPath(entity.data(), view.data().jsonPath()))
                 .toList();
 
         return PartialEntity.create(view.name(), RESULT_ENTITY_KIND,
                 Map.of("data", objectMapper.convertValue(data, JsonNode.class)));
-    }
-
-    private String assertSelectorEntityKind(EntityLike view) {
-        return Optional.ofNullable(view.data().get("selector"))
-                .map(n -> n.get("entityKind"))
-                .map(JsonNode::asText)
-                .orElseThrow(() -> new ViewProcessorException("View is missing selector.entityKind"));
-    }
-
-    private String assertJsonPath(EntityLike view) {
-        return Optional.ofNullable(view.data().get("data"))
-                .map(n -> n.get("jsonPath"))
-                .map(JsonNode::asText)
-                .orElseThrow(() -> new ViewProcessorException("View is missing data.jsonPath"));
     }
 
     private Optional<JsonNode> applyJsonPath(Map<String, JsonNode> data, String jsonPath) {

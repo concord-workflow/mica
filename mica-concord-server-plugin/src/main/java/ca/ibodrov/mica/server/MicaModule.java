@@ -4,6 +4,7 @@ import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.EntityResource;
 import ca.ibodrov.mica.server.api.EntityUploadResource;
 import ca.ibodrov.mica.server.api.SystemResource;
+import ca.ibodrov.mica.server.api.ViewResource;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
@@ -30,6 +31,17 @@ import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.walmartlabs.concord.server.Utils.bindJaxRsResource;
 
+/**
+ * Mica's Guice module.
+ * <p/>
+ * Several things are assumed to be provided by the environment:
+ * <ul>
+ * <li>{@link com.fasterxml.jackson.databind.ObjectMapper}</li>
+ * <li>{@link com.walmartlabs.concord.db.DatabaseConfiguration} annotated as
+ * {@link com.walmartlabs.concord.db.MainDB}</li>
+ * <li>{@link com.codahale.metrics.MetricRegistry}</li>
+ * </ul>
+ */
 @Named
 public class MicaModule implements Module {
 
@@ -77,6 +89,7 @@ public class MicaModule implements Module {
         bindJaxRsResource(binder, OidcResource.class);
         bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, WhoamiResource.class);
+        bindJaxRsResource(binder, ViewResource.class);
 
         // other beans
 
