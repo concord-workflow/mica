@@ -32,6 +32,8 @@ import static org.jooq.impl.DSL.noCondition;
  */
 public class EntityStore {
 
+    private static final int MAX_ROWS_HARD_LIMIT = 1000;
+
     private static final TypeReference<Map<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
     };
 
@@ -64,16 +66,21 @@ public class EntityStore {
                 .fetch(EntityStore::toEntityMetadata);
     }
 
-    public List<Entity> getAllByKind(String entityKind) {
-        return dsl.select(MICA_ENTITIES.ID,
+    public List<Entity> getAllByKind(String entityKind, int limit) {
+        var step = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.KIND.eq(entityKind))
-                .fetch(this::toEntity);
+                .where(MICA_ENTITIES.KIND.eq(entityKind));
+
+        if (limit > 0) {
+            step.limit(limit);
+        }
+
+        return step.fetch(this::toEntity);
     }
 
     public Optional<Entity> getById(UUID entityId) {

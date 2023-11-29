@@ -1,4 +1,4 @@
-import { EntityEntry, useDeleteById } from '../api/entity.ts';
+import { useDeleteById } from '../api/entity.ts';
 import { LoadingButton } from '@mui/lab';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
@@ -6,13 +6,14 @@ import React from 'react';
 import { useQueryClient } from 'react-query';
 
 interface Props {
-    entry: EntityEntry;
+    entityId: string;
+    entityName: string;
     open: boolean;
     onSuccess: () => void;
     onClose: () => void;
 }
 
-const DeleteEntityConfirmation = ({ entry, open, onSuccess, onClose }: Props) => {
+const DeleteEntityConfirmation = ({ entityId, entityName, open, onSuccess, onClose }: Props) => {
     const client = useQueryClient();
     const { mutateAsync, isLoading, error } = useDeleteById({
         onSuccess: async () => {
@@ -21,9 +22,9 @@ const DeleteEntityConfirmation = ({ entry, open, onSuccess, onClose }: Props) =>
     });
 
     const handleDelete = React.useCallback(async () => {
-        await mutateAsync({ entityId: entry.id });
+        await mutateAsync({ entityId });
         onSuccess();
-    }, [entry.id, mutateAsync, onSuccess]);
+    }, [entityId, mutateAsync, onSuccess]);
 
     return (
         <Dialog open={open} onClose={onClose}>
@@ -34,7 +35,7 @@ const DeleteEntityConfirmation = ({ entry, open, onSuccess, onClose }: Props) =>
                         {error.message}
                     </Alert>
                 )}
-                Are you sure you want to delete entity <b>{entry.name}</b> (ID: {entry.id})?
+                Are you sure you want to delete entity <b>{entityName}</b> (ID: {entityId})?
             </DialogContent>
             <DialogActions>
                 <Button variant="contained" color="primary" onClick={onClose}>

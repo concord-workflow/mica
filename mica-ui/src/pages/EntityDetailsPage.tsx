@@ -1,6 +1,6 @@
 import {
-    EntityEntry,
     EntityWithData,
+    MICA_VIEW_KIND,
     STANDARD_ENTITY_PROPERTIES,
     getEntity,
 } from '../api/entity.ts';
@@ -10,12 +10,17 @@ import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
+import RenderedView from '../features/RenderedView.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import PreviewIcon from '@mui/icons-material/Preview';
 import {
     Button,
     CircularProgress,
     Container,
+    Dialog,
+    DialogContent,
+    DialogTitle,
     FormControl,
     Link,
     Paper,
@@ -26,6 +31,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -44,6 +50,15 @@ const HELP: React.ReactNode = (
 
 type RouteParams = {
     entityId: string;
+};
+
+const kindToPayloadTitle = (kind: string): string => {
+    switch (kind) {
+        case MICA_VIEW_KIND:
+            return 'View Definition';
+        default:
+            return 'Data';
+    }
 };
 
 const renderPropertyValue = (o: object, key: string) => {
@@ -100,18 +115,20 @@ const EntityDetailsPage = () => {
 
     const navigate = useNavigate();
 
-    const [selectedEntry, setSelectedEntry] = React.useState<EntityEntry | undefined>();
     const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
-    const handleCancelDelete = React.useCallback(() => {
-        setSelectedEntry(undefined);
-        setOpenDeleteConfirmation(false);
-    }, []);
     const handleDelete = React.useCallback(() => {
         if (!entity) {
             return;
         }
-        setSelectedEntry(entity);
         setOpenDeleteConfirmation(true);
+    }, [entity]);
+
+    const [openPreview, setOpenPreview] = React.useState(false);
+    const handlePreview = React.useCallback(() => {
+        if (!entity) {
+            return;
+        }
+        setOpenPreview(true);
     }, [entity]);
 
     const visibleProperties = React.useMemo(
@@ -121,15 +138,15 @@ const EntityDetailsPage = () => {
 
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
-            {selectedEntry && (
+            {entity && (
                 <DeleteEntityConfirmation
-                    entry={selectedEntry}
+                    entityId={entity.id}
+                    entityName={entity.name}
                     open={openDeleteConfirmation}
                     onSuccess={() => navigate('/entity')}
-                    onClose={handleCancelDelete}
+                    onClose={() => setOpenDeleteConfirmation(false)}
                 />
             )}
-
             <Grid container>
                 <Grid xs={10}>
                     <PageTitle help={HELP}>Entity Details</PageTitle>
@@ -157,7 +174,7 @@ const EntityDetailsPage = () => {
                     </Stack>
                 </Grid>
             </Grid>
-            <MetadataGrid sx={{ marginBottom: 2 }}>
+            <MetadataGrid sx={{ mb: 2 }}>
                 <MetadataItem label="ID">
                     {entityId} {isFetching && <CircularProgress size={16} />}
                 </MetadataItem>
@@ -180,9 +197,30 @@ const EntityDetailsPage = () => {
                     {entity ? new Date(entity.updatedAt).toLocaleString() : '?'}
                 </MetadataItem>
             </MetadataGrid>
+            {entity && entity.kind == MICA_VIEW_KIND && (
+                <>
+                    <FormControl sx={{ mt: 2, mb: 2 }}>
+                        <Tooltip title="Render the view using a small subset of data.">
+                            <Button
+                                startIcon={<PreviewIcon />}
+                                variant="outlined"
+                                onClick={handlePreview}>
+                                Preview Data
+                            </Button>
+                        </Tooltip>
+                    </FormControl>
+
+                    <Dialog open={openPreview} onClose={() => setOpenPreview(false)}>
+                        <DialogTitle>Preview</DialogTitle>
+                        <DialogContent>
+                            <RenderedView viewId={entity.id} />
+                        </DialogContent>
+                    </Dialog>
+                </>
+            )}
             {entity && (
                 <>
-                    <Typography variant="h6">Data</Typography>
+                    <Typography variant="h6">{kindToPayloadTitle(entity.kind)}</Typography>
                     <ActionBar sx={{ mb: 2 }}>
                         <Spacer />
                         <SearchField onChange={(search) => setSearch(search)} />

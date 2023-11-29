@@ -64,14 +64,14 @@ const EntityListPage = () => {
         setOpenUpload(false);
     }, []);
 
-    const [selectedEntry, setSelectedEntry] = React.useState<EntityEntry | undefined>();
+    const [selectedEntity, setSelectedEntity] = React.useState<EntityEntry | undefined>();
     const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
     const handleDelete = React.useCallback((entry: EntityEntry) => {
-        setSelectedEntry(entry);
+        setSelectedEntity(entry);
         setOpenDeleteConfirmation(true);
     }, []);
     const handleCancelDelete = React.useCallback(() => {
-        setSelectedEntry(undefined);
+        setSelectedEntity(undefined);
         setOpenDeleteConfirmation(false);
     }, []);
     const handleSuccessfulDelete = React.useCallback(() => {
@@ -89,9 +89,10 @@ const EntityListPage = () => {
                     onClose={() => setOpenUpload(false)}
                 />
             )}
-            {selectedEntry && (
+            {selectedEntity && (
                 <DeleteEntityConfirmation
-                    entry={selectedEntry}
+                    entityId={selectedEntity.id}
+                    entityName={selectedEntity.name}
                     open={openDeleteConfirmation}
                     onSuccess={handleSuccessfulDelete}
                     onClose={handleCancelDelete}
