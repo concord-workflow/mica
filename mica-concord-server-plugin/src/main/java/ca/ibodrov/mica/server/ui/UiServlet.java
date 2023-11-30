@@ -85,10 +85,11 @@ public class UiServlet extends HttpServlet {
         }
         var ext = fileName.substring(extIdx + 1);
         return Optional.ofNullable(switch (ext) {
-            case "html" -> "text/html";
             case "css" -> "text/css";
+            case "html" -> "text/html";
             case "js" -> "text/javascript";
             case "svg" -> "image/svg+xml";
+            case "ttf" -> "font/ttf";
             case "woff" -> "font/woff";
             case "woff2" -> "font/woff2";
             default -> null;
