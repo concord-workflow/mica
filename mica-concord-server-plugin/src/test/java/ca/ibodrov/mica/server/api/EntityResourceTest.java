@@ -89,7 +89,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                   multiline
                   text
                 """.getBytes()));
-        var entities = entityResource.listEntities("testRecord", null, null);
+        var entities = entityResource.listEntities("testRecord", null, null, null, 10);
         assertEquals(1, entities.data().size());
         var entity1 = entities.data().get(0);
         assertEquals(entity1Version, entity1.toVersion());
@@ -103,9 +103,9 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                   nested:
                     object: "why not?"
                 """.getBytes()));
-        entities = entityResource.listEntities("testRecord", null, null);
+        entities = entityResource.listEntities("testRecord", null, null, null, 10);
         assertEquals(2, entities.data().size());
-        entities = entityResource.listEntities("anotherTestRecord", null, null);
+        entities = entityResource.listEntities("anotherTestRecord", null, null, null, 10);
         assertEquals(1, entities.data().size());
         var entity2 = entities.data().get(0);
         assertEquals(entity2Version, entity2.toVersion());
@@ -151,13 +151,13 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                 data: "foo"
                 """.getBytes()));
 
-        var entityList = entityResource.listEntities(null, "someRecord", null);
+        var entityList = entityResource.listEntities(null, "someRecord", null, null, 10);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).anyMatch(createdVersion::equals));
 
         var deletedVersion = entityResource.deleteById(createdVersion.id().id());
         assertEquals(createdVersion, deletedVersion);
 
-        entityList = entityResource.listEntities(null, "someRecord", null);
+        entityList = entityResource.listEntities(null, "someRecord", null, null, 10);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).noneMatch(createdVersion::equals));
     }
 

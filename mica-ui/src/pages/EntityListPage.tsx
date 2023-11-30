@@ -1,4 +1,4 @@
-import { EntityEntry, listEntities } from '../api/entity.ts';
+import { EntityEntry, OrderBy, listEntities } from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import RowMenu from '../components/RowMenu.tsx';
@@ -44,6 +44,8 @@ const HELP: React.ReactNode = (
     </>
 );
 
+const DEFAULT_ROW_LIMIT = 100;
+
 const EntityListPage = () => {
     const [openUpload, setOpenUpload] = React.useState(false);
 
@@ -51,10 +53,10 @@ const EntityListPage = () => {
     const [entityKindFilter, setEntityKindFilter] = React.useState<string | undefined>();
     const { data, isFetching } = useQuery(
         ['entity', 'list', entityKindFilter, search],
-        () => listEntities(search, undefined, entityKindFilter),
+        () => listEntities(search, undefined, entityKindFilter, OrderBy.NAME, DEFAULT_ROW_LIMIT),
         {
             keepPreviousData: true,
-            select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),
+            select: ({ data }) => data,
         },
     );
 
@@ -165,6 +167,14 @@ const EntityListPage = () => {
                                     </TableCell>
                                 </TableRow>
                             ))}
+                        {data && data.length >= DEFAULT_ROW_LIMIT && (
+                            <TableRow>
+                                <TableCell colSpan={3} align="center">
+                                    More than {DEFAULT_ROW_LIMIT} results, please refine your
+                                    search.
+                                </TableCell>
+                            </TableRow>
+                        )}
                         {data && data.length < 1 && (
                             <TableRow>
                                 <TableCell colSpan={3} align="center">

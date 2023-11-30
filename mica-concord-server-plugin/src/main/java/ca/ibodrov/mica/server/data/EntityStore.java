@@ -13,6 +13,7 @@ import org.jooq.Record5;
 import org.jooq.Record6;
 import org.jooq.impl.DSL;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -32,8 +33,6 @@ import static org.jooq.impl.DSL.noCondition;
  */
 public class EntityStore {
 
-    private static final int MAX_ROWS_HARD_LIMIT = 1000;
-
     private static final TypeReference<Map<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
     };
 
@@ -51,18 +50,31 @@ public class EntityStore {
         this.uuidGenerator = requireNonNull(uuidGenerator);
     }
 
-    public List<EntityMetadata> search(String search, String entityName, String entityKind) {
+    public List<EntityMetadata> search(@Nullable String search,
+                                       @Nullable String entityName,
+                                       @Nullable String entityKind,
+                                       @Nullable OrderBy orderBy,
+                                       int limit) {
+
         var searchCondition = search != null ? MICA_ENTITIES.NAME.containsIgnoreCase(search) : noCondition();
         var nameCondition = entityName != null ? MICA_ENTITIES.NAME.eq(entityName) : noCondition();
         var entityKindCondition = entityKind != null ? MICA_ENTITIES.KIND.eq(entityKind) : noCondition();
-
-        return dsl.select(MICA_ENTITIES.ID,
+        var query = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT)
                 .from(MICA_ENTITIES)
-                .where(searchCondition.and(nameCondition).and(entityKindCondition))
+                .where(searchCondition.and(nameCondition).and(entityKindCondition));
+
+        if (orderBy != null) {
+            switch (orderBy) {
+                case NAME -> query.orderBy(MICA_ENTITIES.NAME);
+            }
+        }
+
+        return query
+                .limit(limit)
                 .fetch(EntityStore::toEntityMetadata);
     }
 
@@ -172,5 +184,9 @@ public class EntityStore {
         } catch (IOException e) {
             throw new StoreException("JSON serialization error, most likely a bug: " + e.getMessage(), e);
         }
+    }
+
+    public enum OrderBy {
+        NAME
     }
 }
