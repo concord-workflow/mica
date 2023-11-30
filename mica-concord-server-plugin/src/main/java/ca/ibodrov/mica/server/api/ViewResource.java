@@ -55,6 +55,10 @@ public class ViewResource implements Resource {
     @Operation(description = "Preview a view", operationId = "preview")
     public PartialEntity preview(PreviewRequest request) {
         // TODO better validation
+        if (request.view() == null) {
+            throw ApiException.badRequest(NO_DATA, "Missing 'view' field");
+        }
+
         var view = BuiltinSchemas.asView(request.view());
 
         var entities = entityStore.getAllByKind(view.selector().entityKind(), request.limit).stream()

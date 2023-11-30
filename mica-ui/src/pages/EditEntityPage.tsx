@@ -4,9 +4,18 @@ import { PreviewRequest } from '../api/view.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
-import PreviewViewButton from '../features/PreviewViewButton.tsx';
+import PreviewView from '../features/PreviewView.tsx';
 import SaveIcon from '@mui/icons-material/Save';
-import { Alert, Box, Button, FormControl, Snackbar } from '@mui/material';
+import {
+    Alert,
+    Box,
+    Button,
+    Drawer,
+    FormControl,
+    FormControlLabel,
+    Snackbar,
+    Switch,
+} from '@mui/material';
 import { editor } from 'monaco-editor';
 import { parse as parseYaml } from 'yaml';
 
@@ -108,6 +117,31 @@ const EditEntityPage = () => {
         success !== null && success !== undefined,
     );
 
+    // stuff for the live preview feature
+    const [showPreview, setShowPreview] = React.useState<boolean>(false);
+    const [yamlParseError, setYamlParseError] = React.useState<string | undefined>();
+    const createPreviewRequest: () => PreviewRequest | undefined = React.useCallback(() => {
+        const editor = editorRef.current;
+        if (!editor) {
+            return;
+        }
+        const yaml = editor.getValue();
+        try {
+            const view = parseYaml(yaml);
+            setYamlParseError(undefined);
+            return {
+                view,
+                limit: 10,
+            };
+        } catch (e) {
+            console.log('Error parsing YAML:', e);
+            setYamlParseError((e as Error).message);
+        }
+    }, [editorRef]);
+    const [previewRequest, setPreviewRequest] = React.useState<PreviewRequest | undefined>(() =>
+        createPreviewRequest(),
+    );
+
     // the entity ID and kind can be changed by the user, we need to keep track of them
     const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind'));
     const [selectedId, setSelectedId] = React.useState(entityId);
@@ -116,8 +150,11 @@ const EditEntityPage = () => {
             setDirty(value !== data);
             setSelectedId((prev) => getYamlField(value, 'id') ?? prev);
             setSelectedKind((prev) => getYamlField(value, 'kind') ?? prev);
+            if (showPreview) {
+                setPreviewRequest(createPreviewRequest());
+            }
         },
-        [data],
+        [data, createPreviewRequest, showPreview],
     );
     useEffect(() => {
         if (!data) {
@@ -132,24 +169,6 @@ const EditEntityPage = () => {
 
     // provide a source for the preview view button
     // it is responsible for converting the user input (YAML) into a PreviewRequest
-    const [previewError, setPreviewError] = React.useState<string | undefined>();
-    const previewSource: () => PreviewRequest | undefined = React.useCallback(() => {
-        const editor = editorRef.current;
-        if (!editor) {
-            return;
-        }
-        const yaml = editor.getValue();
-        try {
-            const view = parseYaml(yaml);
-            return {
-                view,
-                limit: 10,
-            };
-        } catch (e) {
-            console.log('Error parsing YAML:', e);
-            setPreviewError((e as Error).message);
-        }
-    }, [editorRef]);
 
     // delay the editor rendering as a workaround for monaco-react bug
     const [ready, setReady] = React.useState<boolean>(false);
@@ -171,9 +190,17 @@ const EditEntityPage = () => {
                     <ActionBar>
                         <PageTitle help={HELP}>{selectedKind} Entity</PageTitle>
                         <Spacer />
-                        {selectedId && selectedId !== '_new' && selectedKind === MICA_VIEW_KIND && (
+                        {selectedKind === MICA_VIEW_KIND && (
                             <FormControl>
-                                <PreviewViewButton source={previewSource} />
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            value={showPreview}
+                                            onChange={(ev) => setShowPreview(ev.target.checked)}
+                                        />
+                                    }
+                                    label="Preview"
+                                />
                             </FormControl>
                         )}
                         <FormControl>
@@ -187,9 +214,9 @@ const EditEntityPage = () => {
                         </FormControl>
                     </ActionBar>
                     {saveError && <Alert severity="error">{saveError.message}</Alert>}
-                    {previewError && <Alert severity="error">{previewError}</Alert>}
+                    {yamlParseError && <Alert severity="error">{yamlParseError}</Alert>}
                 </Box>
-                <Box flexGrow="1">
+                <Box flex="1">
                     <ErrorBoundary
                         fallback={<b>Something went wrong while trying to render the editor.</b>}>
                         {ready && defaultValue && (
@@ -197,12 +224,20 @@ const EditEntityPage = () => {
                                 loading={isFetching || isSaving}
                                 height="100%"
                                 defaultLanguage="yaml"
+                                options={{
+                                    minimap: { enabled: false },
+                                }}
                                 defaultValue={defaultValue}
                                 onMount={handleEditorOnMount}
                                 onChange={handleOnChange}
                             />
                         )}
                     </ErrorBoundary>
+                    {showPreview && (
+                        <Drawer anchor="bottom" variant="permanent">
+                            {previewRequest && <PreviewView request={previewRequest} />}
+                        </Drawer>
+                    )}
                 </Box>
             </Box>
         </>
