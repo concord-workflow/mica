@@ -6,7 +6,7 @@
     <parent>
         <groupId>ca.ibodrov.mica</groupId>
         <artifactId>mica</artifactId>
-        <version>0.0.10</version>
+        <version>0.0.11-SNAPSHOT</version>
     </parent>
 
     <artifactId>test-support</artifactId>
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>ca.ibodrov.mica</groupId>
             <artifactId>mica-api</artifactId>
-            <version>0.0.10</version>
+            <version>0.0.11-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
