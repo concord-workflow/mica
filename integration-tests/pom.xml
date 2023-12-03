@@ -24,6 +24,11 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>ca.ibodrov.concord</groupId>
+            <artifactId>webapp-plugin</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- we need concord-server/dist for the default config -->
         <dependency>
             <groupId>com.walmartlabs.concord.it</groupId>

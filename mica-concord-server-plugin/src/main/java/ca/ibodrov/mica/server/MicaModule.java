@@ -15,7 +15,6 @@ import ca.ibodrov.mica.server.exceptions.EntityValidationExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;
 import ca.ibodrov.mica.server.ui.OidcResource;
 import ca.ibodrov.mica.server.ui.SwaggerServlet;
-import ca.ibodrov.mica.server.ui.UiServlet;
 import ca.ibodrov.mica.server.ui.WhoamiResource;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -73,7 +72,6 @@ public class MicaModule implements Module {
 
         // servlets
 
-        newSetBinder(binder, HttpServlet.class).addBinding().to(UiServlet.class).in(SINGLETON);
         newSetBinder(binder, HttpServlet.class).addBinding().to(SwaggerServlet.class).in(SINGLETON);
 
         // filter chains
