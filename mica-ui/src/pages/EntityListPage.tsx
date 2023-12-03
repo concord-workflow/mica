@@ -35,7 +35,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import React from 'react';
 import { useQuery } from 'react-query';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
@@ -47,13 +47,17 @@ const HELP: React.ReactNode = (
 const DEFAULT_ROW_LIMIT = 100;
 
 const EntityListPage = () => {
+    const [searchParams] = useSearchParams();
+
     const [openUpload, setOpenUpload] = React.useState(false);
 
     const [search, setSearch] = React.useState<string>('');
-    const [entityKindFilter, setEntityKindFilter] = React.useState<string | undefined>();
+    const [selectedKind, setSelectedKind] = React.useState<string | undefined>(
+        searchParams.get('kind') ?? undefined,
+    );
     const { data, isFetching } = useQuery(
-        ['entity', 'list', entityKindFilter, search],
-        () => listEntities(search, undefined, entityKindFilter, OrderBy.NAME, DEFAULT_ROW_LIMIT),
+        ['entity', 'list', selectedKind, search],
+        () => listEntities(search, undefined, selectedKind, OrderBy.NAME, DEFAULT_ROW_LIMIT),
         {
             keepPreviousData: true,
             select: ({ data }) => data,
@@ -121,7 +125,7 @@ const EntityListPage = () => {
                 <Spacer />
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                     <InputLabel>Kind</InputLabel>
-                    <EntityKindSelect value={entityKindFilter} onChange={setEntityKindFilter} />
+                    <EntityKindSelect value={selectedKind} onChange={setSelectedKind} />
                 </FormControl>
                 <SearchField onChange={(value) => setSearch(value)} />
             </ActionBar>
