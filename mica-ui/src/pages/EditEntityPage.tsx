@@ -143,12 +143,14 @@ const EditEntityPage = () => {
     );
 
     // the entity ID and kind can be changed by the user, we need to keep track of them
-    const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind'));
     const [selectedId, setSelectedId] = React.useState(entityId);
+    const [selectedName, setSelectedName] = React.useState<string | undefined>();
+    const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind'));
     const handleOnChange = React.useCallback(
         (value: string | undefined) => {
             setDirty(value !== data);
             setSelectedId((prev) => getYamlField(value, 'id') ?? prev);
+            setSelectedName((prev) => getYamlField(value, 'name') ?? prev);
             setSelectedKind((prev) => getYamlField(value, 'kind') ?? prev);
             if (showPreview) {
                 setPreviewRequest(createPreviewRequest());
@@ -167,16 +169,6 @@ const EditEntityPage = () => {
     const defaultValue =
         selectedId === '_new' ? (selectedKind ? kindToTemplate(selectedKind) : undefined) : data;
 
-    // provide a source for the preview view button
-    // it is responsible for converting the user input (YAML) into a PreviewRequest
-
-    // delay the editor rendering as a workaround for monaco-react bug
-    const [ready, setReady] = React.useState<boolean>(false);
-    useEffect(() => {
-        const timer = setTimeout(() => setReady(true), 100);
-        return () => clearTimeout(timer);
-    });
-
     return (
         <>
             <Snackbar
@@ -188,7 +180,7 @@ const EditEntityPage = () => {
             <Box display="flex" flexDirection="column" height="100%">
                 <Box sx={{ m: 2 }}>
                     <ActionBar>
-                        <PageTitle help={HELP}>{selectedKind} Entity</PageTitle>
+                        <PageTitle help={HELP}>{selectedName}</PageTitle>
                         <Spacer />
                         {selectedKind === MICA_VIEW_KIND && (
                             <FormControl>
@@ -219,7 +211,7 @@ const EditEntityPage = () => {
                 <Box flex="1">
                     <ErrorBoundary
                         fallback={<b>Something went wrong while trying to render the editor.</b>}>
-                        {ready && defaultValue && (
+                        {defaultValue && (
                             <Editor
                                 loading={isFetching || isSaving}
                                 height="100%"
