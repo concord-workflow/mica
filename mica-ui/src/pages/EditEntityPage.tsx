@@ -120,12 +120,19 @@ const EditEntityPage = () => {
     // stuff for the live preview feature
     const [showPreview, setShowPreview] = React.useState<boolean>(false);
     const [yamlParseError, setYamlParseError] = React.useState<string | undefined>();
+
+    // the entity ID and kind can be changed by the user, we need to keep track of them
+    const [selectedId, setSelectedId] = React.useState(entityId);
+    const [selectedName, setSelectedName] = React.useState<string | undefined>();
+    const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind'));
+
+    // provide a default value for the editor
+    const defaultValue =
+        selectedId === '_new' ? (selectedKind ? kindToTemplate(selectedKind) : undefined) : data;
+
     const createPreviewRequest: () => PreviewRequest | undefined = React.useCallback(() => {
         const editor = editorRef.current;
-        if (!editor) {
-            return;
-        }
-        const yaml = editor.getValue();
+        const yaml = editor ? editor.getValue() : '';
         try {
             const view = parseYaml(yaml);
             setYamlParseError(undefined);
@@ -138,14 +145,11 @@ const EditEntityPage = () => {
             setYamlParseError((e as Error).message);
         }
     }, [editorRef]);
+
     const [previewRequest, setPreviewRequest] = React.useState<PreviewRequest | undefined>(() =>
         createPreviewRequest(),
     );
 
-    // the entity ID and kind can be changed by the user, we need to keep track of them
-    const [selectedId, setSelectedId] = React.useState(entityId);
-    const [selectedName, setSelectedName] = React.useState<string | undefined>();
-    const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind'));
     const handleOnChange = React.useCallback(
         (value: string | undefined) => {
             setDirty(value !== data);
@@ -158,16 +162,10 @@ const EditEntityPage = () => {
         },
         [data, createPreviewRequest, showPreview],
     );
-    useEffect(() => {
-        if (!data) {
-            return;
-        }
-        handleOnChange(data);
-    }, [handleOnChange, data]);
 
-    // provide a default value for the editor
-    const defaultValue =
-        selectedId === '_new' ? (selectedKind ? kindToTemplate(selectedKind) : undefined) : data;
+    useEffect(() => {
+        handleOnChange(defaultValue);
+    }, [handleOnChange, defaultValue]);
 
     return (
         <>
