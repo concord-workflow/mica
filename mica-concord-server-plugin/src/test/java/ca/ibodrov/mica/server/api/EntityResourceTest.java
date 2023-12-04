@@ -124,7 +124,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                     text
                 """.getBytes()));
 
-        var response = entityResource.getEntityAsYamlString(entityVersion.id().id());
+        var response = entityResource.getEntityAsYamlString(entityVersion.id());
         assertEquals(200, response.getStatus());
 
         var expectedYaml = """

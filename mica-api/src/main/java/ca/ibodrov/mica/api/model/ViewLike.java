@@ -1,5 +1,9 @@
 package ca.ibodrov.mica.api.model;
 
+import ca.ibodrov.mica.schema.ObjectSchemaNode;
+
+import java.util.Map;
+
 public interface ViewLike {
 
     String name();
@@ -7,6 +11,8 @@ public interface ViewLike {
     Selector selector();
 
     Data data();
+
+    Map<String, ObjectSchemaNode> parameters();
 
     interface Selector {
 

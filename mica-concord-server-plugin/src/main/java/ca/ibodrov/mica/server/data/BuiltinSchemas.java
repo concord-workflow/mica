@@ -6,8 +6,10 @@ import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.schema.ValueType;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -59,16 +61,21 @@ public final class BuiltinSchemas {
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
             "name", string(),
+            "parameters", object(Map.of(), Set.of()),
             "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
             "data", object(Map.of("jsonPath", string()), Set.of("jsonPath"))),
             Set.of("kind", "name", "selector", "data"));
 
-    public static ViewLike asView(EntityLike entity) {
+    public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {
         if (!entity.kind().equals(BuiltinSchemas.MICA_VIEW_V1)) {
             throw ApiException.badRequest(BAD_DATA, "Expected a MicaView/v1 entity, got: " + entity.kind());
         }
 
         var name = entity.name();
+
+        var parameters = Optional.ofNullable(entity.data().get("parameters"))
+                .map(object -> parseParameters(objectMapper, object))
+                .orElseGet(Map::of);
 
         var selectorEntityKind = select(entity, "selector", "entityKind", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing selector.entityKind"));
@@ -83,6 +90,11 @@ public final class BuiltinSchemas {
             @Override
             public String name() {
                 return name;
+            }
+
+            @Override
+            public Map<String, ObjectSchemaNode> parameters() {
+                return parameters;
             }
 
             @Override
@@ -105,6 +117,21 @@ public final class BuiltinSchemas {
                 };
             }
         };
+    }
+
+    private static Map<String, ObjectSchemaNode> parseParameters(ObjectMapper objectMapper, JsonNode parameters) {
+        var result = new HashMap<String, ObjectSchemaNode>();
+        parameters.fields().forEachRemaining(field -> {
+            var name = field.getKey();
+            var value = field.getValue();
+            var schema = objectMapper.convertValue(value, ObjectSchemaNode.class);
+            if (schema == null) {
+                throw ApiException.badRequest(BAD_DATA,
+                        "Expected a parameter definition for '%s', got: %s".formatted(name, value));
+            }
+            result.put(name, schema);
+        });
+        return result;
     }
 
     private static <T> Optional<T> select(EntityLike entityLike,

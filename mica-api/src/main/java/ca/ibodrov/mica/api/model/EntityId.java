@@ -24,4 +24,8 @@ public record EntityId(UUID id) {
     public String toExternalForm() {
         return id.toString();
     }
+
+    public static EntityId fromString(String s) {
+        return new EntityId(UUID.fromString(s));
+    }
 }

@@ -20,36 +20,29 @@ Entity
 The entity's `kind` is a reference to a `MicaKind/v1` entity that provides
 the schema. For example, a `CorporateCustomer` entity may look like this:
 
-```json
-{
-  "name": "AcmeCorp",
-  "kind": "CorporateCustomer",
-  "details": {
-    "displayName": "Acme Corp",
-    "validationUrl": "https://acme.example.com/validate"
-  }
-}
+```yaml
+name: AcmeCorp
+kind: AcmeClient
+details:
+  id: acme
+  validationUrl: https://acme.example.com/validate
 ```
 
 Which is enforced by the schema stored in a separate `Entity`:
 
-```json
-{
-    "name": "CorporateCustomer",
-    "kind": "MicaKind/v1",
-    "schema": {
-        "properties": {
-            "displayName": {
-                "type": "string",
-                "required": true
-            },
-            "validationUrl": {
-                "type": "string",
-                "required": true
-            }
-        }
-    }
-}
+```yaml
+name: AcmeClient
+kind: MicaKind/v1
+schema:
+  properties:
+    id:
+      type: string
+    status:
+      type: string
+      enum: [active, retired]
+    validationUrl:
+      type: string
+  required: ['id', 'validationUrl']
 ```
 
 Mica is enforcing schemas every time an entity is created or updated. See
@@ -80,7 +73,7 @@ For example, given a couple of entities like so:
 
 ```yaml
 name: clients-20240101
-kind: AcmeClient
+kind: AcmeClientList
 clients:
   - id: foo
     status: active
@@ -95,7 +88,7 @@ clients:
 
 ```yaml
 name: clients-20230101
-kind: AcmeClient
+kind: AcmeClientList
 clients:
   - id: qux
     status: active
@@ -108,13 +101,34 @@ clients:
     validationUrl: "http://ack.example.org"
 ```
 
+Validated by the following schema:
+
+```yaml
+name: AcmeClientList
+kind: MicaKind/v1
+schema:
+  properties:
+    clients:
+      type: array
+      items:
+        properties:
+          id:
+            type: string
+          status:
+            type: string
+            enum: [active, retired]
+          validationUrl:
+            type: string
+        required: ['id', 'validationUrl']
+```
+
 Plus a view definition:
 
 ```yaml
 kind: MicaView/v1
 name: ActiveClients
 selector:
-  entityKind: AcmeClient
+  entityKind: AcmeClientList
 data:
   jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
 ```
@@ -160,7 +174,7 @@ of arrays. To flatten the result, use the `flatten` option:
 kind: MicaView/v1
 name: ActiveClients
 selector:
-  entityKind: AcmeClient
+  entityKind: AcmeClientList
 data:
   jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
   flatten: true
@@ -191,8 +205,6 @@ Note that now the result is a JSON array of objects, not an array of arrays.
 
 ## Parametrized Views
 
-_This section is a work in progress._
-
 Views can declare parameters:
 
 ```yaml
@@ -201,13 +213,22 @@ name: ActiveClients
 parameters:
   clientId:
     type: string
+selector:
+  entityKind: AcmeClientList
 data:
-  jsonPath: $.clients[?(@.status=parameters.clientId)].["id", "validationUrl"]
+  jsonPath: $.clients[?(@.id==$clientId)].["id", "validationUrl"]
+  flatten: true
 ```
 
-## View Implementation Details
+The `$syntax` is used to reference parameters in the `jsonPath` expression.
+Currently, any JSON value can be used as a parameter. Currently, only primitive
+types are supported.
 
+To pass the parameters, use the `parameters` field in the request body:
 
+```
+curl -i --json '{"viewName": "ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
+```
 
 ## Entity Validation
 

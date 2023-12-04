@@ -2,6 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.Validator;
+import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -16,8 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
-import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_SCHEMA_PROPERTY;
-import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_V1;
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BuiltinSchemasTest {
@@ -59,6 +60,23 @@ public class BuiltinSchemasTest {
         assertTrue(oldResult.isValid());
         var newResult = Validator.validateObject(NEW_MICA_KIND_V1_SCHEMA, input);
         assertTrue(newResult.isValid());
+    }
+
+    @Test
+    public void testBadViews() {
+        var entity = parseYaml("""
+                name: MyView
+                kind: MicaView/v1
+                # broken parameters
+                parameters:
+                  clientId:
+                selector:
+                  entityKind: MicaRecord/v1
+                data:
+                  jsonPath: $
+                """);
+
+        assertThrows(ApiException.class, () -> asView(yamlMapper, entity));
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {

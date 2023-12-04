@@ -95,7 +95,7 @@ public class EntityStore {
         return step.fetch(this::toEntity);
     }
 
-    public Optional<Entity> getById(UUID entityId) {
+    public Optional<Entity> getById(EntityId entityId) {
         return dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -103,7 +103,7 @@ public class EntityStore {
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(entityId))
+                .where(MICA_ENTITIES.ID.eq(entityId.id()))
                 .fetchOptional(this::toEntity);
     }
 

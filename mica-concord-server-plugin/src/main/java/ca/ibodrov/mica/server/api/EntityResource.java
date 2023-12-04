@@ -62,7 +62,7 @@ public class EntityResource implements Resource {
     @GET
     @Path("{id}")
     @Operation(description = "Get entity by ID", operationId = "getEntityById")
-    public Entity getEntityById(@PathParam("id") UUID entityId) {
+    public Entity getEntityById(@PathParam("id") EntityId entityId) {
         return entityStore.getById(entityId)
                 .orElseThrow(() -> ApiException.notFound(NO_DATA, "Entity not found: " + entityId));
     }
@@ -70,7 +70,7 @@ public class EntityResource implements Resource {
     @GET
     @Path("{id}/yaml")
     @Operation(description = "Get entity by ID in YAML format", operationId = "getEntityAsYamlString")
-    public Response getEntityAsYamlString(@PathParam("id") UUID entityId) {
+    public Response getEntityAsYamlString(@PathParam("id") EntityId entityId) {
         var entity = getEntityById(entityId);
         try {
             var string = yamlMapper.writerWithDefaultPrettyPrinter()
