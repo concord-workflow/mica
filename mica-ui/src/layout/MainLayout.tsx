@@ -1,3 +1,4 @@
+import Version from '../features/Version.tsx';
 import ProfileToolbarButton from './ProfileToolbarButton.tsx';
 import Sidebar from './Sidebar.tsx';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -74,13 +75,11 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                         }}>
                         <MenuIcon />
                     </IconButton>
-                    <Typography
-                        component="h1"
-                        variant="h6"
-                        color="inherit"
-                        noWrap
-                        sx={{ flexGrow: 1 }}>
-                        mICA
+                    <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flex: 1 }}>
+                        Mica
+                    </Typography>
+                    <Typography variant="caption" sx={{ mr: 2 }}>
+                        <Version />
                     </Typography>
                     <ProfileToolbarButton />
                 </Toolbar>
