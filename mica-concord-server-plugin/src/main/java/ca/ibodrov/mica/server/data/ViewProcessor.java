@@ -79,7 +79,7 @@ public class ViewProcessor {
         Object result;
         try {
             result = parseContext.parse(data).read(jsonPath);
-        } catch (JsonPathException e) {
+        } catch (IllegalArgumentException | JsonPathException e) {
             throw ApiException.badRequest(ApiException.ErrorKind.BAD_DATA,
                     "Error while processing entity '%s'. %s (%s)".formatted(entityName, e.getMessage(), jsonPath));
         }
