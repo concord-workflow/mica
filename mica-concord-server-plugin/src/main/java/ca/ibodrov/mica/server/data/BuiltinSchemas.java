@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.schema.ValueType;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
 import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
@@ -17,10 +19,20 @@ import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 public final class BuiltinSchemas {
 
     /**
+     * Schema of {@link ObjectSchemaNode} itself.
+     */
+    private static final ObjectSchemaNode OBJECT_SCHEMA_NODE_SCHEMA = object(Map.of(
+            "type", enums(ValueType.valuesAsJson()),
+            "properties", object(Map.of(), Set.of()),
+            "required", array(string()),
+            "enum", array(any()),
+            "items", any()), Set.of());
+
+    /**
      * MicaRecord/v1 - use to declare entities of any kind.
      */
     public static final String MICA_RECORD_V1 = "MicaRecord/v1";
-    public static ObjectSchemaNode MICA_RECORD_V1_SCHEMA = object(Map.of(
+    public static final ObjectSchemaNode MICA_RECORD_V1_SCHEMA = object(Map.of(
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_RECORD_V1)),
             "name", string(),
@@ -32,18 +44,18 @@ public final class BuiltinSchemas {
      */
     public static final String MICA_KIND_V1 = "MicaKind/v1";
     public static final String MICA_KIND_SCHEMA_PROPERTY = "schema";
-    public static ObjectSchemaNode MICA_KIND_V1_SCHEMA = object(Map.of(
+    public static final ObjectSchemaNode MICA_KIND_V1_SCHEMA = object(Map.of(
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
             "name", string(),
-            MICA_KIND_SCHEMA_PROPERTY, any()),
+            MICA_KIND_SCHEMA_PROPERTY, OBJECT_SCHEMA_NODE_SCHEMA),
             Set.of("kind", "name", "schema"));
 
     /**
      * MicaView/v1 - use to declare entity views.
      */
     public static final String MICA_VIEW_V1 = "MicaView/v1";
-    public static ObjectSchemaNode MICA_VIEW_V1_SCHEMA = object(Map.of(
+    public static final ObjectSchemaNode MICA_VIEW_V1_SCHEMA = object(Map.of(
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
             "name", string(),
@@ -58,15 +70,14 @@ public final class BuiltinSchemas {
 
         var name = entity.name();
 
-        var selectorEntityKind = Optional.ofNullable(entity.data().get("selector"))
-                .map(n -> n.get("entityKind"))
-                .map(JsonNode::asText)
+        var selectorEntityKind = select(entity, "selector", "entityKind", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing selector.entityKind"));
 
-        var dataJsonPath = Optional.ofNullable(entity.data().get("data"))
-                .map(n -> n.get("jsonPath"))
-                .map(JsonNode::asText)
+        var dataJsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing data.jsonPath"));
+
+        var flatten = select(entity, "data", "flatten", JsonNode::asBoolean)
+                .orElse(false);
 
         return new ViewLike() {
             @Override
@@ -81,9 +92,29 @@ public final class BuiltinSchemas {
 
             @Override
             public Data data() {
-                return () -> dataJsonPath;
+                return new Data() {
+                    @Override
+                    public String jsonPath() {
+                        return dataJsonPath;
+                    }
+
+                    @Override
+                    public boolean flatten() {
+                        return flatten;
+                    }
+                };
             }
         };
+    }
+
+    private static <T> Optional<T> select(EntityLike entityLike,
+                                          String pathElement1,
+                                          String pathElement2,
+                                          Function<JsonNode, T> converter) {
+        // TODO validate target type
+        return Optional.ofNullable(entityLike.data().get(pathElement1))
+                .map(n -> n.get(pathElement2))
+                .map(converter);
     }
 
     private BuiltinSchemas() {

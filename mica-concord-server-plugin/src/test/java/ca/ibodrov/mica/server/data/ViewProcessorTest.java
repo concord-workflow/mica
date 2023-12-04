@@ -1,7 +1,6 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.api.model.ViewLike;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
@@ -24,7 +23,15 @@ public class ViewProcessorTest {
 
     @Test
     public void testSimpleRender() {
-        var view = view("test", "MicaRecord/v1", "$.data");
+        var view = asView(parseYaml("""
+                kind: MicaView/v1
+                name: %s
+                selector:
+                  entityKind: %s
+                data:
+                  jsonPath: %s
+                  flatten: %s
+                """.formatted("test", "MicaRecord/v1", "$.data", false)));
 
         var entityA = parseYaml("""
                 kind: MicaRecord/v1
@@ -46,9 +53,6 @@ public class ViewProcessorTest {
 
     @Test
     public void testComplex() {
-        // TODO a bit more complicated json path
-        var view = view("test", "ClientList", "$.clients[*].name");
-
         var entityA = parseYaml("""
                 kind: ClientList
                 name: Client List 2023
@@ -67,14 +71,73 @@ public class ViewProcessorTest {
                     name: Bob
                   - id: 2
                     name: Alice
+                    validationUrl: https://alice.example.com
                 """);
+
+        var view = asView(parseYaml("""
+                kind: MicaView/v1
+                name: test
+                selector:
+                  entityKind: ClientList
+                data:
+                  jsonPath: $.clients[*].['name', 'id', 'validationUrl']
+                """));
 
         var result = processor.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals("John", result.data().get("data").get(0).get(0).asText());
-        assertEquals("Jane", result.data().get("data").get(0).get(1).asText());
-        assertEquals("Bob", result.data().get("data").get(1).get(0).asText());
-        assertEquals("Alice", result.data().get("data").get(1).get(1).asText());
+        assertEquals(1, result.data().size());
+
+        var expected = """
+                ---
+                data:
+                - - name: "John"
+                    id: 3
+                    validationUrl: null
+                  - name: "Jane"
+                    id: 4
+                    validationUrl: null
+                - - name: "Bob"
+                    id: 1
+                    validationUrl: null
+                  - name: "Alice"
+                    id: 2
+                    validationUrl: "https://alice.example.com"
+                """;
+        assertEquals(expected, toYaml(result.data()));
+
+        // now with flatten=true
+
+        view = asView(parseYaml("""
+                kind: MicaView/v1
+                name: test
+                selector:
+                  entityKind: ClientList
+                data:
+                  jsonPath: $.clients[*].['name', 'id', 'validationUrl']
+                  flatten: true
+                """));
+
+        result = processor.render(view, Stream.of(entityA, entityB));
+        assertNotNull(result);
+        assertEquals(1, result.data().size());
+
+        expected = """
+                ---
+                data:
+                - name: "John"
+                  id: 3
+                  validationUrl: null
+                - name: "Jane"
+                  id: 4
+                  validationUrl: null
+                - name: "Bob"
+                  id: 1
+                  validationUrl: null
+                - name: "Alice"
+                  id: 2
+                  validationUrl: "https://alice.example.com"
+                """;
+        assertEquals(expected, toYaml(result.data()));
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {
@@ -85,14 +148,12 @@ public class ViewProcessorTest {
         }
     }
 
-    private static ViewLike view(String viewName, String selectorEntityKind, String dataJsonPath) {
-        return asView(parseYaml("""
-                kind: MicaView/v1
-                name: %s
-                selector:
-                  entityKind: %s
-                data:
-                  jsonPath: %s
-                """.formatted(viewName, selectorEntityKind, dataJsonPath)));
+    private static String toYaml(Object o) {
+        try {
+            return yamlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
+
 }

@@ -12,7 +12,10 @@ import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class ViewProcessor {
 
@@ -60,6 +63,13 @@ public class ViewProcessor {
                 .map(entity -> applyJsonPath(entity.name(), entity.data(), view.data().jsonPath()))
                 .flatMap(Optional::stream)
                 .toList();
+
+        if (!data.isEmpty() && view.data().flatten() && data.stream().allMatch(JsonNode::isArray)) {
+            data = data.stream()
+                    .flatMap(node -> StreamSupport
+                            .stream(Spliterators.spliteratorUnknownSize(node.elements(), Spliterator.ORDERED), false))
+                    .toList();
+        }
 
         return PartialEntity.create(view.name(), RESULT_ENTITY_KIND,
                 Map.of("data", objectMapper.convertValue(data, JsonNode.class)));

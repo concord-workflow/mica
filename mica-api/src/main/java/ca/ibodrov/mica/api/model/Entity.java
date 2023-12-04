@@ -20,7 +20,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 public record Entity(@NotNull EntityId id,
         @ValidName String name,
-        @NotEmpty String kind,
+        @ValidName String kind,
         @NotNull OffsetDateTime createdAt,
         @NotNull OffsetDateTime updatedAt,
         @JsonProperty("__data") @JsonAnySetter @JsonAnyGetter @NotNull Map<String, JsonNode> data)

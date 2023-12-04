@@ -11,7 +11,9 @@ Entity
   name          string, URI path element
   kind          string, URI path element
   createdAt     timestamp;
-  updatedAt     timestamp
+  updatedAt     timestamp;
+  validatedAt   timestamp;
+  status        enum: valid, invalid, unknown;
   *             other arbitrary keys
 ```
 
@@ -74,7 +76,7 @@ There are several built-in entity kinds:
 
 Use Mica Views to create projections of data.
 
-For example, given an entity (a list of clients of Acme Corp):
+For example, given a couple of entities like so:
 
 ```yaml
 name: clients-20240101
@@ -91,6 +93,21 @@ clients:
     validationUrl: "http://baz.example.org"
 ```
 
+```yaml
+name: clients-20230101
+kind: AcmeClient
+clients:
+  - id: qux
+    status: active
+    validationUrl: "http://qux.example.org"
+  - id: eek
+    status: retired
+    validationUrl: "http://eek.example.org"
+  - id: ack
+    status: retired
+    validationUrl: "http://ack.example.org"
+```
+
 Plus a view definition:
 
 ```yaml
@@ -99,7 +116,7 @@ name: ActiveClients
 selector:
   entityKind: AcmeClient
 data:
-  jsonPath: $.clients[?(@.status='active')].["id", "validationUrl"]
+  jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
 ```
 
 Equals:
@@ -111,6 +128,49 @@ curl 'http://localhost:8080/api/mica/v1/view/render/ActiveClients'
 ```json
 {
     "data": [
+        [
+            {
+                "id": "foo",
+                "validationUrl": "http://foo.example.org"
+            },
+            {
+                "id": "baz",
+                "validationUrl": "http://baz.example.org"
+            }
+        ],
+        [
+            {
+                "id": "qux",
+                "validationUrl": "http://qux.example.org"
+            }
+        ]
+    ]
+}
+```
+
+The `data` object is a JSON array where each element corresponds to a selected
+entity.
+
+## View Flattening
+
+When returning multiple fields per entity, normally the result is a JSON array
+of arrays. To flatten the result, use the `flatten` option:
+
+```yaml
+kind: MicaView/v1
+name: ActiveClients
+selector:
+  entityKind: AcmeClient
+data:
+  jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
+  flatten: true
+```
+
+Using the example data from the previous section, the result is:
+
+```json
+{
+    "data": [
         {
             "id": "foo",
             "validationUrl": "http://foo.example.org"
@@ -118,19 +178,54 @@ curl 'http://localhost:8080/api/mica/v1/view/render/ActiveClients'
         {
             "id": "baz",
             "validationUrl": "http://baz.example.org"
+        },
+        {
+            "id": "qux",
+            "validationUrl": "http://qux.example.org"
         }
     ]
 }
 ```
 
-TODO:
-- parameterized views
+Note that now the result is a JSON array of objects, not an array of arrays.
+
+## Parametrized Views
+
+_This section is a work in progress._
+
+Views can declare parameters:
+
+```yaml
+kind: MicaView/v1
+name: ActiveClients
+parameters:
+  clientId:
+    type: string
+data:
+  jsonPath: $.clients[?(@.status=parameters.clientId)].["id", "validationUrl"]
+```
+
+## View Implementation Details
+
+
 
 ## Entity Validation
 
 To validate an entity of kind `K`, Mica looks up the `MicaKind/v1` entity
 with name `K`. An entity cannot be created or updated if the schema is not
 found.
+
+_This section is a work in progress._
+
+When the schema entity is updated, Mica re-validates all entities of that kind.
+If validation fails, the entity is marked as invalid.
+
+The re-validation is a background process which compares the schema's
+`updatedAt` with the entity's `validatedAt`. If the schema is newer, the entity
+is re-validated. If the entity changes in the meantime and its `validatedAt`
+becomes newer than the schema's `updatedAt`, the entity is not re-validated.
+
+Invalid entities are not returned by views unless specified explicitly.
 
 ## Supported JSON Schema Features
 

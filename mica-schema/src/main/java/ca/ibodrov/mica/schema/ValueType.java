@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 public enum ValueType {
 
@@ -48,5 +49,13 @@ public enum ValueType {
             default:
                 throw new IllegalArgumentException("Unsupported node type: " + v.getNodeType());
         }
+    }
+
+    public static JsonNode[] valuesAsJson() {
+        var result = new JsonNode[values().length];
+        for (int i = 0; i < values().length; i++) {
+            result[i] = TextNode.valueOf(values()[i].key());
+        }
+        return result;
     }
 }

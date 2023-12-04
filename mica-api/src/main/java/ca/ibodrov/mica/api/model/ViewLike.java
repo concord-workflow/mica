@@ -16,5 +16,7 @@ public interface ViewLike {
     interface Data {
 
         String jsonPath();
+
+        boolean flatten();
     }
 }
