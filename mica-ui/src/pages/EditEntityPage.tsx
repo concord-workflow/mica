@@ -10,6 +10,7 @@ import {
     Alert,
     Box,
     Button,
+    CircularProgress,
     Drawer,
     FormControl,
     FormControlLabel,
@@ -66,16 +67,20 @@ const EditEntityPage = () => {
 
     // load the entity
     const { entityId } = useParams<RouteParams>();
-    const { data, isFetching, refetch } = useQuery(
-        ['entity', 'yaml', entityId],
-        () => getEntityAsYamlString(entityId!),
-        {
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            keepPreviousData: false,
-            enabled: entityId !== undefined && entityId !== '_new',
+    const {
+        data: serverValue,
+        isLoading,
+        isFetching,
+    } = useQuery(['entity', 'yaml', entityId], () => getEntityAsYamlString(entityId!), {
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        keepPreviousData: false,
+        enabled: entityId !== undefined && entityId !== '_new',
+        onSuccess: (data) => {
+            syncValueToState(data);
+            setDirty(false);
         },
-    );
+    });
 
     // editor harness
     const editorRef = React.useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -87,29 +92,6 @@ const EditEntityPage = () => {
 
     // save the entity
     const { mutateAsync, isLoading: isSaving, error: saveError } = usePutYamlString();
-    const handleSave = React.useCallback(async () => {
-        const editor = editorRef.current;
-        if (!editor) {
-            return;
-        }
-
-        // save and get the new version
-        const version = await mutateAsync({ body: editor.getValue() });
-
-        if (entityId === '_new') {
-            // update the URL, if it's a "_new" entity then the user will be redirected to the created entity
-            navigate(`/entity/${version.id}/edit?success`, { replace: true });
-        } else {
-            // if it's an existing entity, we need to re-fetch the data to update the editor
-            const result = await refetch();
-            if (!result.data) {
-                throw new Error('Failed to fetch entity after save');
-            }
-            editor.setValue(result.data);
-            setDirty(false);
-            setShowSuccess(true);
-        }
-    }, [entityId, mutateAsync, navigate, refetch]);
 
     // because we redirect to the new entity, we need to pass the success state via the search params
     const success = searchParams.get('success');
@@ -126,46 +108,80 @@ const EditEntityPage = () => {
     const [selectedName, setSelectedName] = React.useState<string | undefined>();
     const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind'));
 
-    // provide a default value for the editor
-    const defaultValue =
-        selectedId === '_new' ? (selectedKind ? kindToTemplate(selectedKind) : undefined) : data;
-
-    const createPreviewRequest: () => PreviewRequest | undefined = React.useCallback(() => {
-        const editor = editorRef.current;
-        const yaml = editor ? editor.getValue() : '';
-        try {
-            const view = parseYaml(yaml);
-            setYamlParseError(undefined);
-            return {
-                view,
-                limit: 10,
-            };
-        } catch (e) {
-            console.log('Error parsing YAML:', e);
-            setYamlParseError((e as Error).message);
-        }
-    }, [editorRef]);
-
-    const [previewRequest, setPreviewRequest] = React.useState<PreviewRequest | undefined>(() =>
-        createPreviewRequest(),
+    const createPreviewRequest: (yaml: string) => PreviewRequest | undefined = React.useCallback(
+        (yaml: string) => {
+            if (yaml.length < 1) {
+                return;
+            }
+            try {
+                const view = parseYaml(yaml);
+                setYamlParseError(undefined);
+                return {
+                    view,
+                    limit: 10,
+                };
+            } catch (e) {
+                console.log('Error parsing YAML:', e);
+                setYamlParseError((e as Error).message);
+            }
+        },
+        [],
     );
 
-    const handleOnChange = React.useCallback(
+    const [previewRequest, setPreviewRequest] = React.useState<PreviewRequest | undefined>(() =>
+        createPreviewRequest(editorRef.current?.getValue() ?? ''),
+    );
+
+    const syncValueToState = React.useCallback(
         (value: string | undefined) => {
-            setDirty(value !== data);
+            // TODO parse once
             setSelectedId((prev) => getYamlField(value, 'id') ?? prev);
             setSelectedName((prev) => getYamlField(value, 'name') ?? prev);
             setSelectedKind((prev) => getYamlField(value, 'kind') ?? prev);
-            if (showPreview) {
-                setPreviewRequest(createPreviewRequest());
+            if (showPreview && value) {
+                setPreviewRequest(createPreviewRequest(value));
             }
         },
-        [data, createPreviewRequest, showPreview],
+        [createPreviewRequest, showPreview],
     );
 
+    const handleEditorOnChange = React.useCallback(
+        (value: string | undefined) => {
+            syncValueToState(value);
+            setDirty(true);
+        },
+        [syncValueToState],
+    );
+
+    const handleSave = React.useCallback(async () => {
+        const editor = editorRef.current;
+        if (!editor) {
+            return;
+        }
+
+        // save and get the new version
+        const version = await mutateAsync({ body: editor.getValue() });
+
+        if (entityId === '_new') {
+            // update the URL, redirect the user to the created entity
+            navigate(`/entity/${version.id}/edit?success`, { replace: true });
+        }
+
+        setShowSuccess(true);
+    }, [entityId, mutateAsync, navigate]);
+
+    // provide a default value for the editor
+    const defaultValue =
+        selectedId === '_new'
+            ? selectedKind
+                ? kindToTemplate(selectedKind)
+                : '# new entity'
+            : serverValue;
+
+    // on the first load, sync the default value to the state
     useEffect(() => {
-        handleOnChange(defaultValue);
-    }, [handleOnChange, defaultValue]);
+        syncValueToState(defaultValue);
+    }, [syncValueToState, defaultValue]);
 
     return (
         <>
@@ -209,7 +225,8 @@ const EditEntityPage = () => {
                 <Box flex="1">
                     <ErrorBoundary
                         fallback={<b>Something went wrong while trying to render the editor.</b>}>
-                        {defaultValue && (
+                        {isLoading && <CircularProgress />}
+                        {!isLoading && defaultValue && (
                             <Editor
                                 loading={isFetching || isSaving}
                                 height="100%"
@@ -219,7 +236,7 @@ const EditEntityPage = () => {
                                 }}
                                 defaultValue={defaultValue}
                                 onMount={handleEditorOnMount}
-                                onChange={handleOnChange}
+                                onChange={handleEditorOnChange}
                             />
                         )}
                     </ErrorBoundary>

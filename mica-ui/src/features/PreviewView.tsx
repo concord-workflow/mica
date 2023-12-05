@@ -23,6 +23,10 @@ const PreviewView = ({ request }: Props) => {
 
     const debouncedRequest = useDebounce(request, 250);
     React.useEffect(() => {
+        if (!debouncedRequest.view) {
+            return;
+        }
+
         mutateAsync(debouncedRequest);
     }, [mutateAsync, debouncedRequest]);
 
