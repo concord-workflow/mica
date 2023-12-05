@@ -63,7 +63,9 @@ public final class BuiltinSchemas {
             "name", string(),
             "parameters", object(Map.of(), Set.of()),
             "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
-            "data", object(Map.of("jsonPath", string()), Set.of("jsonPath"))),
+            "data", object(Map.of(
+                    "jsonPath", string(),
+                    "flatten", bool()), Set.of("jsonPath"))),
             Set.of("kind", "name", "selector", "data"));
 
     public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {

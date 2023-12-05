@@ -34,6 +34,11 @@ public record ObjectSchemaNode(Optional<String> type,
                 Optional.empty());
     }
 
+    public static ObjectSchemaNode bool() {
+        return new ObjectSchemaNode(Optional.of(BOOLEAN.key()), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty());
+    }
+
     public static ObjectSchemaNode enums(JsonNode... values) {
         return new ObjectSchemaNode(Optional.of(STRING.key()), Optional.empty(), Optional.empty(),
                 Optional.of(List.of(values)), Optional.empty());
@@ -42,9 +47,5 @@ public record ObjectSchemaNode(Optional<String> type,
     public static ObjectSchemaNode any() {
         return new ObjectSchemaNode(Optional.of(ANY.key()), Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty());
-    }
-
-    public Optional<ObjectSchemaNode> getProperty(String name) {
-        return properties().flatMap(p -> Optional.ofNullable(p.get(name)));
     }
 }
