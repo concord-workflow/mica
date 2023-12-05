@@ -40,9 +40,9 @@ public class InitialDataLoader {
         createOrReplace(schema(BuiltinSchemas.MICA_VIEW_V1, BuiltinSchemas.MICA_VIEW_V1_SCHEMA));
 
         // examples
-        createOrReplace(view("example-view", BuiltinSchemas.MICA_RECORD_V1, "$.data"));
-        createOrReplace(record("example-record-a", TextNode.valueOf("hello!")));
-        createOrReplace(record("example-record-b", TextNode.valueOf("bye!")));
+        createOrReplace(view("/examples/simple/example-view", BuiltinSchemas.MICA_RECORD_V1, "$.data"));
+        createOrReplace(record("/examples/simple/example-record-a", TextNode.valueOf("hello!")));
+        createOrReplace(record("/example/simple/example-record-b", TextNode.valueOf("bye!")));
     }
 
     private void createOrReplace(PartialEntity entity) {

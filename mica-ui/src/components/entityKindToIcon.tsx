@@ -4,9 +4,9 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 
 const entityKindToIcon = (kind: string) => {
     switch (kind) {
-        case 'MicaKind/v1':
+        case '/mica/kind/v1':
             return <ChecklistIcon fontSize="small" />;
-        case 'MicaView/v1':
+        case '/mica/view/v1':
             return <TableChartIcon fontSize="small" />;
     }
     return <DataObjectIcon fontSize="small" />;

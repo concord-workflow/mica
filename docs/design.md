@@ -17,7 +17,7 @@ Entity
   *             other arbitrary keys
 ```
 
-The entity's `kind` is a reference to a `MicaKind/v1` entity that provides
+The entity's `kind` is a reference to a `/mica/kind/v1` entity that provides
 the schema. For example, a `CorporateCustomer` entity may look like this:
 
 ```yaml
@@ -32,7 +32,7 @@ Which is enforced by the schema stored in a separate `Entity`:
 
 ```yaml
 name: AcmeClient
-kind: MicaKind/v1
+kind: /mica/kind/v1
 schema:
   properties:
     id:
@@ -61,9 +61,9 @@ ObjectSchemaNode:
 ```
 
 There are several built-in entity kinds:
-- `MicaRecord/v1` -- basic data record, no attached behaviors;
-- `MicaKind/v1` -- a `kind` definition, aka entity "template";
-- `MicaView/v1` -- entity view object.
+- `/mica/record/v1` -- basic data record, no attached behaviors;
+- `/mica/kind/v1` -- a `kind` definition, aka entity "template";
+- `/mica/view/v1` -- entity view object.
 
 ## Views
 
@@ -105,7 +105,7 @@ Validated by the following schema:
 
 ```yaml
 name: AcmeClientList
-kind: MicaKind/v1
+kind: /mica/kind/v1
 schema:
   properties:
     clients:
@@ -125,7 +125,7 @@ schema:
 Plus a view definition:
 
 ```yaml
-kind: MicaView/v1
+kind: /mica/view/v1
 name: ActiveClients
 selector:
   entityKind: AcmeClientList
@@ -176,7 +176,7 @@ When returning multiple fields per entity, normally the result is a JSON array
 of arrays. To flatten the result, use the `flatten` option:
 
 ```yaml
-kind: MicaView/v1
+kind: /mica/view/v1
 name: ActiveClients
 selector:
   entityKind: AcmeClientList
@@ -213,7 +213,7 @@ Note that now the result is a JSON array of objects, not an array of arrays.
 View data can be merged into a single JSON object using the `merge` option:
 
 ```yaml
-kind: MicaView/v1
+kind: /mica/view/v1
 name: PiecesCombined
 selector:
   entityKind: Piece
@@ -266,7 +266,7 @@ the rendered view will contain the object with keys merged from both entities:
 Views can declare parameters:
 
 ```yaml
-kind: MicaView/v1
+kind: /mica/view/v1
 name: ActiveClients
 parameters:
   clientId:
@@ -290,7 +290,7 @@ curl -i --json '{"viewName": "ActiveClients", "limit": 10, "parameters": {"clien
 
 ## Entity Validation
 
-To validate an entity of kind `K`, Mica looks up the `MicaKind/v1` entity
+To validate an entity of kind `K`, Mica looks up the `/mica/kind/v1` entity
 with name `K`. An entity cannot be created or updated if the schema is not
 found.
 

@@ -66,7 +66,7 @@ public class ViewProcessor {
     }
 
     /**
-     * Materialize (or "render") a MicaView/v1 using the given entities and
+     * Materialize (or "render") a /mica/view/v1 using the given entities and
      * parameters.
      */
     public PartialEntity render(ViewLike view, Map<String, JsonNode> parameters, Stream<EntityLike> entities) {

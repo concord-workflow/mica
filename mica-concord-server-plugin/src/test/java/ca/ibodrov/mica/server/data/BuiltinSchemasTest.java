@@ -33,7 +33,7 @@ public class BuiltinSchemasTest {
     @Test
     public void testMigration() {
         var yaml = """
-                kind: MicaKind/v1
+                kind: /mica/kind/v1
                 name: foobar
                 schema:
                   type: object
@@ -66,12 +66,12 @@ public class BuiltinSchemasTest {
     public void testBadViews() {
         var entity = parseYaml("""
                 name: MyView
-                kind: MicaView/v1
+                kind: /mica/view/v1
                 # broken parameters
                 parameters:
                   clientId:
                 selector:
-                  entityKind: MicaRecord/v1
+                  entityKind: /mica/record/v1
                 data:
                   jsonPath: $
                 """);

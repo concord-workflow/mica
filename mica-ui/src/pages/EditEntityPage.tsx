@@ -110,7 +110,7 @@ const EditEntityPage = () => {
 
     // the entity ID and kind can be changed by the user, we need to keep track of them
     const [selectedId, setSelectedId] = React.useState(entityId);
-    const [selectedName, setSelectedName] = React.useState<string | undefined>();
+    const [selectedName, setSelectedName] = React.useState(searchParams.get('name') ?? undefined);
     const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind') ?? undefined);
 
     const createPreviewRequest: (yaml: string) => PreviewRequest | undefined = React.useCallback(
@@ -193,7 +193,7 @@ const EditEntityPage = () => {
     const defaultValue =
         selectedId === '_new'
             ? selectedKind
-                ? kindToTemplate(selectedKind)
+                ? kindToTemplate(selectedName ?? '/myEntity', selectedKind)
                 : '# new entity'
             : serverValue;
 

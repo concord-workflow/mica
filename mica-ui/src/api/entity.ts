@@ -3,26 +3,26 @@ import { doFetch, handleJsonResponse, handleTextResponse } from './common.ts';
 import { useMutation } from 'react-query';
 import { UseMutationOptions } from 'react-query/types/react/types';
 
-export const MICA_KIND_KIND = 'MicaKind/v1';
-export const MICA_RECORD_KIND = 'MicaRecord/v1';
-export const MICA_VIEW_KIND = 'MicaView/v1';
+export const MICA_KIND_KIND = '/mica/kind/v1';
+export const MICA_RECORD_KIND = '/mica/record/v1';
+export const MICA_VIEW_KIND = '/mica/view/v1';
 
 const GENERIC_TEMPLATE = `# new entity
-name: myEntity
+name: %%NAME%%
 kind: %%KIND%%
 data:
   myProperty: true
 `;
 
 const MICA_RECORD_TEMPLATE = `# new entity
-name: myEntity
+name: %%NAME%%
 kind: ${MICA_RECORD_KIND}
 data:
   myProperty: true
 `;
 
 const MICA_KIND_TEMPLATE = `# new kind
-name: MyKind
+name: %%NAME%%
 kind: ${MICA_KIND_KIND}
 schema:
   properties:
@@ -31,7 +31,7 @@ schema:
 `;
 
 const MICA_VIEW_TEMPLATE = `# new view
-name: MyView
+name: %%NAME%%
 kind: ${MICA_VIEW_KIND}
 selector:
   entityKind: ${MICA_RECORD_KIND}
@@ -39,7 +39,7 @@ data:
   jsonPath: $.myProperty
 `;
 
-export const kindToTemplate = (kind: string): string => {
+const lookupTemplateByKind = (kind: string): string => {
     switch (kind) {
         case MICA_RECORD_KIND:
             return MICA_RECORD_TEMPLATE;
@@ -48,8 +48,13 @@ export const kindToTemplate = (kind: string): string => {
         case MICA_VIEW_KIND:
             return MICA_VIEW_TEMPLATE;
         default:
-            return GENERIC_TEMPLATE.replace('%%KIND%%', kind);
+            return GENERIC_TEMPLATE;
     }
+};
+
+export const kindToTemplate = (name: string, kind: string): string => {
+    const template = lookupTemplateByKind(kind);
+    return template.replace('%%KIND%%', kind).replace('%%NAME%%', name);
 };
 
 export type JsonNode =
@@ -83,12 +88,14 @@ export interface Entity {
     kind: string;
     createdAt: string;
     updatedAt: string;
+
     [key: string]: JsonNode;
 }
 
 export interface PartialEntity {
     name: string;
     kind: string;
+
     [key: string]: JsonNode;
 }
 

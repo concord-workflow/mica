@@ -27,23 +27,23 @@ public class ViewProcessorTest {
     @Test
     public void testSimpleRender() {
         var view = parseView("""
-                kind: MicaView/v1
+                kind: /mica/view/v1
                 name: %s
                 selector:
                   entityKind: %s
                 data:
                   jsonPath: %s
                   flatten: %s
-                """.formatted("test", "MicaRecord/v1", "$.data", false));
+                """.formatted("test", "/mica/record/v1", "$.data", false));
 
         var entityA = parseYaml("""
-                kind: MicaRecord/v1
+                kind: /mica/record/v1
                 name: A
                 data: Some data from A
                 """);
 
         var entityB = parseYaml("""
-                kind: MicaRecord/v1
+                kind: /mica/record/v1
                 name: B
                 data: Some data from B
                 """);
@@ -78,7 +78,7 @@ public class ViewProcessorTest {
                 """);
 
         var view = parseView("""
-                kind: MicaView/v1
+                kind: /mica/view/v1
                 name: test
                 selector:
                   entityKind: ClientList
@@ -110,7 +110,7 @@ public class ViewProcessorTest {
         // now with flatten=true
 
         view = parseView("""
-                kind: MicaView/v1
+                kind: /mica/view/v1
                 name: test
                 selector:
                   entityKind: ClientList
@@ -165,7 +165,7 @@ public class ViewProcessorTest {
                 """);
 
         var view = parseView("""
-                kind: MicaView/v1
+                kind: /mica/view/v1
                 name: test
                 parameters:
                   clientId:
@@ -211,7 +211,7 @@ public class ViewProcessorTest {
                 """);
 
         var view = parseView("""
-                kind: MicaView/v1
+                kind: /mica/view/v1
                 name: test
                 selector:
                   entityKind: Item

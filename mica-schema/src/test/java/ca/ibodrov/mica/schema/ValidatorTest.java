@@ -328,7 +328,7 @@ public class ValidatorTest {
                 kind: MicaEntityView/v1
                 name: whatevs
                 selector:
-                  kind: MicaRecord/v1
+                  kind: /mica/record/v1
                 allowThingamajigs: true
                 fields:
                   - name: foo
@@ -344,7 +344,7 @@ public class ValidatorTest {
 
         var properties = result.properties().orElseGet(Map::of);
         assertEquals(BooleanNode.getTrue(), properties.get("allowThingamajigs").value().orElseThrow());
-        assertEquals("MicaRecord/v1", properties.get("selector").properties().orElseThrow()
+        assertEquals("/mica/record/v1", properties.get("selector").properties().orElseThrow()
                 .get("kind").value().orElseThrow().asText());
         assertEquals("/properties/foo", properties.get("fields").value().orElseThrow().get(0).get("$ref").asText());
     }

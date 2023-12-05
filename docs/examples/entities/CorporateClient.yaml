@@ -1,5 +1,5 @@
 name: CorporateClient
-kind: MicaKind/v1
+kind: /mica/kind/v1
 schema:
   properties:
     apiVersion:

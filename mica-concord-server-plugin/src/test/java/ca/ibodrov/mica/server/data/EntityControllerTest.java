@@ -49,14 +49,14 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     @Test
     public void testUploadBuiltInEntityKinds() {
         controller.createOrUpdate(parseYaml("""
-                kind: MicaRecord/v1
+                kind: /mica/record/v1
                 name: %s
                 data: |
                   some text
                 """.formatted(randomEntityName())));
 
         controller.createOrUpdate(parseYaml("""
-                kind: MicaKind/v1
+                kind: /mica/kind/v1
                 name: %s
                 schema:
                   type: object
@@ -66,10 +66,10 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName())));
 
         controller.createOrUpdate(parseYaml("""
-                kind: MicaView/v1
+                kind: /mica/view/v1
                 name: %s
                 selector:
-                  entityKind: MicaRecord/v1
+                  entityKind: /mica/record/v1
                 data:
                   jsonPath: $.data
                 """.formatted(randomEntityName())));
@@ -79,7 +79,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     public void testUploadInvalidEntity() {
         // missing property
         var entity1 = parseYaml("""
-                kind: MicaRecord/v1
+                kind: /mica/record/v1
                 name: %s
                 randomProp: "foo"
                 """.formatted(randomEntityName()));
@@ -89,7 +89,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         // invalid type
         // TODO test with numbers, booleans, etc.
         var entity2 = parseYaml("""
-                kind: MicaRecord/v1
+                kind: /mica/record/v1
                 name: null
                 data: "foo"
                 """);

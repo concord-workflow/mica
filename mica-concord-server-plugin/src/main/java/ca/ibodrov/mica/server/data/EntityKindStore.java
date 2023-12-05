@@ -16,7 +16,7 @@ import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_SCHEMA_PROPER
 import static java.util.Objects.requireNonNull;
 
 /**
- * @implNote entity kinds are regular entities with {@code kind=MicaKind/v1}.
+ * @implNote entity kinds are regular entities with {@code kind=/mica/kind/v1}.
  */
 public class EntityKindStore {
 

@@ -1,6 +1,6 @@
 ---
 name: bar
-kind: MicaRecord/v1
+kind: /mica/record/v1
 data:
   nested:
     object: "why not?"

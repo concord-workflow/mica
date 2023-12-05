@@ -15,6 +15,7 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import java.io.ByteArrayInputStream;
 import java.time.OffsetDateTime;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,8 +45,8 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         // insert the initial version
 
         var yaml = """
-                kind: MicaRecord/v1
-                name: testSchema
+                kind: /mica/record/v1
+                name: /testSchema
                 data:
                   type: object
                   properties:
@@ -82,8 +83,8 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         // insert an entity
 
         var entity1Version = entityUploadResource.putYaml(new ByteArrayInputStream("""
-                kind: MicaRecord/v1
-                name: testRecord
+                kind: /mica/record/v1
+                name: /testRecord
                 data: |
                   some
                   multiline
@@ -97,8 +98,8 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         // insert another entity with a similar name and try finding them both
 
         var entity2Version = entityUploadResource.putYaml(new ByteArrayInputStream("""
-                kind: MicaRecord/v1
-                name: anotherTestRecord
+                kind: /mica/record/v1
+                name: /anotherTestRecord
                 data:
                   nested:
                     object: "why not?"
@@ -114,8 +115,8 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     @Test
     public void testPutAndGetAsYaml() {
         var entityVersion = entityUploadResource.putYaml(new ByteArrayInputStream("""
-                kind: MicaRecord/v1
-                name: yamlRecord
+                kind: /mica/record/v1
+                name: /yamlRecord
                 # comments are ignored
                 data:
                   x: |
@@ -129,8 +130,8 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         var expectedYaml = """
                 id: %s
-                name: yamlRecord
-                kind: MicaRecord/v1
+                name: /yamlRecord
+                kind: /mica/record/v1
                 createdAt: %s
                 updatedAt: %s
                 data:
@@ -146,18 +147,18 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     @Test
     public void testPutListDelete() {
         var createdVersion = entityUploadResource.putYaml(new ByteArrayInputStream("""
-                kind: MicaRecord/v1
-                name: someRecord
+                kind: /mica/record/v1
+                name: /someRecord
                 data: "foo"
                 """.getBytes()));
 
-        var entityList = entityResource.listEntities(null, "someRecord", null, null, 10);
+        var entityList = entityResource.listEntities(null, "/someRecord", null, null, 10);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).anyMatch(createdVersion::equals));
 
         var deletedVersion = entityResource.deleteById(createdVersion.id().id());
         assertEquals(createdVersion, deletedVersion);
 
-        entityList = entityResource.listEntities(null, "someRecord", null, null, 10);
+        entityList = entityResource.listEntities(null, "/someRecord", null, null, 10);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).noneMatch(createdVersion::equals));
     }
 
@@ -166,8 +167,8 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         // name too short (2 characters)
         assertThrows(ConstraintViolationException.class,
                 () -> entityUploadResource.putYaml(new ByteArrayInputStream("""
-                        kind: MicaRecord/v1
-                        name: fo
+                        kind: /mica/record/v1
+                        name: /f
                         # comments are ignored
                         data:
                           x: |
@@ -176,12 +177,12 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                             text
                         """.getBytes())));
 
-        // name too long (257 characters)
+        // name too long (1025 characters)
         assertThrows(ConstraintViolationException.class,
                 () -> entityUploadResource.putYaml(new ByteArrayInputStream(
                         """
-                                kind: MicaRecord/v1
-                                name: foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+                                kind: /mica/record/v1
+                                name: %s
                                 # comments are ignored
                                 data:
                                   x: |
@@ -189,13 +190,14 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                                     line
                                     text
                                 """
+                                .formatted(randomEntityName(1025))
                                 .getBytes())));
 
-        // not a valid name (starts with a digit)
+        // not a valid name (doesn't start with a forward slash)
         assertThrows(ConstraintViolationException.class,
                 () -> entityUploadResource.putYaml(new ByteArrayInputStream("""
-                        kind: MicaRecord/v1
-                        name: /foobar/
+                        kind: /mica/record/v1
+                        name: foobar/
                         # comments are ignored
                         data:
                           x: |
@@ -207,5 +209,12 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
     private String format(OffsetDateTime v) {
         return objectMapper.convertValue(v, String.class);
+    }
+
+    private static String randomEntityName(int length) {
+        return "/test/" + ThreadLocalRandom.current()
+                .ints(length - 6, 'a', 'z' + 1)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
     }
 }

@@ -1,6 +1,6 @@
 ---
 name: foo
-kind: MicaRecord/v1
+kind: /mica/record/v1
 data: |
   some
   multiline

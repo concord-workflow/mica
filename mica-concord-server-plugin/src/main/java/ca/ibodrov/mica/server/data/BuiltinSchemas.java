@@ -31,9 +31,9 @@ public final class BuiltinSchemas {
             "items", any()), Set.of());
 
     /**
-     * MicaRecord/v1 - use to declare entities of any kind.
+     * /mica/record/v1 - use to declare entities of any kind.
      */
-    public static final String MICA_RECORD_V1 = "MicaRecord/v1";
+    public static final String MICA_RECORD_V1 = "/mica/record/v1";
     public static final ObjectSchemaNode MICA_RECORD_V1_SCHEMA = object(Map.of(
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_RECORD_V1)),
@@ -42,9 +42,9 @@ public final class BuiltinSchemas {
             Set.of("kind", "name", "data"));
 
     /**
-     * MicaKind/v1 - use to declare new entity kinds.
+     * /mica/kind/v1 - use to declare new entity kinds.
      */
-    public static final String MICA_KIND_V1 = "MicaKind/v1";
+    public static final String MICA_KIND_V1 = "/mica/kind/v1";
     public static final String MICA_KIND_SCHEMA_PROPERTY = "schema";
     public static final ObjectSchemaNode MICA_KIND_V1_SCHEMA = object(Map.of(
             "id", string(),
@@ -54,9 +54,9 @@ public final class BuiltinSchemas {
             Set.of("kind", "name", "schema"));
 
     /**
-     * MicaView/v1 - use to declare entity views.
+     * /mica/view/v1 - use to declare entity views.
      */
-    public static final String MICA_VIEW_V1 = "MicaView/v1";
+    public static final String MICA_VIEW_V1 = "/mica/view/v1";
     public static final ObjectSchemaNode MICA_VIEW_V1_SCHEMA = object(Map.of(
             "id", string(),
             "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
@@ -72,7 +72,7 @@ public final class BuiltinSchemas {
 
     public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {
         if (!entity.kind().equals(BuiltinSchemas.MICA_VIEW_V1)) {
-            throw ApiException.badRequest(BAD_DATA, "Expected a MicaView/v1 entity, got: " + entity.kind());
+            throw ApiException.badRequest(BAD_DATA, "Expected a /mica/view/v1 entity, got: " + entity.kind());
         }
 
         var name = entity.name();
