@@ -65,7 +65,9 @@ public final class BuiltinSchemas {
             "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
             "data", object(Map.of(
                     "jsonPath", string(),
-                    "flatten", bool()), Set.of("jsonPath"))),
+                    "flatten", bool(),
+                    "merge", bool()),
+                    Set.of("jsonPath"))),
             Set.of("kind", "name", "selector", "data"));
 
     public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {
@@ -86,6 +88,9 @@ public final class BuiltinSchemas {
                 .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing data.jsonPath"));
 
         var flatten = select(entity, "data", "flatten", JsonNode::asBoolean)
+                .orElse(false);
+
+        var merge = select(entity, "data", "merge", JsonNode::asBoolean)
                 .orElse(false);
 
         return new ViewLike() {
@@ -115,6 +120,11 @@ public final class BuiltinSchemas {
                     @Override
                     public boolean flatten() {
                         return flatten;
+                    }
+
+                    @Override
+                    public boolean merge() {
+                        return merge;
                     }
                 };
             }

@@ -165,6 +165,11 @@ curl 'http://localhost:8080/api/mica/v1/view/render/ActiveClients'
 The `data` object is a JSON array where each element corresponds to a selected
 entity.
 
+The resulting data is further processed by applying one or more of the optional
+steps:
+- `flatten` -- joins array of arrays of objects into a regular flat array of objects;
+- `merge` -- merges multiple objects into one by deep-merging fields.
+
 ## View Flattening
 
 When returning multiple fields per entity, normally the result is a JSON array
@@ -202,6 +207,59 @@ Using the example data from the previous section, the result is:
 ```
 
 Note that now the result is a JSON array of objects, not an array of arrays.
+
+## Merge Results
+
+View data can be merged into a single JSON object using the `merge` option:
+
+```yaml
+kind: MicaView/v1
+name: PiecesCombined
+selector:
+  entityKind: Piece
+data:
+  jsonPath: $
+  merge: true
+```
+
+Given an entity
+
+```yaml
+kind: Piece
+name: piece-a
+foos: ['a', 'b', 'c']
+bars:
+  baz:
+    qux: 123
+```
+
+and
+
+```yaml
+kind: Piece
+name: piece-b
+foos: ['x', 'y', 'z']
+bars:
+  eek: true
+```
+
+the rendered view will contain the object with keys merged from both entities:
+
+```json
+{
+    "data": [
+        {
+            "foos": ["x", "y", "z"],
+            "bars": {
+                "eek": true,
+                "baz": {
+                    "qux": 123
+                }
+            }
+        }
+    ]
+}
+```
 
 ## Parametrized Views
 

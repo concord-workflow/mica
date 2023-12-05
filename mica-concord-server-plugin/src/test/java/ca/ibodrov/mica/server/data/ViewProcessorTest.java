@@ -188,6 +188,57 @@ public class ViewProcessorTest {
         assertEquals(expected, toYaml(result.data().get("data")));
     }
 
+    @Test
+    public void testMerge() {
+        var entityA = parseYaml("""
+                kind: Item
+                name: item-a
+                foo:
+                  bar: true
+                baz: [0, 1, 2]
+                qux:
+                  ack: "hello!"
+                """);
+
+        var entityB = parseYaml("""
+                kind: Item
+                name: item-b
+                foo:
+                  bar: false
+                baz: [3, 4, 5]
+                qux:
+                  eek: "bye!"
+                """);
+
+        var view = parseView("""
+                kind: MicaView/v1
+                name: test
+                selector:
+                  entityKind: Item
+                data:
+                  jsonPath: $
+                  merge: true
+                """);
+
+        var result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
+        assertNotNull(result);
+        assertEquals(1, result.data().get("data").size());
+
+        var expected = """
+                ---
+                - qux:
+                    ack: "hello!"
+                    eek: "bye!"
+                  foo:
+                    bar: false
+                  baz:
+                  - 3
+                  - 4
+                  - 5
+                """;
+        assertEquals(expected, toYaml(result.data().get("data")));
+    }
+
     private static ViewLike parseView(@Language("yaml") String yaml) {
         return asView(yamlMapper, parseYaml(yaml));
     }

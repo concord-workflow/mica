@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.*;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -78,10 +79,19 @@ public class ViewProcessor {
                 .flatMap(Optional::stream)
                 .toList();
 
-        if (!data.isEmpty() && view.data().flatten() && data.stream().allMatch(JsonNode::isArray)) {
-            data = data.stream()
-                    .flatMap(node -> stream(spliteratorUnknownSize(node.elements(), Spliterator.ORDERED), false))
-                    .toList();
+        if (!data.isEmpty()) {
+            if (view.data().flatten() && data.stream().allMatch(JsonNode::isArray)) {
+                data = data.stream()
+                        .flatMap(node -> stream(spliteratorUnknownSize(node.elements(), Spliterator.ORDERED), false))
+                        .toList();
+            }
+
+            if (view.data().merge() && data.stream().allMatch(JsonNode::isObject)) {
+                var mergedData = data.stream()
+                        .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
+                        .orElseThrow(() -> new ViewProcessorException("Expected a merge result, got nothing"));
+                data = List.of(mergedData);
+            }
         }
 
         return PartialEntity.create(view.name(), RESULT_ENTITY_KIND,
@@ -108,6 +118,21 @@ public class ViewProcessor {
             }
         }
         return Optional.of((JsonNode) result);
+    }
+
+    private ObjectNode deepMerge(ObjectNode left, ObjectNode right) {
+        right.fieldNames().forEachRemaining(rightKey -> {
+            var leftValue = left.get(rightKey);
+            var rightValue = right.get(rightKey);
+
+            var result = rightValue;
+            if (leftValue instanceof ObjectNode leftObject && rightValue instanceof ObjectNode rightObject) {
+                result = deepMerge(leftObject, rightObject);
+            }
+
+            left.set(rightKey, result);
+        });
+        return left;
     }
 
     private static String interpolate(String s, Map<String, JsonNode> parameters) {

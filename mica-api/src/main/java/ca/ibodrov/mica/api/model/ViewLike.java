@@ -24,5 +24,7 @@ public interface ViewLike {
         String jsonPath();
 
         boolean flatten();
+
+        boolean merge();
     }
 }
