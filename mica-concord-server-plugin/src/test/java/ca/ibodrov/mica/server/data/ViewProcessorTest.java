@@ -88,11 +88,10 @@ public class ViewProcessorTest {
 
         var result = processor.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals(1, result.data().size());
+        assertEquals(2, result.data().get("data").size());
 
         var expected = """
                 ---
-                data:
                 - - name: "John"
                     id: 3
                     validationUrl: null
@@ -106,7 +105,7 @@ public class ViewProcessorTest {
                     id: 2
                     validationUrl: "https://alice.example.com"
                 """;
-        assertEquals(expected, toYaml(result.data()));
+        assertEquals(expected, toYaml(result.data().get("data")));
 
         // now with flatten=true
 
@@ -122,11 +121,10 @@ public class ViewProcessorTest {
 
         result = processor.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals(1, result.data().size());
+        assertEquals(4, result.data().get("data").size());
 
         expected = """
                 ---
-                data:
                 - name: "John"
                   id: 3
                   validationUrl: null
@@ -140,7 +138,7 @@ public class ViewProcessorTest {
                   id: 2
                   validationUrl: "https://alice.example.com"
                 """;
-        assertEquals(expected, toYaml(result.data()));
+        assertEquals(expected, toYaml(result.data().get("data")));
     }
 
     @Test
@@ -181,14 +179,13 @@ public class ViewProcessorTest {
 
         var result = processor.render(view, Map.of("clientId", IntNode.valueOf(1)), Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals(1, result.data().size());
+        assertEquals(1, result.data().get("data").size());
 
         var expected = """
                 ---
-                data:
                 - "Bob"
                 """;
-        assertEquals(expected, toYaml(result.data()));
+        assertEquals(expected, toYaml(result.data().get("data")));
     }
 
     private static ViewLike parseView(@Language("yaml") String yaml) {
