@@ -119,6 +119,13 @@ public class EntityStore {
                 .fetchOptional(this::toEntity);
     }
 
+    public Optional<EntityId> getIdByName(String entityName) {
+        return dsl.select(MICA_ENTITIES.ID)
+                .from(MICA_ENTITIES)
+                .where(MICA_ENTITIES.NAME.eq(entityName))
+                .fetchOptional(r -> new EntityId(r.value1()));
+    }
+
     public Optional<EntityVersion> deleteById(EntityId entityId) {
         return dsl.transactionResult(tx -> tx.dsl()
                 .deleteFrom(MICA_ENTITIES)
@@ -137,8 +144,12 @@ public class EntityStore {
     }
 
     public Optional<EntityVersion> upsert(PartialEntity entity) {
-        if (entity.id().isEmpty() && isNameExists(entity.name())) {
-            throw new StoreException("Entity with name '%s' already exists.".formatted(entity.name()));
+        var existingId = getIdByName(entity.name());
+        if (existingId.isPresent()) {
+            if (entity.id().isEmpty() || !entity.id().equals(existingId)) {
+                throw new StoreException("Another entity with name '%s' already exists (with ID=%s)"
+                        .formatted(entity.name(), existingId.get().toExternalForm()));
+            }
         }
 
         var id = entity.id().map(EntityId::id)

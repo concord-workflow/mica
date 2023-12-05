@@ -39,10 +39,7 @@ const HELP: React.ReactNode = (
     </>
 );
 
-const getYamlField = (yaml: string | undefined, key: string): string | undefined => {
-    if (!yaml) {
-        return;
-    }
+const getYamlField = (yaml: string, key: string): string | undefined => {
     let start = yaml.lastIndexOf('\n' + key);
     if (start < 0 && yaml.substring(0, key.length) === key) {
         start = 0;
@@ -61,6 +58,13 @@ const getYamlField = (yaml: string | undefined, key: string): string | undefined
     return result;
 };
 
+type Setter = (prev: string | undefined) => string | undefined;
+
+const updateFromYamlField =
+    (yaml: string, key: string): Setter =>
+    (prev) =>
+        getYamlField(yaml, key) ?? prev;
+
 const EditEntityPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -71,6 +75,7 @@ const EditEntityPage = () => {
         data: serverValue,
         isLoading,
         isFetching,
+        refetch,
     } = useQuery(['entity', 'yaml', entityId], () => getEntityAsYamlString(entityId!), {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
@@ -88,7 +93,7 @@ const EditEntityPage = () => {
         editorRef.current = editor;
     };
 
-    const [dirty, setDirty] = React.useState<boolean>(false);
+    const [dirty, setDirty] = React.useState<boolean>(entityId === '_new');
 
     // save the entity
     const { mutateAsync, isLoading: isSaving, error: saveError } = usePutYamlString();
@@ -106,7 +111,7 @@ const EditEntityPage = () => {
     // the entity ID and kind can be changed by the user, we need to keep track of them
     const [selectedId, setSelectedId] = React.useState(entityId);
     const [selectedName, setSelectedName] = React.useState<string | undefined>();
-    const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind'));
+    const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind') ?? undefined);
 
     const createPreviewRequest: (yaml: string) => PreviewRequest | undefined = React.useCallback(
         (yaml: string) => {
@@ -134,11 +139,15 @@ const EditEntityPage = () => {
 
     const syncValueToState = React.useCallback(
         (value: string | undefined) => {
-            // TODO parse once
-            setSelectedId((prev) => getYamlField(value, 'id') ?? prev);
-            setSelectedName((prev) => getYamlField(value, 'name') ?? prev);
-            setSelectedKind((prev) => getYamlField(value, 'kind') ?? prev);
-            if (showPreview && value) {
+            if (!value) {
+                return;
+            }
+
+            setSelectedId(updateFromYamlField(value, 'id'));
+            setSelectedName(updateFromYamlField(value, 'name'));
+            setSelectedKind(updateFromYamlField(value, 'kind'));
+
+            if (showPreview) {
                 setPreviewRequest(createPreviewRequest(value));
             }
         },
@@ -163,12 +172,22 @@ const EditEntityPage = () => {
         const version = await mutateAsync({ body: editor.getValue() });
 
         if (entityId === '_new') {
-            // update the URL, redirect the user to the created entity
+            // update the URL
             navigate(`/entity/${version.id}/edit?success`, { replace: true });
+        } else {
+            const { data, error } = await refetch();
+            if (error) {
+                console.error("Couldn't re-fetch the entity:", error);
+            }
+            if (data) {
+                editor.setValue(data);
+                syncValueToState(data);
+            }
         }
 
+        setDirty(false);
         setShowSuccess(true);
-    }, [entityId, mutateAsync, navigate]);
+    }, [entityId, mutateAsync, navigate, refetch, syncValueToState]);
 
     // provide a default value for the editor
     const defaultValue =
