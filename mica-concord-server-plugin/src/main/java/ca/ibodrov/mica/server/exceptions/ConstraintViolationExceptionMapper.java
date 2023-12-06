@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.exceptions;
 
+import ca.ibodrov.mica.api.model.ApiError;
 import org.sonatype.siesta.Component;
 
 import javax.validation.ConstraintViolation;
@@ -16,16 +17,14 @@ public class ConstraintViolationExceptionMapper implements ExceptionMapper<Const
 
     @Override
     public Response toResponse(ConstraintViolationException exception) {
+        // TODO return as a list of errors in the payload
         Set<ConstraintViolation<?>> violations = exception.getConstraintViolations();
         var message = violations.stream()
                 .map(error -> "%s: %s".formatted(error.getPropertyPath(), error.getMessage()))
                 .collect(Collectors.joining("\n"));
         return Response.status(BAD_REQUEST)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(new ValidationErrors(message))
+                .entity(ApiError.simpleValidationError(message))
                 .build();
-    }
-
-    public record ValidationErrors(String message) {
     }
 }

@@ -21,8 +21,8 @@ The entity's `kind` is a reference to a `/mica/kind/v1` entity that provides
 the schema. For example, a `CorporateCustomer` entity may look like this:
 
 ```yaml
-name: AcmeCorp
-kind: AcmeClient
+name: /clients/AcmeCorp
+kind: /schemas/AcmeClient
 details:
   id: acme
   validationUrl: https://acme.example.com/validate
@@ -31,7 +31,7 @@ details:
 Which is enforced by the schema stored in a separate `Entity`:
 
 ```yaml
-name: AcmeClient
+name: /schemas/AcmeClient
 kind: /mica/kind/v1
 schema:
   properties:
@@ -72,8 +72,8 @@ Use Mica Views to create projections of data.
 For example, given a couple of entities like so:
 
 ```yaml
-name: clients-20240101
-kind: AcmeClientList
+name: /clients/20240101
+kind: /schemas/AcmeClientList
 clients:
   - id: foo
     status: active
@@ -87,8 +87,8 @@ clients:
 ```
 
 ```yaml
-name: clients-20230101
-kind: AcmeClientList
+name: /clients/20230101
+kind: /schemas/AcmeClientList
 clients:
   - id: qux
     status: active
@@ -104,7 +104,7 @@ clients:
 Validated by the following schema:
 
 ```yaml
-name: AcmeClientList
+name: /schemas/AcmeClientList
 kind: /mica/kind/v1
 schema:
   properties:
@@ -126,9 +126,9 @@ Plus a view definition:
 
 ```yaml
 kind: /mica/view/v1
-name: ActiveClients
+name: /views/ActiveClients
 selector:
-  entityKind: AcmeClientList
+  entityKind: /schemas/AcmeClientList
 data:
   jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
 ```
@@ -177,9 +177,9 @@ of arrays. To flatten the result, use the `flatten` option:
 
 ```yaml
 kind: /mica/view/v1
-name: ActiveClients
+name: /views/ActiveClients
 selector:
-  entityKind: AcmeClientList
+  entityKind: /schemas/AcmeClientList
 data:
   jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
   flatten: true
@@ -214,9 +214,9 @@ View data can be merged into a single JSON object using the `merge` option:
 
 ```yaml
 kind: /mica/view/v1
-name: PiecesCombined
+name: /views/PiecesCombined
 selector:
-  entityKind: Piece
+  entityKind: /schemas/Piece
 data:
   jsonPath: $
   merge: true
@@ -225,8 +225,8 @@ data:
 Given an entity
 
 ```yaml
-kind: Piece
-name: piece-a
+kind: /schemas/Piece
+name: /puzzle/piece-a
 foos: ['a', 'b', 'c']
 bars:
   baz:
@@ -236,8 +236,8 @@ bars:
 and
 
 ```yaml
-kind: Piece
-name: piece-b
+kind: /schemas/Piece
+name: /puzzle/piece-b
 foos: ['x', 'y', 'z']
 bars:
   eek: true
@@ -267,12 +267,12 @@ Views can declare parameters:
 
 ```yaml
 kind: /mica/view/v1
-name: ActiveClients
+name: /views/ActiveClients
 parameters:
   clientId:
     type: string
 selector:
-  entityKind: AcmeClientList
+  entityKind: /schemas/AcmeClientList
 data:
   jsonPath: $.clients[?(@.id==$clientId)].["id", "validationUrl"]
   flatten: true
@@ -285,7 +285,7 @@ types are supported.
 To pass the parameters, use the `parameters` field in the request body:
 
 ```
-curl -i --json '{"viewName": "ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
+curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
 
 ## Entity Validation

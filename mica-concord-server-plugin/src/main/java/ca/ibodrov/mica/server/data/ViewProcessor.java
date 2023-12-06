@@ -104,7 +104,7 @@ public class ViewProcessor {
         try {
             result = parseContext.parse(data).read(jsonPath);
         } catch (IllegalArgumentException | JsonPathException e) {
-            throw ApiException.badRequest(ApiException.ErrorKind.BAD_DATA,
+            throw ApiException.badRequest(
                     "Error while processing entity '%s'. %s (%s)".formatted(entityName, e.getMessage(), jsonPath));
         }
         if (result == null) {

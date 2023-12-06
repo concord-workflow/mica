@@ -3,6 +3,7 @@ import { usePutYamlString } from '../api/upload.ts';
 import { PreviewRequest } from '../api/view.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
+import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
 import PreviewView from '../features/PreviewView.tsx';
 import SaveIcon from '@mui/icons-material/Save';
@@ -69,6 +70,7 @@ const EditEntityPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
+    // TODO handle load errors
     // load the entity
     const { entityId } = useParams<RouteParams>();
     const {
@@ -238,7 +240,11 @@ const EditEntityPage = () => {
                             </Button>
                         </FormControl>
                     </ActionBar>
-                    {saveError && <Alert severity="error">{saveError.message}</Alert>}
+                    {saveError && (
+                        <Alert severity="error">
+                            <ReadableApiError error={saveError} />
+                        </Alert>
+                    )}
                     {yamlParseError && <Alert severity="error">{yamlParseError}</Alert>}
                 </Box>
                 <Box flex="1">

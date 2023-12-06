@@ -1,4 +1,5 @@
 import { doFetch, handleJsonResponse, handleTextResponse } from './common.ts';
+import { ApiError } from './error.ts';
 
 import { useMutation } from 'react-query';
 import { UseMutationOptions } from 'react-query/types/react/types';
@@ -136,9 +137,9 @@ const deleteById = (entityId: string): Promise<EntityVersion> =>
     }).then(handleJsonResponse<EntityVersion>);
 
 export const useDeleteById = (
-    options?: UseMutationOptions<EntityVersion, Error, { entityId: string }>,
+    options?: UseMutationOptions<EntityVersion, ApiError, { entityId: string }>,
 ) =>
-    useMutation<EntityVersion, Error, { entityId: string }>(
+    useMutation<EntityVersion, ApiError, { entityId: string }>(
         ({ entityId }) => deleteById(entityId),
         options,
     );

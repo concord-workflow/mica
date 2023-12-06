@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import ca.ibodrov.mica.server.exceptions.EntityValidationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.intellij.lang.annotations.Language;
@@ -12,8 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.UUID;
 
-import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
-import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.UNKNOWN_ENTITY_KIND;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -43,7 +43,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """;
 
         var error = assertThrows(ApiException.class, () -> controller.createOrUpdate(parseYaml(yaml)));
-        assertEquals(UNKNOWN_ENTITY_KIND, error.getErrorKind());
+        assertEquals(BAD_REQUEST, error.getStatus());
     }
 
     @Test
@@ -83,8 +83,8 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 name: %s
                 randomProp: "foo"
                 """.formatted(randomEntityName()));
-        var error1 = assertThrows(ApiException.class, () -> controller.createOrUpdate(entity1));
-        assertEquals(BAD_DATA, error1.getErrorKind());
+        var error1 = assertThrows(EntityValidationException.class, () -> controller.createOrUpdate(entity1));
+        assertEquals(1, error1.getErrors().size());
 
         // invalid type
         // TODO test with numbers, booleans, etc.
@@ -93,8 +93,8 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 name: null
                 data: "foo"
                 """);
-        var error2 = assertThrows(ApiException.class, () -> controller.createOrUpdate(entity2));
-        assertEquals(BAD_DATA, error2.getErrorKind());
+        var error2 = assertThrows(EntityValidationException.class, () -> controller.createOrUpdate(entity2));
+        assertEquals(1, error2.getErrors().size());
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {

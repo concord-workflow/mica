@@ -1,4 +1,5 @@
 import { useDeleteById } from '../api/entity.ts';
+import ReadableApiError from '../components/ReadableApiError.tsx';
 import { LoadingButton } from '@mui/lab';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
@@ -32,7 +33,7 @@ const DeleteEntityConfirmation = ({ entityId, entityName, open, onSuccess, onClo
             <DialogContent sx={{ padding: 3 }}>
                 {error && (
                     <Alert severity="error" sx={{ marginBottom: 1 }}>
-                        {error.message}
+                        <ReadableApiError error={error} />
                     </Alert>
                 )}
                 Are you sure you want to delete entity <b>{entityName}</b> (ID: {entityId})?

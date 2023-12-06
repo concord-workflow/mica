@@ -1,5 +1,6 @@
 import { doFetch, handleJsonResponse } from './common.ts';
 import { EntityVersion } from './entity.ts';
+import { ApiError } from './error.ts';
 
 import { useMutation } from 'react-query';
 import { UseMutationOptions } from 'react-query/types/react/types';
@@ -38,14 +39,17 @@ interface PutYamlFileRequest {
 }
 
 export const usePutPartialYaml = (
-    options?: UseMutationOptions<EntityVersion, Error, PutYamlFileRequest>,
+    options?: UseMutationOptions<EntityVersion, ApiError, PutYamlFileRequest>,
 ) =>
-    useMutation<EntityVersion, Error, PutYamlFileRequest>(
+    useMutation<EntityVersion, ApiError, PutYamlFileRequest>(
         ({ file, entityName, entityKind }) => putPartialYaml(file, entityName, entityKind),
         options,
     );
 
 export const usePutYamlString = (
-    options?: UseMutationOptions<EntityVersion, Error, { body: string }>,
+    options?: UseMutationOptions<EntityVersion, ApiError, { body: string }>,
 ) =>
-    useMutation<EntityVersion, Error, { body: string }>(({ body }) => putYamlString(body), options);
+    useMutation<EntityVersion, ApiError, { body: string }>(
+        ({ body }) => putYamlString(body),
+        options,
+    );

@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.exceptions;
 
+import ca.ibodrov.mica.api.model.ApiError;
 import ca.ibodrov.mica.server.data.ViewProcessorException;
 import org.sonatype.siesta.Component;
 
@@ -13,12 +14,10 @@ public class ViewProcessorExceptionMapper implements Component, ExceptionMapper<
 
     @Override
     public Response toResponse(ViewProcessorException exception) {
+        // TODO structured errors?
         return Response.status(BAD_REQUEST)
                 .type(APPLICATION_JSON)
-                .entity(new ViewError(exception.getMessage()))
+                .entity(ApiError.badRequest(exception.getMessage()))
                 .build();
-    }
-
-    public record ViewError(String message) {
     }
 }

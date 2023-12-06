@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.exceptions;
 
+import ca.ibodrov.mica.api.model.ApiError;
 import org.jooq.exception.DataAccessException;
 import org.sonatype.siesta.Component;
 
@@ -14,10 +15,7 @@ public class DataAccessExceptionMapper implements Component, ExceptionMapper<Dat
     public Response toResponse(DataAccessException exception) {
         return Response.serverError()
                 .type(APPLICATION_JSON)
-                .entity(new InternalError(exception.getMessage()))
+                .entity(ApiError.internalError(exception.getMessage()))
                 .build();
-    }
-
-    public record InternalError(String message) {
     }
 }

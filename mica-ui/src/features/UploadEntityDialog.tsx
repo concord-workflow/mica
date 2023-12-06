@@ -1,4 +1,5 @@
 import { usePutPartialYaml } from '../api/upload.ts';
+import ReadableApiError from '../components/ReadableApiError.tsx';
 import EntityKindSelect from './EntityKindSelect.tsx';
 import { LoadingButton } from '@mui/lab';
 import {
@@ -57,7 +58,7 @@ const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
             <DialogContent sx={{ padding: 3 }}>
                 {error && (
                     <Alert severity="error" sx={{ marginBottom: 1 }}>
-                        {error.message}
+                        <ReadableApiError error={error} />
                     </Alert>
                 )}
                 <FormControl sx={{ mb: 5 }} fullWidth={true}>

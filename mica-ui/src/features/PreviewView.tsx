@@ -1,5 +1,6 @@
 import { JsonNode } from '../api/entity.ts';
 import { PreviewRequest, usePreview } from '../api/view.ts';
+import ReadableApiError from '../components/ReadableApiError.tsx';
 import { Alert, Box, CircularProgress } from '@mui/material';
 import { useDebounce } from '@uidotdev/usehooks';
 
@@ -34,7 +35,7 @@ const PreviewView = ({ request }: Props) => {
         <>
             {error && (
                 <Alert color="error" sx={{ position: 'relative' }}>
-                    {error.message}
+                    <ReadableApiError error={error} />
                 </Alert>
             )}
             <Box marginLeft={2}>

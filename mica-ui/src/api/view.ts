@@ -1,5 +1,6 @@
 import { doFetch, handleJsonResponse } from './common.ts';
 import { Entity, PartialEntity } from './entity.ts';
+import { ApiError } from './error.ts';
 
 import { useMutation } from 'react-query';
 import { UseMutationOptions } from 'react-query/types/react/types';
@@ -23,5 +24,5 @@ const preview = (request: PreviewRequest): Promise<PartialEntity> =>
         body: JSON.stringify(request),
     }).then(handleJsonResponse<PartialEntity>);
 
-export const usePreview = (options?: UseMutationOptions<PartialEntity, Error, PreviewRequest>) =>
-    useMutation<PartialEntity, Error, PreviewRequest>(preview, options);
+export const usePreview = (options?: UseMutationOptions<PartialEntity, ApiError, PreviewRequest>) =>
+    useMutation<PartialEntity, ApiError, PreviewRequest>(preview, options);

@@ -19,7 +19,6 @@ import javax.ws.rs.*;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -70,7 +69,7 @@ public class EntityUploadResource implements Resource {
             }
             entity = yamlMapper.convertValue(object, PartialEntity.class);
         } catch (IOException e) {
-            throw ApiException.badRequest(BAD_DATA, "Error parsing YAML: " + e.getMessage());
+            throw ApiException.badRequest("Error parsing YAML: " + e.getMessage());
         }
         assertValid(entity);
         return controller.createOrUpdate(entity);

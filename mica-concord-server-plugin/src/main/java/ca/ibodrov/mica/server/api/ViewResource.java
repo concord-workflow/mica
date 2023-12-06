@@ -21,7 +21,6 @@ import javax.ws.rs.*;
 import java.util.Map;
 import java.util.Optional;
 
-import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.NO_DATA;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -83,15 +82,15 @@ public class ViewResource implements Resource {
     private EntityLike assertViewEntity(@Valid RenderRequest request) {
         if (request.viewId().isPresent()) {
             return entityStore.getById(request.viewId().get())
-                    .orElseThrow(() -> ApiException.notFound(NO_DATA, "View not found: " + request.viewId().get()));
+                    .orElseThrow(() -> ApiException.notFound("View not found: " + request.viewId().get()));
         }
 
         if (request.viewName().isPresent()) {
             return entityStore.getByName(request.viewName().get())
-                    .orElseThrow(() -> ApiException.notFound(NO_DATA, "View not found: " + request.viewName().get()));
+                    .orElseThrow(() -> ApiException.notFound("View not found: " + request.viewName().get()));
         }
 
-        throw ApiException.badRequest(NO_DATA, "viewId or viewName is required");
+        throw ApiException.badRequest("viewId or viewName is required");
     }
 
     public record RenderRequest(Optional<EntityId> viewId,

@@ -22,7 +22,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.UUID;
 
-import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.NO_DATA;
 import static com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature.*;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -72,7 +71,7 @@ public class EntityResource implements Resource {
     @Operation(description = "Get entity by ID", operationId = "getEntityById")
     public Entity getEntityById(@PathParam("id") EntityId entityId) {
         return entityStore.getById(entityId)
-                .orElseThrow(() -> ApiException.notFound(NO_DATA, "Entity not found: " + entityId));
+                .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
     }
 
     @GET
@@ -95,7 +94,7 @@ public class EntityResource implements Resource {
     @Operation(description = "Delete an existing entity by its ID", operationId = "deleteById")
     public EntityVersion deleteById(@PathParam("id") UUID entityId) {
         return entityStore.deleteById(new EntityId(entityId))
-                .orElseThrow(() -> ApiException.notFound(NO_DATA, "Entity not found: " + entityId));
+                .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
     }
 
     private static String nonBlank(String s) {

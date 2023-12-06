@@ -16,7 +16,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
-import static ca.ibodrov.mica.server.exceptions.ApiException.ErrorKind.BAD_DATA;
 
 public final class BuiltinSchemas {
 
@@ -72,7 +71,7 @@ public final class BuiltinSchemas {
 
     public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {
         if (!entity.kind().equals(BuiltinSchemas.MICA_VIEW_V1)) {
-            throw ApiException.badRequest(BAD_DATA, "Expected a /mica/view/v1 entity, got: " + entity.kind());
+            throw ApiException.badRequest("Expected a /mica/view/v1 entity, got: " + entity.kind());
         }
 
         var name = entity.name();
@@ -82,10 +81,10 @@ public final class BuiltinSchemas {
                 .orElseGet(Map::of);
 
         var selectorEntityKind = select(entity, "selector", "entityKind", JsonNode::asText)
-                .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing selector.entityKind"));
+                .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));
 
         var dataJsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
-                .orElseThrow(() -> ApiException.badRequest(BAD_DATA, "View is missing data.jsonPath"));
+                .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
         var flatten = select(entity, "data", "flatten", JsonNode::asBoolean)
                 .orElse(false);
@@ -138,8 +137,8 @@ public final class BuiltinSchemas {
             var value = field.getValue();
             var schema = objectMapper.convertValue(value, ObjectSchemaNode.class);
             if (schema == null) {
-                throw ApiException.badRequest(BAD_DATA,
-                        "Expected a parameter definition for '%s', got: %s".formatted(name, value));
+                throw ApiException
+                        .badRequest("Expected a parameter definition for '%s', got: %s".formatted(name, value));
             }
             result.put(name, schema);
         });
