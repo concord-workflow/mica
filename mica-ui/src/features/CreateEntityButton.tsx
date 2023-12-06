@@ -12,8 +12,8 @@ const CreateEntityButton = () => {
     const navigate = useNavigate();
 
     const { data, isFetching } = useQuery(
-        ['entity', 'list'],
-        () => listEntities(undefined, undefined, MICA_KIND_KIND),
+        ['entity', 'list', '/', MICA_KIND_KIND],
+        () => listEntities({ entityKind: MICA_KIND_KIND }),
         {
             keepPreviousData: true,
             select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),

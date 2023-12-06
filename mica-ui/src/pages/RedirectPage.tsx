@@ -23,7 +23,7 @@ const RedirectPage = () => {
 
         const doIt = async () => {
             try {
-                const result = await listEntities(undefined, entityName);
+                const result = await listEntities({ entityName });
                 if (result.data.length != 1) {
                     // TODO error handling
                     return;

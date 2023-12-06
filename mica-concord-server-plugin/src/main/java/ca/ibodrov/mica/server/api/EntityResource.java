@@ -5,6 +5,7 @@ import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.EntityList;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.server.data.EntityStore;
+import ca.ibodrov.mica.server.data.EntityStore.ListEntitiesRequest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -49,13 +50,20 @@ public class EntityResource implements Resource {
 
     @GET
     @Operation(description = "List known entities", operationId = "listEntities")
-    public EntityList listEntities(@QueryParam("search") String search,
+    public EntityList listEntities(@Nullable @QueryParam("search") String search,
+                                   @Nullable @QueryParam("entityNameStartsWith") String entityNameStartsWith,
                                    @Nullable @QueryParam("entityName") String entityName,
                                    @Nullable @QueryParam("entityKind") String entityKind,
                                    @Nullable @QueryParam("orderBy") EntityStore.OrderBy orderBy,
                                    @QueryParam("limit") @DefaultValue("100") int limit) {
         // TODO validate entityName and entityKind, use @ValidName
-        var data = entityStore.search(nonBlank(search), nonBlank(entityName), nonBlank(entityKind), orderBy, limit);
+        var request = new ListEntitiesRequest(nonBlank(search),
+                nonBlank(entityNameStartsWith),
+                nonBlank(entityName),
+                nonBlank(entityKind),
+                orderBy,
+                limit);
+        var data = entityStore.search(request);
         return new EntityList(limit, data);
     }
 

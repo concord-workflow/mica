@@ -50,23 +50,41 @@ public class EntityStore {
         this.uuidGenerator = requireNonNull(uuidGenerator);
     }
 
-    public List<EntityMetadata> search(@Nullable String search,
-                                       @Nullable String entityName,
-                                       @Nullable String entityKind,
-                                       @Nullable OrderBy orderBy,
-                                       int limit) {
+    public record ListEntitiesRequest(@Nullable String search,
+            @Nullable String entityNameStartsWith,
+            @Nullable String entityName,
+            @Nullable String entityKind,
+            @Nullable OrderBy orderBy,
+            int limit) {
+    }
 
+    public List<EntityMetadata> search(ListEntitiesRequest request) {
+        var search = request.search();
         var searchCondition = search != null ? MICA_ENTITIES.NAME.containsIgnoreCase(search) : noCondition();
+
+        var entityNameStartsWith = request.entityNameStartsWith();
+        var entityNameStartsWithCondition = entityNameStartsWith != null
+                ? MICA_ENTITIES.NAME.startsWith(entityNameStartsWith)
+                : noCondition();
+
+        var entityName = request.entityName();
         var nameCondition = entityName != null ? MICA_ENTITIES.NAME.eq(entityName) : noCondition();
+
+        var entityKind = request.entityKind();
         var entityKindCondition = entityKind != null ? MICA_ENTITIES.KIND.eq(entityKind) : noCondition();
+
         var query = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT)
                 .from(MICA_ENTITIES)
-                .where(searchCondition.and(nameCondition).and(entityKindCondition));
+                .where(searchCondition
+                        .and(entityNameStartsWithCondition)
+                        .and(nameCondition)
+                        .and(entityKindCondition));
 
+        var orderBy = request.orderBy();
         if (orderBy != null) {
             switch (orderBy) {
                 case NAME -> query.orderBy(MICA_ENTITIES.NAME);
@@ -74,7 +92,7 @@ public class EntityStore {
         }
 
         return query
-                .limit(limit)
+                .limit(request.limit())
                 .fetch(EntityStore::toEntityMetadata);
     }
 

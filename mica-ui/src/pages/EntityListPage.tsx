@@ -12,7 +12,10 @@ import EntityKindSelect from '../features/EntityKindSelect.tsx';
 import UploadEntityDialog from '../features/UploadEntityDialog.tsx';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FolderIcon from '@mui/icons-material/Folder';
+import HomeIcon from '@mui/icons-material/Home';
 import {
+    Box,
     Button,
     CircularProgress,
     Container,
@@ -44,7 +47,143 @@ const HELP: React.ReactNode = (
     </>
 );
 
-const DEFAULT_ROW_LIMIT = 100;
+const DEFAULT_ROW_LIMIT = 1000;
+
+interface FileRow {
+    key: string;
+    label: string;
+    type: 'entity';
+    entity: EntityEntry;
+}
+
+interface FolderRow {
+    key: string;
+    label: string;
+    type: 'folder';
+    path: string;
+}
+
+type DataRow = FileRow | FolderRow;
+
+/**
+ * Takes a list of entities and returns a list of rows to be displayed in the table.
+ * Each row can be either a "file" (link to an entity) or a "folder" (link to
+ * the entity list filtered by the folder's path).
+ */
+const filterAndSortData = (data: EntityEntry[], selectedPath: string): DataRow[] => {
+    const files = new Array<FileRow>();
+    const folders = new Array<FolderRow>();
+
+    data.filter((entity) => entity.name.startsWith(selectedPath)).forEach((entity) => {
+        let path = entity.name.substring(0, entity.name.lastIndexOf('/'));
+        if (path.length === 0) {
+            path = '/';
+        }
+        const fileName = entity.name.substring(entity.name.lastIndexOf('/') + 1);
+        if (path === selectedPath) {
+            files.push({
+                key: entity.id,
+                label: fileName,
+                type: 'entity',
+                entity: entity,
+            });
+        } else {
+            const relativePath = entity.name.substring(selectedPath.length);
+            let nextFolder = relativePath.substring(0, relativePath.indexOf('/', 1));
+            if (nextFolder[0] !== '/') {
+                nextFolder = '/' + nextFolder;
+            }
+            if (!folders.find((folder) => folder.label === nextFolder)) {
+                folders.push({
+                    key: entity.id,
+                    label: nextFolder,
+                    type: 'folder',
+                    path: (selectedPath + nextFolder).replace('//', '/'),
+                });
+            }
+        }
+    });
+
+    return [
+        ...folders.sort((a, b) => a.label.localeCompare(b.label)),
+        ...files.sort((a, b) => a.label.localeCompare(b.label)),
+    ];
+};
+
+const Breadcrumbs = ({ path }: { path: string }) => {
+    const parts = path.split('/').filter((part) => part.length > 0);
+    return (
+        <Box marginBottom={2}>
+            <Tooltip title="Back to /">
+                <Link component={RouterLink} to={`/entity?path=/`}>
+                    <HomeIcon fontSize="small" sx={{ position: 'relative', top: '3px' }} />
+                </Link>
+            </Tooltip>
+            {parts.map((part, index) => (
+                <React.Fragment key={index}>
+                    &nbsp;&nbsp;
+                    <Link
+                        component={RouterLink}
+                        to={`/entity?path=/${parts.slice(0, index + 1).join('/')}`}>
+                        {'/'}
+                        {part}
+                    </Link>
+                </React.Fragment>
+            ))}
+        </Box>
+    );
+};
+
+const EntityTableRow = ({
+    row,
+    search,
+    handleDelete,
+}: {
+    row: FileRow;
+    search: string;
+    handleDelete: (row: EntityEntry) => void;
+}) => {
+    return (
+        <TableRow>
+            <TableCell>
+                <Tooltip title={row.entity.kind}>{entityKindToIcon(row.entity.kind)}</Tooltip>
+            </TableCell>
+            <TableCell>
+                <Link component={RouterLink} to={`/entity/${row.entity.id}/details`}>
+                    {highlightSubstring(row.label, search)}
+                </Link>
+            </TableCell>
+            <TableCell align="right">
+                <RowMenu>
+                    <MenuItem onClick={() => handleDelete(row.entity)}>
+                        <ListItemIcon>
+                            <DeleteIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Delete</ListItemText>
+                    </MenuItem>
+                </RowMenu>
+            </TableCell>
+        </TableRow>
+    );
+};
+
+const FolderTableRow = ({ row, search }: { row: FolderRow; search: string }) => {
+    return (
+        <TableRow>
+            <TableCell>
+                <Tooltip title="Folder">
+                    <FolderIcon />
+                </Tooltip>
+            </TableCell>
+            <TableCell>
+                <Link component={RouterLink} to={`/entity?path=${row.path}`}>
+                    {highlightSubstring(row.label, search)}
+                </Link>
+            </TableCell>
+            <TableCell align="right"></TableCell>
+        </TableRow>
+    );
+};
 
 const EntityListPage = () => {
     const [searchParams] = useSearchParams();
@@ -52,12 +191,20 @@ const EntityListPage = () => {
     const [openUpload, setOpenUpload] = React.useState(false);
 
     const [search, setSearch] = React.useState<string>('');
+    const selectedPath = searchParams.get('path') ?? '/';
     const [selectedKind, setSelectedKind] = React.useState<string | undefined>(
         searchParams.get('kind') ?? undefined,
     );
     const { data, isFetching } = useQuery(
-        ['entity', 'list', selectedKind, search],
-        () => listEntities(search, undefined, selectedKind, OrderBy.NAME, DEFAULT_ROW_LIMIT),
+        ['entity', 'list', selectedPath, selectedKind, search],
+        () =>
+            listEntities({
+                search,
+                entityNameStartsWith: selectedPath,
+                entityKind: selectedKind,
+                orderBy: OrderBy.NAME,
+                limit: DEFAULT_ROW_LIMIT,
+            }),
         {
             keepPreviousData: true,
             select: ({ data }) => data,
@@ -84,6 +231,11 @@ const EntityListPage = () => {
         setSuccessNotification('Entity deleted successfully');
         setOpenDeleteConfirmation(false);
     }, []);
+
+    const effectiveData = React.useMemo(
+        () => filterAndSortData(data ?? [], selectedPath),
+        [data, selectedPath],
+    );
 
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
@@ -129,6 +281,7 @@ const EntityListPage = () => {
                 </FormControl>
                 <SearchField onChange={(value) => setSearch(value)} />
             </ActionBar>
+            <Breadcrumbs path={selectedPath} />
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
@@ -143,34 +296,23 @@ const EntityListPage = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {data &&
-                            data.length > 0 &&
-                            data.map((row) => (
-                                <TableRow key={row.id}>
-                                    <TableCell>
-                                        <Tooltip title={row.kind}>
-                                            {entityKindToIcon(row.kind)}
-                                        </Tooltip>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Link
-                                            component={RouterLink}
-                                            to={`/entity/${row.id}/details`}>
-                                            {highlightSubstring(row.name, search)}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <RowMenu>
-                                            <MenuItem onClick={() => handleDelete(row)}>
-                                                <ListItemIcon>
-                                                    <DeleteIcon fontSize="small" />
-                                                </ListItemIcon>
-                                                <ListItemText>Delete</ListItemText>
-                                            </MenuItem>
-                                        </RowMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                        {effectiveData.length > 0 &&
+                            effectiveData.map((row) => {
+                                if (row.type === 'folder') {
+                                    return (
+                                        <FolderTableRow key={row.key} row={row} search={search} />
+                                    );
+                                } else {
+                                    return (
+                                        <EntityTableRow
+                                            key={row.key}
+                                            row={row}
+                                            search={search}
+                                            handleDelete={handleDelete}
+                                        />
+                                    );
+                                }
+                            })}
                         {data && data.length >= DEFAULT_ROW_LIMIT && (
                             <TableRow>
                                 <TableCell colSpan={3} align="center">

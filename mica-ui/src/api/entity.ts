@@ -114,20 +114,19 @@ export const getEntityAsYamlString = (id: string): Promise<string> =>
 const qp = (key: string, value: string | number | undefined): string =>
     value ? `${key}=${encodeURIComponent(value)}` : '';
 
-export const listEntities = (
-    search?: string,
-    entityName?: string,
-    entityKind?: string,
-    orderBy?: OrderBy,
-    limit?: number,
-): Promise<EntityList> => {
-    const queryParams = [
-        qp('search', search),
-        qp('entityName', entityName),
-        qp('entityKind', entityKind),
-        qp('orderBy', orderBy),
-        qp('limit', limit),
-    ].join('&');
+export interface ListEntitiesRequest {
+    search?: string;
+    entityNameStartsWith?: string;
+    entityName?: string;
+    entityKind?: string;
+    orderBy?: OrderBy;
+    limit?: number;
+}
+
+export const listEntities = (request: ListEntitiesRequest): Promise<EntityList> => {
+    const queryParams = Object.keys(request)
+        .map((key) => qp(key, request[key as keyof ListEntitiesRequest]))
+        .join('&');
     return doFetch(`/api/mica/v1/entity?${queryParams}`).then(handleJsonResponse<EntityList>);
 };
 
