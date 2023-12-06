@@ -1,7 +1,5 @@
 package ca.ibodrov.mica.server.data;
 
-import ca.ibodrov.mica.api.model.EntityVersion;
-import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.schema.ValueType;
@@ -39,10 +37,6 @@ public class EntityKindStore {
                 .flatMap(e -> Optional.ofNullable(e.getProperty(MICA_KIND_SCHEMA_PROPERTY)))
                 .map(v -> objectMapper.convertValue(v, ObjectSchemaNode.class))
                 .map(EntityKindStore::sanityCheck);
-    }
-
-    public Optional<EntityVersion> upsert(PartialEntity entity) {
-        return entityStore.upsert(assertKind(entity));
     }
 
     private static <T extends EntityLike> T assertKind(T entity) {
