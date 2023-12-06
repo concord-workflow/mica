@@ -48,20 +48,25 @@ public class EntityUploadResource implements Resource {
     @Operation(description = "Upload an entity in YAML format", operationId = "putYaml")
     public EntityVersion putYaml(InputStream in) {
         // assume the name is present in the document
-        return putPartialYaml(null, in);
+        return putPartialYaml(null, null, in);
     }
 
     @PUT
     @Path("partialYaml")
     @Consumes("*/yaml")
-    @Operation(description = "Upload a (possibly) partial entity in YAML format with name override", operationId = "putPartialYaml")
-    public EntityVersion putPartialYaml(@Nullable @QueryParam("entityName") String entityName, InputStream in) {
+    @Operation(description = "Upload a (possibly) partial entity in YAML format with 'name' or 'kind' overrides", operationId = "putPartialYaml")
+    public EntityVersion putPartialYaml(@Nullable @QueryParam("entityName") String entityName,
+                                        @Nullable @QueryParam("entityKind") String entityKind,
+                                        InputStream in) {
         // TODO validate entityName
         PartialEntity entity;
         try {
             var object = yamlMapper.readValue(in, ObjectNode.class);
             if (entityName != null && !entityName.isBlank()) {
                 object = object.put("name", entityName);
+            }
+            if (entityKind != null && !entityKind.isBlank()) {
+                object = object.put("kind", entityKind);
             }
             entity = yamlMapper.convertValue(object, PartialEntity.class);
         } catch (IOException e) {

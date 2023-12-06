@@ -2,15 +2,17 @@ import { MICA_KIND_KIND, listEntities } from '../api/entity.ts';
 import entityKindToIcon from '../components/entityKindToIcon.tsx';
 import { MenuItem, Select } from '@mui/material';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import { SelectProps } from '@mui/material/Select/Select';
 
 import { useQuery } from 'react-query';
 
-interface Props {
+interface Props extends Omit<SelectProps, 'value' | 'onChange'> {
     value: string | undefined;
     onChange: (value: string) => void;
+    disableAny?: boolean;
 }
 
-const EntityKindSelect = ({ value, onChange }: Props) => {
+const EntityKindSelect = ({ value, onChange, disableAny, ...rest }: Props) => {
     const { data, isFetching } = useQuery(
         ['entity', 'list', '/', MICA_KIND_KIND],
         () => listEntities({ entityKind: MICA_KIND_KIND }),
@@ -26,10 +28,13 @@ const EntityKindSelect = ({ value, onChange }: Props) => {
             label="Kind"
             disabled={isFetching}
             value={effectiveValue}
-            onChange={(ev) => onChange(ev.target.value as string)}>
-            <MenuItem key={''} value={''}>
-                any
-            </MenuItem>
+            onChange={(ev) => onChange(ev.target.value as string)}
+            {...rest}>
+            {!disableAny && (
+                <MenuItem key={''} value={''}>
+                    any
+                </MenuItem>
+            )}
             {data &&
                 data.map((row) => (
                     <MenuItem key={row.id} value={row.name}>
