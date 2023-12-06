@@ -260,7 +260,14 @@ const EditEntityPage = () => {
                         )}
                     </ErrorBoundary>
                     {showPreview && (
-                        <Drawer anchor="bottom" variant="permanent">
+                        <Drawer
+                            anchor="bottom"
+                            variant="permanent"
+                            sx={{
+                                '.MuiPaper-root': {
+                                    maxHeight: '50%',
+                                },
+                            }}>
                             {previewRequest && <PreviewView request={previewRequest} />}
                         </Drawer>
                     )}
