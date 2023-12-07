@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static ca.ibodrov.mica.schema.ValidatedProperty.*;
 import static ca.ibodrov.mica.schema.ValidationError.Kind.INVALID_SCHEMA;
@@ -60,8 +57,6 @@ public class Validator {
             case OBJECT -> validateObject(property, input);
             case STRING -> validateString(property, input);
             case NULL -> validateNull(property, input);
-            // TODO other types
-            default -> unexpectedType(type);
         };
     }
 
@@ -123,15 +118,28 @@ public class Validator {
             return validateEnums(enums.get(), OBJECT, input);
         }
 
+        // track any unknown properties in the input object
+        var unknownInputKeys = new HashSet<String>(input.size());
+        input.fieldNames().forEachRemaining(unknownInputKeys::add);
+
         // check the nested properties
         var validatedProperties = new HashMap<String, ValidatedProperty>();
         var properties = property.properties().orElseGet(Map::of);
         properties.forEach((key, prop) -> {
+            unknownInputKeys.remove(key);
+
             var required = property.required().map(props -> props.contains(key)).orElse(false);
             var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
             var validatedProp = validateProperty(key, prop, required, value);
             validatedProperties.put(key, validatedProp);
         });
+
+        // check if additional properties are allowed
+        // https://json-schema.org/understanding-json-schema/reference/object#additionalproperties
+        // TODO support schema objects in additionalProperties
+        if (!property.additionalProperties().orElse(true) && !unknownInputKeys.isEmpty()) {
+            return unexpectedProperties("Additional properties are not allowed: " + unknownInputKeys, unknownInputKeys);
+        }
 
         // no nested properties found, return the current result
         if (validatedProperties.isEmpty()) {

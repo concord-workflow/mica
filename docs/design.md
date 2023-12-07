@@ -311,9 +311,14 @@ Invalid entities are not returned by views unless specified explicitly.
 Mica implements a subset of JSON Schema features:
 
 - types: array, boolean, object, string, number, null, any (see `ca.ibodrov.mica.schema.ValueType`);
-- required properties;
-- enum values;
+- `required` properties;
+- `enum` values;
+- `additionalProperties` option (only `true` or `false` for now);
 - _TODO_ format: uri, email, uuid, date, time, etc;
+
+The major difference from the standard is that Mica does not support `null`
+values. When validating `required` properties, Mica treats `null` values as
+"missing" properties.
 
 ## Database Design
 

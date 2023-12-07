@@ -3,6 +3,7 @@ package ca.ibodrov.mica.schema;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -13,10 +14,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static ca.ibodrov.mica.schema.ValidationError.Kind.UNEXPECTED_VALUE;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ValidatorTest {
+
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new Jdk8Module())
             .setDefaultPropertyInclusion(NON_NULL);
@@ -297,6 +300,34 @@ public class ValidatorTest {
     }
 
     @Test
+    public void testAdditionalProperties() {
+        var schema = parseYaml(ObjectSchemaNode.class, """
+                type: object
+                additionalProperties: true
+                properties:
+                  foo:
+                    type: number
+                """);
+
+        var result = validateMap(schema, Map.of("foo", 123, "bar", 456));
+        assertTrue(result.isValid());
+        assertValidProperty(result, "foo", IntNode.valueOf(123));
+        assertNoProperty(result, "bar"); // the validator doesn't return properties that are not in the schema
+
+        schema = parseYaml(ObjectSchemaNode.class, """
+                type: object
+                additionalProperties: false
+                properties:
+                  foo:
+                    type: number
+                """);
+
+        result = validateMap(schema, Map.of("foo", 123, "bar", 456));
+        assertFalse(result.isValid());
+        assertEquals(UNEXPECTED_VALUE, result.error().orElseThrow().kind());
+    }
+
+    @Test
     public void testComplex() {
         var schema = parseYaml(ObjectSchemaNode.class, """
                 type: object
@@ -362,6 +393,11 @@ public class ValidatorTest {
         assertTrue(properties.containsKey(key));
         assertTrue(properties.get(key).value().map(v -> v.equals(expectedValue)).orElse(false));
         assertTrue(properties.get(key).error().isEmpty());
+    }
+
+    private static void assertNoProperty(ValidatedProperty property, String key) {
+        var properties = property.properties().orElseGet(Map::of);
+        assertFalse(properties.containsKey(key));
     }
 
     private <T> T parseJson(Class<T> klass, @Language("JSON") String s) {

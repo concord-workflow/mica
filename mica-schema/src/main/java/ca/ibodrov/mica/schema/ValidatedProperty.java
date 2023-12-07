@@ -2,10 +2,12 @@ package ca.ibodrov.mica.schema;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static ca.ibodrov.mica.schema.ValidationError.Kind.*;
 
@@ -37,6 +39,15 @@ public record ValidatedProperty(Optional<JsonNode> value,
                 Map.of("expectedType", TextNode.valueOf(expectedType.key()),
                         "expectedValue", expectedValue,
                         "actualValue", actualValue)));
+    }
+
+    public static ValidatedProperty unexpectedProperties(String details, Set<String> propertyNames) {
+        return invalid(new ValidationError(UNEXPECTED_VALUE,
+                Map.of("details", TextNode.valueOf(details),
+                        "propertyNames", new ArrayNode(null, propertyNames.stream()
+                                .map(TextNode::valueOf)
+                                .map(n -> (JsonNode) n)
+                                .toList()))));
     }
 
     public static ValidatedProperty invalidType(ValueType expectedType, JsonNode actualValue) {
