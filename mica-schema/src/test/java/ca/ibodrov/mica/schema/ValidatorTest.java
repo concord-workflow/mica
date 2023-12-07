@@ -325,6 +325,25 @@ public class ValidatorTest {
         result = validateMap(schema, Map.of("foo", 123, "bar", 456));
         assertFalse(result.isValid());
         assertEquals(UNEXPECTED_VALUE, result.error().orElseThrow().kind());
+
+        schema = parseYaml(ObjectSchemaNode.class, """
+                type: object
+                additionalProperties:
+                  type: boolean
+                properties:
+                  foo:
+                    type: number
+                """);
+
+        result = validateMap(schema, Map.of("foo", 123, "bar", false));
+        assertTrue(result.isValid());
+        assertValidProperty(result, "foo", IntNode.valueOf(123));
+        assertValidProperty(result, "bar", BooleanNode.getFalse());
+
+        result = validateMap(schema, Map.of("foo", 123, "bar", 456));
+        assertFalse(result.isValid());
+        assertValidProperty(result, "foo", IntNode.valueOf(123));
+        assertInvalidProperty(result, "bar");
     }
 
     @Test

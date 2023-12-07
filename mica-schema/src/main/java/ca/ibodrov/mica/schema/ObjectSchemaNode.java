@@ -3,11 +3,9 @@ package ca.ibodrov.mica.schema;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static ca.ibodrov.mica.schema.ValueType.*;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
@@ -18,7 +16,7 @@ public record ObjectSchemaNode(Optional<String> type,
         Optional<Set<String>> required,
         @JsonProperty("enum") Optional<List<JsonNode>> enumeratedValues,
         Optional<ObjectSchemaNode> items,
-        Optional<Boolean> additionalProperties) {
+        Optional<JsonNode> additionalProperties) {
 
     public static ObjectSchemaNode array(ObjectSchemaNode items) {
         return new Builder()
@@ -60,6 +58,62 @@ public record ObjectSchemaNode(Optional<String> type,
                 .build();
     }
 
+    public static ObjectSchemaNode from(ObjectNode node) {
+        var builder = new Builder();
+
+        Optional.ofNullable(node.get("type"))
+                .map(JsonNode::asText)
+                .ifPresent(builder::type);
+
+        Optional.ofNullable(node.get("properties"))
+                .map(JsonNode::fields)
+                .ifPresent(fields -> {
+                    var properties = new HashMap<String, ObjectSchemaNode>();
+                    fields.forEachRemaining(entry -> {
+                        var name = entry.getKey();
+                        var value = entry.getValue();
+                        if (value.isObject()) {
+                            properties.put(name, from((ObjectNode) value));
+                        } else {
+                            throw new IllegalArgumentException("property '" + name + "' must be an object");
+                        }
+                    });
+                    builder.properties(properties);
+                });
+
+        Optional.ofNullable(node.get("required"))
+                .map(JsonNode::elements)
+                .ifPresent(elements -> {
+                    var required = new HashSet<String>();
+                    elements.forEachRemaining(element -> {
+                        if (element.isTextual()) {
+                            required.add(element.asText());
+                        } else {
+                            throw new IllegalArgumentException("'required' must be an array of strings");
+                        }
+                    });
+                    builder.required(required);
+                });
+
+        Optional.ofNullable(node.get("enum"))
+                .map(JsonNode::elements)
+                .ifPresent(elements -> {
+                    var enums = new ArrayList<JsonNode>();
+                    elements.forEachRemaining(enums::add);
+                    builder.enums(enums);
+                });
+
+        Optional.ofNullable(node.get("items"))
+                .filter(JsonNode::isObject)
+                .map(ObjectNode.class::cast)
+                .ifPresent(items -> builder.items(from(items)));
+
+        Optional.ofNullable(node.get("additionalProperties"))
+                .ifPresent(builder::additionalProperties);
+
+        return builder.build();
+    }
+
     public static class Builder {
 
         private Optional<String> type = Optional.empty();
@@ -67,7 +121,7 @@ public record ObjectSchemaNode(Optional<String> type,
         private Optional<Set<String>> required = Optional.empty();
         private Optional<List<JsonNode>> enumeratedValues = Optional.empty();
         private Optional<ObjectSchemaNode> items = Optional.empty();
-        private Optional<Boolean> additionalProperties = Optional.empty();
+        private Optional<JsonNode> additionalProperties = Optional.empty();
 
         public Builder type(String type) {
             this.type = Optional.of(type);
@@ -94,7 +148,7 @@ public record ObjectSchemaNode(Optional<String> type,
             return this;
         }
 
-        public Builder additionalProperties(boolean additionalProperties) {
+        public Builder additionalProperties(JsonNode additionalProperties) {
             this.additionalProperties = Optional.of(additionalProperties);
             return this;
         }

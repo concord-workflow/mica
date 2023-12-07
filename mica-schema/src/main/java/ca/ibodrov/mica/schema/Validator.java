@@ -2,6 +2,7 @@ package ca.ibodrov.mica.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.*;
@@ -10,8 +11,18 @@ import static ca.ibodrov.mica.schema.ValidatedProperty.*;
 import static ca.ibodrov.mica.schema.ValidationError.Kind.INVALID_SCHEMA;
 import static ca.ibodrov.mica.schema.ValueType.*;
 
-// TODO non-recursive depth-first traversal of the schema
-//  (using a command queue)
+/**
+ * A simple recursive validator. Supports a subset of JSON schema features:
+ * <ul>
+ * <li>types: object, array, string, number, boolean, null</li>
+ * <li>properties</li>
+ * <li><i>required<i>properties</li>
+ * <li><i>additionalProperties</i></li>
+ * <li><i>enum</i> values</li>
+ * <li>array <i>items</i> (only item schema validation, no <i>prefixItems</i>
+ * with <i>items: false</i> support yet)</li>
+ * </ul>
+ */
 public class Validator {
 
     private static ValidatedProperty validateProperty(String name,
@@ -107,6 +118,16 @@ public class Validator {
         return ValidatedProperty.nested(validatedItems).withValue(Optional.of(input));
     }
 
+    /**
+     * Validates input against the given schema. Returns a {@link ValidatedProperty}
+     * instance that contains all schema fields and their validation results.
+     * Additional properties are returned only if their types or values are
+     * validated.
+     *
+     * @param property the schema
+     * @param input    input data
+     * @return validated data.
+     */
     public static ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {
         if (!input.isObject()) {
             return invalidType(OBJECT, input);
@@ -134,11 +155,29 @@ public class Validator {
             validatedProperties.put(key, validatedProp);
         });
 
-        // check if additional properties are allowed
+        // check additional properties
         // https://json-schema.org/understanding-json-schema/reference/object#additionalproperties
-        // TODO support schema objects in additionalProperties
-        if (!property.additionalProperties().orElse(true) && !unknownInputKeys.isEmpty()) {
-            return unexpectedProperties("Additional properties are not allowed: " + unknownInputKeys, unknownInputKeys);
+        if (property.additionalProperties().filter(v -> !v.isNull()).isPresent()) {
+            var additionalProperties = property.additionalProperties().get();
+
+            // additionalProperties can be a boolean or an object
+            if (additionalProperties.isBoolean()) {
+                if (!additionalProperties.booleanValue() && !unknownInputKeys.isEmpty()) {
+                    return unexpectedProperties("Additional properties are not allowed: " + unknownInputKeys,
+                            unknownInputKeys);
+                }
+            } else if (additionalProperties.isObject()) {
+                var schema = ObjectSchemaNode.from((ObjectNode) additionalProperties);
+                var validatedAdditionalProperties = new HashMap<String, ValidatedProperty>();
+                unknownInputKeys.forEach(key -> {
+                    var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
+                    var validatedProp = validateProperty(key, schema, false, value);
+                    validatedAdditionalProperties.put(key, validatedProp);
+                });
+                validatedProperties.putAll(validatedAdditionalProperties);
+            } else {
+                return invalidSchema("'additionalProperties' must be a boolean or a schema object");
+            }
         }
 
         // no nested properties found, return the current result
