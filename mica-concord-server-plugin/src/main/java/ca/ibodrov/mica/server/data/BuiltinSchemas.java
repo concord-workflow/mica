@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -16,58 +17,103 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
+import static ca.ibodrov.mica.schema.ValueType.OBJECT;
 
 public final class BuiltinSchemas {
+
+    public static final String MICA_OBJECT_SCHEMA_NODE_V1 = "/mica/objectSchemaNode/v1";
+    public static final String MICA_RECORD_V1 = "/mica/record/v1";
+    public static final String MICA_KIND_V1 = "/mica/kind/v1";
+    public static final String MICA_VIEW_V1 = "/mica/view/v1";
+
+    public static final String MICA_KIND_SCHEMA_PROPERTY = "schema";
+
+    private final ObjectSchemaNode objectSchemaNodeSchema;
+    private final ObjectSchemaNode micaRecordV1Schema;
+    private final ObjectSchemaNode micaKindV1Schema;
+    private final ObjectSchemaNode micaViewV1Schema;
+
+    @Inject
+    public BuiltinSchemas(ObjectMapper objectMapper) {
+        this.objectSchemaNodeSchema = object(Map.of(
+                "type", enums(ValueType.valuesAsJson()),
+                "properties", new Builder()
+                        .type(OBJECT)
+                        .additionalProperties(
+                                objectMapper.convertValue(ref(MICA_OBJECT_SCHEMA_NODE_V1), JsonNode.class))
+                        .build(),
+                "required", array(string()),
+                "enum", array(any()),
+                "items", any()), Set.of());
+
+        this.micaRecordV1Schema = object(Map.of(
+                "id", string(),
+                "kind", enums(TextNode.valueOf(MICA_RECORD_V1)),
+                "name", string(),
+                "data", any()),
+                Set.of("kind", "name", "data"));
+
+        this.micaKindV1Schema = object(Map.of(
+                "id", string(),
+                "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
+                "name", string(),
+                MICA_KIND_SCHEMA_PROPERTY, objectSchemaNodeSchema),
+                Set.of("kind", "name", "schema"));
+
+        this.micaViewV1Schema = object(Map.of(
+                "id", string(),
+                "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
+                "name", string(),
+                "parameters", object(Map.of(), Set.of()),
+                "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
+                "data", object(Map.of(
+                        "jsonPath", string(),
+                        "flatten", bool(),
+                        "merge", bool()),
+                        Set.of("jsonPath"))),
+                Set.of("kind", "name", "selector", "data"));
+    }
 
     /**
      * Schema of {@link ObjectSchemaNode} itself.
      */
-    private static final ObjectSchemaNode OBJECT_SCHEMA_NODE_SCHEMA = object(Map.of(
-            "type", enums(ValueType.valuesAsJson()),
-            "properties", object(Map.of(), Set.of()),
-            "required", array(string()),
-            "enum", array(any()),
-            "items", any()), Set.of());
+    public ObjectSchemaNode getObjectSchemaNodeSchema() {
+        return objectSchemaNodeSchema;
+    }
 
     /**
      * /mica/record/v1 - use to declare entities of any kind.
      */
-    public static final String MICA_RECORD_V1 = "/mica/record/v1";
-    public static final ObjectSchemaNode MICA_RECORD_V1_SCHEMA = object(Map.of(
-            "id", string(),
-            "kind", enums(TextNode.valueOf(MICA_RECORD_V1)),
-            "name", string(),
-            "data", any()),
-            Set.of("kind", "name", "data"));
+    public ObjectSchemaNode getMicaRecordV1Schema() {
+        return micaRecordV1Schema;
+    }
 
     /**
      * /mica/kind/v1 - use to declare new entity kinds.
      */
-    public static final String MICA_KIND_V1 = "/mica/kind/v1";
-    public static final String MICA_KIND_SCHEMA_PROPERTY = "schema";
-    public static final ObjectSchemaNode MICA_KIND_V1_SCHEMA = object(Map.of(
-            "id", string(),
-            "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
-            "name", string(),
-            MICA_KIND_SCHEMA_PROPERTY, OBJECT_SCHEMA_NODE_SCHEMA),
-            Set.of("kind", "name", "schema"));
+    public ObjectSchemaNode getMicaKindV1Schema() {
+        return micaKindV1Schema;
+    }
 
     /**
      * /mica/view/v1 - use to declare entity views.
      */
-    public static final String MICA_VIEW_V1 = "/mica/view/v1";
-    public static final ObjectSchemaNode MICA_VIEW_V1_SCHEMA = object(Map.of(
-            "id", string(),
-            "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
-            "name", string(),
-            "parameters", object(Map.of(), Set.of()),
-            "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
-            "data", object(Map.of(
-                    "jsonPath", string(),
-                    "flatten", bool(),
-                    "merge", bool()),
-                    Set.of("jsonPath"))),
-            Set.of("kind", "name", "selector", "data"));
+    public ObjectSchemaNode getMicaViewV1Schema() {
+        return micaViewV1Schema;
+    }
+
+    public Optional<ObjectSchemaNode> getByRef(String ref) {
+        if (ref == null) {
+            return Optional.empty();
+        }
+        return switch (ref) {
+            case MICA_OBJECT_SCHEMA_NODE_V1 -> Optional.of(objectSchemaNodeSchema);
+            case MICA_RECORD_V1 -> Optional.of(micaRecordV1Schema);
+            case MICA_KIND_V1 -> Optional.of(micaKindV1Schema);
+            case MICA_VIEW_V1 -> Optional.of(micaViewV1Schema);
+            default -> Optional.empty();
+        };
+    }
 
     public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {
         if (!entity.kind().equals(BuiltinSchemas.MICA_VIEW_V1)) {
@@ -153,8 +199,5 @@ public final class BuiltinSchemas {
         return Optional.ofNullable(entityLike.data().get(pathElement1))
                 .map(n -> n.get(pathElement2))
                 .map(converter);
-    }
-
-    private BuiltinSchemas() {
     }
 }

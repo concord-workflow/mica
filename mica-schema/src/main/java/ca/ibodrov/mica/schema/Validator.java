@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static ca.ibodrov.mica.schema.ValidatedProperty.*;
 import static ca.ibodrov.mica.schema.ValidationError.Kind.INVALID_SCHEMA;
@@ -21,14 +22,110 @@ import static ca.ibodrov.mica.schema.ValueType.*;
  * <li><i>enum</i> values</li>
  * <li>array <i>items</i> (only item schema validation, no <i>prefixItems</i>
  * with <i>items: false</i> support yet)</li>
+ * <li><i>$ref</i></li>
  * </ul>
  */
 public class Validator {
 
-    private static ValidatedProperty validateProperty(String name,
-                                                      ObjectSchemaNode property,
-                                                      boolean required,
-                                                      JsonNode input) {
+    private final Function<String, Optional<ObjectSchemaNode>> schemaResolver;
+
+    public Validator() {
+        schemaResolver = (id) -> Optional.empty();
+    }
+
+    public Validator(Function<String, Optional<ObjectSchemaNode>> schemaResolver) {
+        this.schemaResolver = schemaResolver;
+    }
+
+    /**
+     * Validates input against the given schema. Returns a {@link ValidatedProperty}
+     * instance that contains all schema fields and their validation results.
+     * Additional properties are returned only if their types or values are
+     * validated.
+     *
+     * @param property the schema
+     * @param input    input data
+     * @return validated data.
+     */
+    public ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {
+        if (!input.isObject()) {
+            return invalidType(OBJECT, input);
+        }
+
+        // validate the enum value
+        var enums = property.enumeratedValues();
+        if (enums.isPresent()) {
+            return validateEnums(enums.get(), OBJECT, input);
+        }
+
+        // track any unknown properties in the input object
+        var unknownInputKeys = new HashSet<String>(input.size());
+        input.fieldNames().forEachRemaining(unknownInputKeys::add);
+
+        // check "properties"
+        var validatedProperties = new HashMap<String, ValidatedProperty>();
+        var properties = property.properties().orElseGet(Map::of);
+        properties.forEach((key, prop) -> {
+            unknownInputKeys.remove(key);
+
+            var required = property.required().map(props -> props.contains(key)).orElse(false);
+            var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
+            var validatedProp = validateProperty(key, prop, required, value);
+            validatedProperties.put(key, validatedProp);
+        });
+
+        // check "additionalProperties"
+        // https://json-schema.org/understanding-json-schema/reference/object#additionalproperties
+        if (property.additionalProperties().filter(v -> !v.isNull()).isPresent()) {
+            var additionalProperties = property.additionalProperties().get();
+
+            // additionalProperties can be a boolean or an object
+            if (additionalProperties.isBoolean()) {
+                if (!additionalProperties.booleanValue() && !unknownInputKeys.isEmpty()) {
+                    return unexpectedProperties("Additional properties are not allowed: " + unknownInputKeys,
+                            unknownInputKeys);
+                }
+            } else if (additionalProperties.isObject()) {
+                var schema = ObjectSchemaNode.fromObjectNode((ObjectNode) additionalProperties);
+                var validatedAdditionalProperties = new HashMap<String, ValidatedProperty>();
+                unknownInputKeys.forEach(key -> {
+                    var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
+                    var validatedProp = validateProperty(key, schema, false, value);
+                    validatedAdditionalProperties.put(key, validatedProp);
+                });
+                validatedProperties.putAll(validatedAdditionalProperties);
+            } else {
+                return invalidSchema("'additionalProperties' must be a boolean or a schema object");
+            }
+        }
+
+        // no nested properties found, return the current result
+        if (validatedProperties.isEmpty()) {
+            return valid(input);
+        }
+
+        return ValidatedProperty.nested(validatedProperties).withValue(Optional.of(input));
+    }
+
+    private ValidatedProperty validateProperty(String name,
+                                               ObjectSchemaNode property,
+                                               boolean required,
+                                               JsonNode input) {
+
+        // follow the $ref until all references are resolved
+        while (true) {
+            var ref = property.ref();
+            if (ref.isEmpty()) {
+                break;
+            }
+
+            var schema = ref.flatMap(schemaResolver);
+            if (schema.isEmpty()) {
+                return invalidSchema("Schema not found, $ref: " + ref);
+            }
+
+            property = schema.get();
+        }
 
         // looks ugly
         Optional<ValueType> firstEnumValueType = Optional.empty();
@@ -41,7 +138,7 @@ public class Validator {
             // check if all "enum" values are of the same type
             var firstNodeType = ValueType.typeOf(enumValues.get(0));
             if (enumValues.stream().map(ValueType::typeOf).anyMatch(t -> !t.equals(firstNodeType))) {
-                throw new IllegalArgumentException("'enum' values must be of the same type");
+                return invalidSchema("'enum' values must be of the same type");
             }
             firstEnumValueType = Optional.of(firstNodeType);
         }
@@ -71,21 +168,7 @@ public class Validator {
         };
     }
 
-    public static ValidatedProperty validateAny(ObjectSchemaNode property, JsonNode input) {
-        // "any" does not allow properties
-        if (!property.properties().map(Map::isEmpty).orElse(true)) {
-            return invalid(new ValidationError(INVALID_SCHEMA,
-                    Map.of("details", TextNode.valueOf("'any' does not allow 'properties'"))));
-        }
-
-        try {
-            return valid(input);
-        } catch (IllegalArgumentException e) {
-            return invalidType(ValueType.ANY, input);
-        }
-    }
-
-    public static ValidatedProperty validateArray(ObjectSchemaNode property, JsonNode input) {
+    private ValidatedProperty validateArray(ObjectSchemaNode property, JsonNode input) {
         if (!input.isArray()) {
             return invalidType(ARRAY, input);
         }
@@ -118,77 +201,21 @@ public class Validator {
         return ValidatedProperty.nested(validatedItems).withValue(Optional.of(input));
     }
 
-    /**
-     * Validates input against the given schema. Returns a {@link ValidatedProperty}
-     * instance that contains all schema fields and their validation results.
-     * Additional properties are returned only if their types or values are
-     * validated.
-     *
-     * @param property the schema
-     * @param input    input data
-     * @return validated data.
-     */
-    public static ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {
-        if (!input.isObject()) {
-            return invalidType(OBJECT, input);
+    private static ValidatedProperty validateAny(ObjectSchemaNode property, JsonNode input) {
+        // "any" does not allow properties
+        if (!property.properties().map(Map::isEmpty).orElse(true)) {
+            return invalid(new ValidationError(INVALID_SCHEMA,
+                    Map.of("details", TextNode.valueOf("'any' does not allow 'properties'"))));
         }
 
-        // validate the enum value
-        var enums = property.enumeratedValues();
-        if (enums.isPresent()) {
-            return validateEnums(enums.get(), OBJECT, input);
-        }
-
-        // track any unknown properties in the input object
-        var unknownInputKeys = new HashSet<String>(input.size());
-        input.fieldNames().forEachRemaining(unknownInputKeys::add);
-
-        // check the nested properties
-        var validatedProperties = new HashMap<String, ValidatedProperty>();
-        var properties = property.properties().orElseGet(Map::of);
-        properties.forEach((key, prop) -> {
-            unknownInputKeys.remove(key);
-
-            var required = property.required().map(props -> props.contains(key)).orElse(false);
-            var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
-            var validatedProp = validateProperty(key, prop, required, value);
-            validatedProperties.put(key, validatedProp);
-        });
-
-        // check additional properties
-        // https://json-schema.org/understanding-json-schema/reference/object#additionalproperties
-        if (property.additionalProperties().filter(v -> !v.isNull()).isPresent()) {
-            var additionalProperties = property.additionalProperties().get();
-
-            // additionalProperties can be a boolean or an object
-            if (additionalProperties.isBoolean()) {
-                if (!additionalProperties.booleanValue() && !unknownInputKeys.isEmpty()) {
-                    return unexpectedProperties("Additional properties are not allowed: " + unknownInputKeys,
-                            unknownInputKeys);
-                }
-            } else if (additionalProperties.isObject()) {
-                var schema = ObjectSchemaNode.from((ObjectNode) additionalProperties);
-                var validatedAdditionalProperties = new HashMap<String, ValidatedProperty>();
-                unknownInputKeys.forEach(key -> {
-                    var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
-                    var validatedProp = validateProperty(key, schema, false, value);
-                    validatedAdditionalProperties.put(key, validatedProp);
-                });
-                validatedProperties.putAll(validatedAdditionalProperties);
-            } else {
-                return invalidSchema("'additionalProperties' must be a boolean or a schema object");
-            }
-        }
-
-        // no nested properties found, return the current result
-        if (validatedProperties.isEmpty()) {
+        try {
             return valid(input);
+        } catch (IllegalArgumentException e) {
+            return invalidType(ValueType.ANY, input);
         }
-
-        return ValidatedProperty.nested(validatedProperties).withValue(Optional.of(input));
     }
 
-    public static ValidatedProperty validateBoolean(ObjectSchemaNode property, JsonNode input) {
+    private static ValidatedProperty validateBoolean(ObjectSchemaNode property, JsonNode input) {
         if (!input.isBoolean()) {
             return invalidType(BOOLEAN, input);
         }
@@ -198,7 +225,7 @@ public class Validator {
                 .orElseGet(() -> valid(input));
     }
 
-    public static ValidatedProperty validateString(ObjectSchemaNode property, JsonNode input) {
+    private static ValidatedProperty validateString(ObjectSchemaNode property, JsonNode input) {
         if (!input.isTextual()) {
             return invalidType(STRING, input);
         }
@@ -208,7 +235,7 @@ public class Validator {
                 .orElseGet(() -> valid(input));
     }
 
-    public static ValidatedProperty validateNumber(ObjectSchemaNode property, JsonNode input) {
+    private static ValidatedProperty validateNumber(ObjectSchemaNode property, JsonNode input) {
         if (!input.isNumber()) {
             return invalidType(NUMBER, input);
         }
@@ -218,7 +245,7 @@ public class Validator {
                 .orElseGet(() -> valid(input));
     }
 
-    public static ValidatedProperty validateNull(ObjectSchemaNode property, JsonNode input) {
+    private static ValidatedProperty validateNull(ObjectSchemaNode property, JsonNode input) {
         if (!input.isNull()) {
             return ValidatedProperty.unexpectedValue(NULL, NullNode.getInstance(), input);
         }

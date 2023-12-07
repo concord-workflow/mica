@@ -91,9 +91,8 @@ public class SmokeTestIT {
      */
     @Test
     public void testMicaAvailable() {
-        // TODO compare commitIds instead
-        var testVersion = new Version().getExpectedServerVersion();
-        var systemVersion = micaClient.getSystemInfo().version();
+        var testVersion = new Version().getGitCommitId();
+        var systemVersion = micaClient.getSystemInfo().commitId();
         assertEquals(testVersion, systemVersion);
     }
 
@@ -141,7 +140,7 @@ public class SmokeTestIT {
         // start the process
 
         var processApi = new ProcessApi(concordClient);
-        var taskUri = "mvn://ca.ibodrov.mica:mica-concord-task:%s".formatted(new Version().getMavenVersion());
+        var taskUri = "mvn://ca.ibodrov.mica:mica-concord-task:%s".formatted(new Version().getMavenProjectVersion());
 
         var response = processApi.startProcess(Map.of("concord.yml", """
                 configuration:

@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.model.EntityMetadata;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
+import ca.ibodrov.mica.server.data.BuiltinSchemas;
 import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
@@ -30,7 +31,8 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         var uuidGenerator = new UuidGenerator();
         var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var entityKindStore = new EntityKindStore(entityStore, objectMapper);
-        var controller = new EntityController(entityStore, entityKindStore, objectMapper);
+        var builtInSchemas = new BuiltinSchemas(objectMapper);
+        var controller = new EntityController(entityStore, entityKindStore, builtInSchemas, objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
                 .buildValidatorFactory()

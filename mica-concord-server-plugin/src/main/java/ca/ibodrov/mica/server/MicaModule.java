@@ -5,6 +5,7 @@ import ca.ibodrov.mica.server.api.EntityResource;
 import ca.ibodrov.mica.server.api.EntityUploadResource;
 import ca.ibodrov.mica.server.api.SystemResource;
 import ca.ibodrov.mica.server.api.ViewResource;
+import ca.ibodrov.mica.server.data.BuiltinSchemas;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
@@ -97,9 +98,10 @@ public class MicaModule implements Module {
 
         // other beans
 
-        binder.bind(UuidGenerator.class).in(SINGLETON);
-        binder.bind(EntityStore.class).in(SINGLETON);
+        binder.bind(BuiltinSchemas.class).in(SINGLETON);
         binder.bind(EntityKindStore.class).in(SINGLETON);
+        binder.bind(EntityStore.class).in(SINGLETON);
+        binder.bind(UuidGenerator.class).in(SINGLETON);
 
         binder.bind(InitialDataLoader.class).asEagerSingleton();
     }

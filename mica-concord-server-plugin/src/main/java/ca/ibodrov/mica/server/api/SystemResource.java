@@ -11,6 +11,7 @@ import javax.ws.rs.Produces;
 import java.io.IOException;
 import java.util.Properties;
 
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "System")
@@ -21,19 +22,16 @@ public class SystemResource implements Resource {
     private final SystemInfo systemInfo;
 
     public SystemResource() {
-        var gitProps = new Properties();
+        var gitProperties = new Properties();
         try {
-            gitProps.load(SystemResource.class.getResourceAsStream("/ca/ibodrov/mica/server/git.properties"));
+            gitProperties.load(SystemResource.class.getResourceAsStream("/ca/ibodrov/mica/server/git.properties"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        var version = gitProps.getProperty("git.commit.id.describe");
-        if (version == null || version.isBlank()) {
-            throw new IllegalStateException("Missing mica.version property");
-        }
-
-        systemInfo = new SystemInfo(version);
+        var version = requireNonNull(gitProperties.getProperty("git.commit.id.describe"));
+        var commitId = requireNonNull(gitProperties.getProperty("git.commit.id"));
+        systemInfo = new SystemInfo(version, commitId);
     }
 
     @GET

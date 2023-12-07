@@ -10,13 +10,24 @@ import java.util.*;
 import static ca.ibodrov.mica.schema.ValueType.*;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 
+/**
+ * @implNote When adding fields, make sure to update
+ *           {@link #fromObjectNode(ObjectNode)}.
+ */
 @JsonInclude(NON_ABSENT)
 public record ObjectSchemaNode(Optional<String> type,
         Optional<Map<String, ObjectSchemaNode>> properties,
         Optional<Set<String>> required,
         @JsonProperty("enum") Optional<List<JsonNode>> enumeratedValues,
         Optional<ObjectSchemaNode> items,
-        Optional<JsonNode> additionalProperties) {
+        Optional<JsonNode> additionalProperties,
+        @JsonProperty("$ref") Optional<String> ref) {
+
+    public static ObjectSchemaNode ref(String ref) {
+        return new Builder()
+                .ref(ref)
+                .build();
+    }
 
     public static ObjectSchemaNode array(ObjectSchemaNode items) {
         return new Builder()
@@ -58,7 +69,7 @@ public record ObjectSchemaNode(Optional<String> type,
                 .build();
     }
 
-    public static ObjectSchemaNode from(ObjectNode node) {
+    public static ObjectSchemaNode fromObjectNode(ObjectNode node) {
         var builder = new Builder();
 
         Optional.ofNullable(node.get("type"))
@@ -73,7 +84,7 @@ public record ObjectSchemaNode(Optional<String> type,
                         var name = entry.getKey();
                         var value = entry.getValue();
                         if (value.isObject()) {
-                            properties.put(name, from((ObjectNode) value));
+                            properties.put(name, fromObjectNode((ObjectNode) value));
                         } else {
                             throw new IllegalArgumentException("property '" + name + "' must be an object");
                         }
@@ -106,10 +117,14 @@ public record ObjectSchemaNode(Optional<String> type,
         Optional.ofNullable(node.get("items"))
                 .filter(JsonNode::isObject)
                 .map(ObjectNode.class::cast)
-                .ifPresent(items -> builder.items(from(items)));
+                .ifPresent(items -> builder.items(fromObjectNode(items)));
 
         Optional.ofNullable(node.get("additionalProperties"))
                 .ifPresent(builder::additionalProperties);
+
+        Optional.ofNullable(node.get("$ref"))
+                .map(JsonNode::asText)
+                .ifPresent(builder::ref);
 
         return builder.build();
     }
@@ -122,6 +137,11 @@ public record ObjectSchemaNode(Optional<String> type,
         private Optional<List<JsonNode>> enumeratedValues = Optional.empty();
         private Optional<ObjectSchemaNode> items = Optional.empty();
         private Optional<JsonNode> additionalProperties = Optional.empty();
+        private Optional<String> ref = Optional.empty();
+
+        public Builder type(ValueType type) {
+            return this.type(type.key());
+        }
 
         public Builder type(String type) {
             this.type = Optional.of(type);
@@ -153,8 +173,13 @@ public record ObjectSchemaNode(Optional<String> type,
             return this;
         }
 
+        public Builder ref(String ref) {
+            this.ref = Optional.of(ref);
+            return this;
+        }
+
         public ObjectSchemaNode build() {
-            return new ObjectSchemaNode(type, properties, required, enumeratedValues, items, additionalProperties);
+            return new ObjectSchemaNode(type, properties, required, enumeratedValues, items, additionalProperties, ref);
         }
     }
 }

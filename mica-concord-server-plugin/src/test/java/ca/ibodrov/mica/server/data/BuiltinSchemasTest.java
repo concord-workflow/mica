@@ -18,16 +18,19 @@ import java.util.Set;
 
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BuiltinSchemasTest {
 
     private static ObjectMapper yamlMapper;
+    private static BuiltinSchemas builtinSchemas;
+    private static Validator validator;
 
     @BeforeAll
     public static void setUp() {
         yamlMapper = new ObjectMapperProvider().get().copyWith(new YAMLFactory());
+        builtinSchemas = new BuiltinSchemas(yamlMapper);
+        validator = new Validator(ref -> builtinSchemas.getByRef(ref));
     }
 
     @Test
@@ -44,27 +47,27 @@ public class BuiltinSchemasTest {
                     - foo
                 """;
 
-        var entity = parseYaml(yaml);
+        var entity = parseEntityYaml(yaml);
         var input = yamlMapper.convertValue(entity, JsonNode.class);
 
-        var OLD_MICA_KIND_V1_SCHEMA = object(Map.of(
+        var oldSchema = object(Map.of(
                 "id", string(),
                 "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
                 "name", string(),
                 MICA_KIND_SCHEMA_PROPERTY, any()),
                 Set.of("kind", "name", "schema"));
 
-        var NEW_MICA_KIND_V1_SCHEMA = BuiltinSchemas.MICA_KIND_V1_SCHEMA;
+        var newSchema = builtinSchemas.getMicaKindV1Schema();
 
-        var oldResult = Validator.validateObject(OLD_MICA_KIND_V1_SCHEMA, input);
+        var oldResult = validator.validateObject(oldSchema, input);
         assertTrue(oldResult.isValid());
-        var newResult = Validator.validateObject(NEW_MICA_KIND_V1_SCHEMA, input);
+        var newResult = validator.validateObject(newSchema, input);
         assertTrue(newResult.isValid());
     }
 
     @Test
     public void testBadViews() {
-        var entity = parseYaml("""
+        var entity = parseEntityYaml("""
                 name: MyView
                 kind: /mica/view/v1
                 # broken parameters
@@ -79,7 +82,29 @@ public class BuiltinSchemasTest {
         assertThrows(ApiException.class, () -> asView(yamlMapper, entity));
     }
 
-    private static PartialEntity parseYaml(@Language("yaml") String yaml) {
+    @Test
+    public void testObjectSchemaNodeSchemaValidation() throws Exception {
+        var schema = builtinSchemas.getObjectSchemaNodeSchema();
+
+        // invalid type
+        var yaml = """
+                type: foo
+                """;
+        var result = validator.validateObject(schema, yamlMapper.readTree(yaml));
+        assertFalse(result.isValid());
+
+        // invalid property type
+        yaml = """
+                type: object
+                properties:
+                  foo:
+                    type: bar
+                """;
+        result = validator.validateObject(schema, yamlMapper.readTree(yaml));
+        assertFalse(result.isValid());
+    }
+
+    private static PartialEntity parseEntityYaml(@Language("yaml") String yaml) {
         try {
             return yamlMapper.readValue(yaml, PartialEntity.class);
         } catch (IOException e) {

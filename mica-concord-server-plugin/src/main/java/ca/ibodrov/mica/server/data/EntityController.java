@@ -17,15 +17,19 @@ public class EntityController {
     private final EntityStore entityStore;
     private final EntityKindStore entityKindStore;
     private final ObjectMapper objectMapper;
+    private final Validator validator;
 
     @Inject
     public EntityController(EntityStore entityStore,
                             EntityKindStore entityKindStore,
+                            BuiltinSchemas builtinSchemas,
                             ObjectMapper objectMapper) {
 
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
         this.objectMapper = requireNonNull(objectMapper);
+        this.validator = new Validator(ref -> builtinSchemas.getByRef(ref)
+                .or(() -> entityKindStore.getSchemaForKind(ref)));
     }
 
     public EntityVersion createOrUpdate(PartialEntity entity) {
@@ -35,7 +39,7 @@ public class EntityController {
                 .orElseThrow(() -> ApiException.badRequest("Can't find schema for " + kind));
 
         var input = objectMapper.convertValue(entity, JsonNode.class);
-        var validatedInput = Validator.validateObject(schema, input);
+        var validatedInput = validator.validateObject(schema, input);
         if (!validatedInput.isValid()) {
             throw EntityValidationException.from(validatedInput);
         }

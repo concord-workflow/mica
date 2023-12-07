@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static ca.ibodrov.mica.schema.ValidationError.Kind.UNEXPECTED_VALUE;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
@@ -26,7 +27,7 @@ public class ValidatorTest {
 
     private ValidatedProperty validateMap(ObjectSchemaNode schema, Map<String, Object> m) {
         var input = objectMapper.convertValue(m, JsonNode.class);
-        return Validator.validateObject(schema, input);
+        return new Validator().validateObject(schema, input);
     }
 
     @Test
@@ -343,6 +344,53 @@ public class ValidatorTest {
         result = validateMap(schema, Map.of("foo", 123, "bar", 456));
         assertFalse(result.isValid());
         assertValidProperty(result, "foo", IntNode.valueOf(123));
+        assertInvalidProperty(result, "bar");
+    }
+
+    @Test
+    public void testRef() {
+        var barSchema = parseYaml(ObjectSchemaNode.class, """
+                type: boolean
+                """);
+
+        // ref in a property
+        var inputSchema1 = parseYaml(ObjectSchemaNode.class, """
+                type: object
+                properties:
+                  foo:
+                    type: number
+                  bar:
+                    $ref: '#/schemas/bar'
+                """);
+
+        var result = new Validator(id -> Optional.of(barSchema))
+                .validateObject(inputSchema1, toJsonNode(Map.of("foo", 123, "bar", true)));
+        assertTrue(result.isValid());
+        assertValidProperty(result, "foo", IntNode.valueOf(123));
+
+        result = new Validator(id -> Optional.of(barSchema))
+                .validateObject(inputSchema1, toJsonNode(Map.of("foo", 123, "bar", "baz")));
+        assertFalse(result.isValid());
+        assertValidProperty(result, "foo", IntNode.valueOf(123));
+        assertInvalidProperty(result, "bar");
+
+        // ref in additionalProperties
+        var inputSchema2 = parseYaml(ObjectSchemaNode.class, """
+                type: object
+                additionalProperties:
+                  $ref: '#/schemas/bar'
+                """);
+
+        result = new Validator(id -> Optional.of(barSchema))
+                .validateObject(inputSchema2, toJsonNode(Map.of("foo", true, "bar", false)));
+        assertTrue(result.isValid());
+        assertValidProperty(result, "foo", BooleanNode.getTrue());
+        assertValidProperty(result, "bar", BooleanNode.getFalse());
+
+        result = new Validator(id -> Optional.of(barSchema))
+                .validateObject(inputSchema2, toJsonNode(Map.of("foo", true, "bar", "baz")));
+        assertFalse(result.isValid());
+        assertValidProperty(result, "foo", BooleanNode.getTrue());
         assertInvalidProperty(result, "bar");
     }
 

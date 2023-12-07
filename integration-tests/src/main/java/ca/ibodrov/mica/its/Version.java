@@ -7,36 +7,32 @@ import static java.util.Objects.requireNonNull;
 
 public class Version {
 
-    private final String micaITsVersion;
-    private final String gitVersion;
+    private final String mavenProjectVersion;
+    private final String gitCommitId;
 
     public Version() {
-        this.micaITsVersion = requireNonNull(
-                loadProperty("/ca/ibodrov/mica/its/version.properties", "mica.its.version"));
-        this.gitVersion = requireNonNull(loadProperty("/ca/ibodrov/mica/its/git.properties", "git.commit.id.describe"));
+        var projectProperties = loadProperties("/ca/ibodrov/mica/its/version.properties");
+        this.mavenProjectVersion = requireNonNull(projectProperties.getProperty("project.version"));
+
+        var gitProperties = loadProperties("/ca/ibodrov/mica/its/git.properties");
+        this.gitCommitId = requireNonNull(gitProperties.getProperty("git.commit.id"));
     }
 
-    /**
-     * Maven artifact version.
-     */
-    public String getMavenVersion() {
-        return micaITsVersion;
+    public String getMavenProjectVersion() {
+        return mavenProjectVersion;
     }
 
-    /**
-     * The release version of the Mica server.
-     */
-    public String getExpectedServerVersion() {
-        return gitVersion;
+    public String getGitCommitId() {
+        return gitCommitId;
     }
 
-    private static String loadProperty(String path, String key) {
+    private static Properties loadProperties(String path) {
         var props = new Properties();
         try {
             props.load(Version.class.getResourceAsStream(path));
+            return props;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return props.getProperty(key);
     }
 }

@@ -21,11 +21,15 @@ public class InitialDataLoader {
 
     private static final Logger log = LoggerFactory.getLogger(InitialDataLoader.class);
 
+    private final BuiltinSchemas builtinSchemas;
     private final EntityStore entityStore;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public InitialDataLoader(EntityStore entityStore, ObjectMapper objectMapper) {
+    public InitialDataLoader(BuiltinSchemas builtinSchemas,
+                             EntityStore entityStore,
+                             ObjectMapper objectMapper) {
+        this.builtinSchemas = requireNonNull(builtinSchemas);
         this.entityStore = requireNonNull(entityStore);
         this.objectMapper = requireNonNull(objectMapper);
 
@@ -35,9 +39,9 @@ public class InitialDataLoader {
 
     public void load() {
         // built-in entity kinds
-        createOrReplace(schema(BuiltinSchemas.MICA_KIND_V1, BuiltinSchemas.MICA_KIND_V1_SCHEMA));
-        createOrReplace(schema(BuiltinSchemas.MICA_RECORD_V1, BuiltinSchemas.MICA_RECORD_V1_SCHEMA));
-        createOrReplace(schema(BuiltinSchemas.MICA_VIEW_V1, BuiltinSchemas.MICA_VIEW_V1_SCHEMA));
+        createOrReplace(schema(BuiltinSchemas.MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()));
+        createOrReplace(schema(BuiltinSchemas.MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()));
+        createOrReplace(schema(BuiltinSchemas.MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()));
 
         // examples
         createOrReplace(view("/examples/simple/example-view", BuiltinSchemas.MICA_RECORD_V1, "$.data"));

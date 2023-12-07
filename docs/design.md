@@ -310,10 +310,12 @@ Invalid entities are not returned by views unless specified explicitly.
 
 Mica implements a subset of JSON Schema features:
 
-- types: array, boolean, object, string, number, null, any (see `ca.ibodrov.mica.schema.ValueType`);
+- `type`: array, boolean, object, string, number, null, any (see `ca.ibodrov.mica.schema.ValueType`);
 - `required` properties;
 - `enum` values;
-- `additionalProperties` option (only `true` or `false` for now);
+- array `items`;
+- `additionalProperties` option (`true`, `false` or a schema object);
+- `$ref`
 - _TODO_ format: uri, email, uuid, date, time, etc;
 
 The major difference from the standard is that Mica does not support `null`
