@@ -131,6 +131,8 @@ public final class BuiltinSchemas {
         var dataJsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
+        var dataJsonPatch = select(entity, "data", "jsonPatch", Function.identity());
+
         var flatten = select(entity, "data", "flatten", JsonNode::asBoolean);
 
         var merge = select(entity, "data", "merge", JsonNode::asBoolean);
@@ -157,6 +159,11 @@ public final class BuiltinSchemas {
                     @Override
                     public String jsonPath() {
                         return dataJsonPath;
+                    }
+
+                    @Override
+                    public Optional<JsonNode> jsonPatch() {
+                        return dataJsonPatch;
                     }
 
                     @Override

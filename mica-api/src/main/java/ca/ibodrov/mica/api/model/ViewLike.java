@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.api.model;
 
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +24,8 @@ public interface ViewLike {
     interface Data {
 
         String jsonPath();
+
+        Optional<JsonNode> jsonPatch();
 
         Optional<Boolean> flatten();
 

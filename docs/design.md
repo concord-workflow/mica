@@ -1,5 +1,17 @@
 # Mica
 
+## ToC
+
+- [Core Model](#core-model)
+- [Views](#views)
+- [View Flattening](#view-flattening)
+- [Merge Results](#merge-results)
+- [Parametrized Views](#parametrized-views)
+- [Entity Validation](#entity-validation)
+- [Save View Data As Entities](#save-view-data-as-entities)
+- [Supported JSON Schema Features](#supported-json-schema-features)
+- [Database Design](#database-design)
+
 ## Core Model
 
 The primary concept is `Entity` -- a JSON object, validated using rules of the
@@ -166,9 +178,10 @@ The `data` object is a JSON array where each element corresponds to a selected
 entity.
 
 The resulting data is further processed by applying one or more of the optional
-steps:
+steps (in the order in which they are applied):
 - `flatten` -- joins array of arrays of objects into a regular flat array of objects;
-- `merge` -- merges multiple objects into one by deep-merging fields.
+- `merge` -- merges multiple objects into one by deep-merging fields;
+- `jsonPatch` -- applies a JSON Patch to each object.
 
 ## View Flattening
 
@@ -261,6 +274,52 @@ the rendered view will contain the object with keys merged from both entities:
 }
 ```
 
+## JSON Patch Support
+
+Views can apply JSON patch commands to each object in the result set:
+
+```yaml
+kind: /mica/view/v1
+name: /views/ActiveClients
+selector:
+  entityKind: /schemas/AcmeClientList
+data:
+  jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
+  flatten: true
+  jsonPatch:
+    - op: add
+      path: /status
+      value: valid
+```
+
+Given entities from [the example above](#views), the result is:
+
+```json
+{
+    "data": [
+        {
+            "id": "foo",
+            "validationUrl": "http://foo.example.org",
+            "status": "valid"
+        },
+        {
+            "id": "baz",
+            "validationUrl": "http://baz.example.org",
+            "status": "valid"
+        },
+        {
+            "id": "qux",
+            "validationUrl": "http://qux.example.org",
+            "status": "valid"
+        }
+    ]
+}
+```
+
+The view selects all active clients, picks their `id` and `validationUrl`
+properties, flattens the result (so it a simple list of client entries instead
+of a list of lists) and adds the `status` field to each object.
+
 ## Parametrized Views
 
 Views can declare parameters:
@@ -287,6 +346,65 @@ To pass the parameters, use the `parameters` field in the request body:
 ```
 curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
+
+## Save View Data As Entities
+
+_This section is a work in progress._
+
+Given a view definition:
+
+```yaml
+kind: /mica/view/v1
+name: /migrations/2021-01-01
+selector:
+  entityName: /clients/20230101
+data:
+  jsonPatch:
+    - op: add
+      path: /clients
+      value:
+        id: newco
+        name: NewCo
+        validationUrl: "http://newco.example.org"
+```
+
+And an entity:
+
+```yaml
+name: /clients/20230101
+kind: /schemas/AcmeClientList
+clients:
+  - id: qux
+    status: active
+    validationUrl: "http://qux.example.org"
+  - id: eek
+    status: retired
+    validationUrl: "http://eek.example.org"
+```
+
+Produces:
+
+```yaml
+data:
+  clients:
+    - id: qux
+      status: active
+      validationUrl: "http://qux.example.org"
+    - id: eek
+      status: retired
+      validationUrl: "http://eek.example.org"
+    - id: newco
+      name: NewCo
+      validationUrl: "http://newco.example.org"
+```
+
+The API allows to save the resulting `data` as a new entity, or to update the existing one:
+
+```
+curl -i --json '{"viewName": "/migrations/2021-01-01", "saveAs": { "name": "/clients/20240102", "kind": "/schemas/AcmeClientList" }}' 'http://localhost:8080/api/mica/v1/view/render'
+```
+
+The resulting entity must pass the validation according to the specified `kind` before it can be saved. 
 
 ## Entity Validation
 

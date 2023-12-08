@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.flipkart.zjsonpatch.InvalidJsonPatchException;
+import com.flipkart.zjsonpatch.JsonPatch;
 import com.jayway.jsonpath.*;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
@@ -95,6 +97,26 @@ public class ViewProcessor {
                         .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
                         .orElseThrow(() -> new ViewProcessorException("Expected a merge result, got nothing"));
                 data = List.of(mergedData);
+            }
+
+            var patch = view.data().jsonPatch();
+            if (patch.isPresent()) {
+                var patchData = patch.get();
+                if (!patchData.isArray()) {
+                    throw new ViewProcessorException(
+                            "Expected an array of JSON patch operations in data.jsonPatch, got: "
+                                    + patchData.getNodeType());
+                }
+
+                try {
+                    JsonPatch.validate(patchData);
+                } catch (InvalidJsonPatchException e) {
+                    throw new ViewProcessorException("Invalid data.jsonPatch: " + e.getMessage());
+                }
+
+                data = data.stream()
+                        .map(node -> JsonPatch.apply(patchData, node))
+                        .toList();
             }
         }
 

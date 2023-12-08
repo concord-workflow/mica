@@ -239,6 +239,41 @@ public class ViewProcessorTest {
         assertEquals(expected, toYaml(result.data().get("data")));
     }
 
+    @Test
+    public void testJsonPatch() {
+        var entity = parseYaml("""
+                kind: ListOfItems
+                name: my-items
+                widgets:
+                  - id: 1
+                    name: Plumbus
+                  - id: 2
+                    name: Fleeb
+                  - id: 3
+                    name: Schleem
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: ListOfItems
+                data:
+                  jsonPath: $
+                  jsonPatch:
+                    - op: add
+                      path: /widgets/-
+                      value:
+                        id: 4
+                        name: Blamf
+                """);
+
+        var result = processor.render(view, Map.of(), Stream.of(entity));
+        assertNotNull(result);
+        assertEquals(1, result.data().get("data").size());
+        assertEquals("Blamf", result.data().get("data").get(0).get("widgets").get(3).get("name").asText());
+    }
+
     private static ViewLike parseView(@Language("yaml") String yaml) {
         return asView(yamlMapper, parseYaml(yaml));
     }
