@@ -3,6 +3,7 @@ package ca.ibodrov.mica.api.model;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 
 import java.util.Map;
+import java.util.Optional;
 
 public interface ViewLike {
 
@@ -12,7 +13,7 @@ public interface ViewLike {
 
     Data data();
 
-    Map<String, ObjectSchemaNode> parameters();
+    Optional<Map<String, ObjectSchemaNode>> parameters();
 
     interface Selector {
 
@@ -23,8 +24,8 @@ public interface ViewLike {
 
         String jsonPath();
 
-        boolean flatten();
+        Optional<Boolean> flatten();
 
-        boolean merge();
+        Optional<Boolean> merge();
     }
 }

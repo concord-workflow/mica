@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
 import static ca.ibodrov.mica.schema.ValueType.OBJECT;
 
@@ -24,7 +25,6 @@ public final class BuiltinSchemas {
     public static final String MICA_OBJECT_SCHEMA_NODE_V1 = "/mica/objectSchemaNode/v1";
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
     public static final String MICA_KIND_V1 = "/mica/kind/v1";
-    public static final String MICA_VIEW_V1 = "/mica/view/v1";
 
     public static final String MICA_KIND_SCHEMA_PROPERTY = "schema";
 
@@ -116,15 +116,14 @@ public final class BuiltinSchemas {
     }
 
     public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {
-        if (!entity.kind().equals(BuiltinSchemas.MICA_VIEW_V1)) {
+        if (!entity.kind().equals(MICA_VIEW_V1)) {
             throw ApiException.badRequest("Expected a /mica/view/v1 entity, got: " + entity.kind());
         }
 
         var name = entity.name();
 
         var parameters = Optional.ofNullable(entity.data().get("parameters"))
-                .map(object -> parseParameters(objectMapper, object))
-                .orElseGet(Map::of);
+                .map(object -> parseParameters(objectMapper, object));
 
         var selectorEntityKind = select(entity, "selector", "entityKind", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));
@@ -132,11 +131,9 @@ public final class BuiltinSchemas {
         var dataJsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
-        var flatten = select(entity, "data", "flatten", JsonNode::asBoolean)
-                .orElse(false);
+        var flatten = select(entity, "data", "flatten", JsonNode::asBoolean);
 
-        var merge = select(entity, "data", "merge", JsonNode::asBoolean)
-                .orElse(false);
+        var merge = select(entity, "data", "merge", JsonNode::asBoolean);
 
         return new ViewLike() {
             @Override
@@ -145,7 +142,7 @@ public final class BuiltinSchemas {
             }
 
             @Override
-            public Map<String, ObjectSchemaNode> parameters() {
+            public Optional<Map<String, ObjectSchemaNode>> parameters() {
                 return parameters;
             }
 
@@ -163,12 +160,12 @@ public final class BuiltinSchemas {
                     }
 
                     @Override
-                    public boolean flatten() {
+                    public Optional<Boolean> flatten() {
                         return flatten;
                     }
 
                     @Override
-                    public boolean merge() {
+                    public Optional<Boolean> merge() {
                         return merge;
                     }
                 };

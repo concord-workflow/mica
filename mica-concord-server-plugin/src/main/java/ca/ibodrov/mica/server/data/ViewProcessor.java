@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.Spliterator;
 import java.util.stream.Stream;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
@@ -72,7 +73,8 @@ public class ViewProcessor {
     public PartialEntity render(ViewLike view, Map<String, JsonNode> parameters, Stream<EntityLike> entities) {
         // TODO validate supplied parameters according to the view's schema
 
-        var effectiveJsonPath = interpolate(view.data().jsonPath(), parameters);
+        var jsonPath = requireNonNull(view.data().jsonPath());
+        var effectiveJsonPath = interpolate(jsonPath, parameters);
 
         var data = entities.filter(entity -> entity.kind().equals(view.selector().entityKind()))
                 .map(entity -> applyJsonPath(entity.name(), entity.data(), effectiveJsonPath))
@@ -80,13 +82,15 @@ public class ViewProcessor {
                 .toList();
 
         if (!data.isEmpty()) {
-            if (view.data().flatten() && data.stream().allMatch(JsonNode::isArray)) {
+            var flatten = view.data().flatten().orElse(false);
+            if (flatten && data.stream().allMatch(JsonNode::isArray)) {
                 data = data.stream()
                         .flatMap(node -> stream(spliteratorUnknownSize(node.elements(), Spliterator.ORDERED), false))
                         .toList();
             }
 
-            if (view.data().merge() && data.stream().allMatch(JsonNode::isObject)) {
+            var merge = view.data().merge().orElse(false);
+            if (merge && data.stream().allMatch(JsonNode::isObject)) {
                 var mergedData = data.stream()
                         .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
                         .orElseThrow(() -> new ViewProcessorException("Expected a merge result, got nothing"));

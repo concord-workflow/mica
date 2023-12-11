@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +12,11 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.Map;
 
+import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
+import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
+import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_V1;
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_RECORD_V1;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -39,12 +45,14 @@ public class InitialDataLoader {
 
     public void load() {
         // built-in entity kinds
-        createOrReplace(schema(BuiltinSchemas.MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()));
-        createOrReplace(schema(BuiltinSchemas.MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()));
-        createOrReplace(schema(BuiltinSchemas.MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()));
+        createOrReplace(schema(MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()));
+        createOrReplace(schema(MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()));
+        createOrReplace(schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()));
 
-        // examples
-        createOrReplace(view("/examples/simple/example-view", BuiltinSchemas.MICA_RECORD_V1, "$.data"));
+        // examples/simple
+        createOrReplace(build(new MicaViewV1.Builder().name("/examples/simple/example-view")
+                .selector(byEntityKind(MICA_RECORD_V1))
+                .data(jsonPath("$.data"))));
         createOrReplace(record("/examples/simple/example-record-a", TextNode.valueOf("hello!")));
         createOrReplace(record("/examples/simple/example-record-b", TextNode.valueOf("bye!")));
     }
@@ -60,22 +68,16 @@ public class InitialDataLoader {
     }
 
     private PartialEntity schema(String name, ObjectSchemaNode schema) {
-        return PartialEntity.create(name, BuiltinSchemas.MICA_KIND_V1,
+        return PartialEntity.create(name, MICA_KIND_V1,
                 Map.of("schema", objectMapper.convertValue(schema, JsonNode.class)));
     }
 
-    private PartialEntity view(String name, String selectorEntityKind, String dataJsonPath) {
-        return PartialEntity.create(name, BuiltinSchemas.MICA_VIEW_V1,
-                Map.of("selector", objectMapper.convertValue(Map.of("entityKind", selectorEntityKind), JsonNode.class),
-                        "data", objectMapper.convertValue(Map.of("jsonPath", dataJsonPath), JsonNode.class)));
+    private PartialEntity build(MicaViewV1.Builder builder) {
+        return builder.build().asPartialEntity(objectMapper);
     }
 
     private PartialEntity record(String name, JsonNode data) {
-        return PartialEntity.create(name, BuiltinSchemas.MICA_RECORD_V1,
+        return PartialEntity.create(name, MICA_RECORD_V1,
                 Map.of("data", data));
-    }
-
-    private void createOrReplaceView() {
-
     }
 }
