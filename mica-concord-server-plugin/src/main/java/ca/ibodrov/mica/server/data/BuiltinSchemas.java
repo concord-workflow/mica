@@ -19,6 +19,7 @@ import java.util.function.Function;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
 import static ca.ibodrov.mica.schema.ValueType.OBJECT;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 
 public final class BuiltinSchemas {
 
@@ -35,16 +36,18 @@ public final class BuiltinSchemas {
 
     @Inject
     public BuiltinSchemas(ObjectMapper objectMapper) {
+        var mapper = objectMapper.setDefaultPropertyInclusion(NON_ABSENT);
+
         this.objectSchemaNodeSchema = object(Map.of(
                 "type", enums(ValueType.valuesAsJson()),
                 "properties", new Builder()
                         .type(OBJECT)
-                        .additionalProperties(
-                                objectMapper.convertValue(ref(MICA_OBJECT_SCHEMA_NODE_V1), JsonNode.class))
+                        .additionalProperties(mapper.convertValue(ref(MICA_OBJECT_SCHEMA_NODE_V1), JsonNode.class))
                         .build(),
                 "required", array(string()),
                 "enum", array(any()),
-                "items", any()), Set.of());
+                "items", any()),
+                Set.of());
 
         this.micaRecordV1Schema = object(Map.of(
                 "id", string(),
@@ -64,10 +67,11 @@ public final class BuiltinSchemas {
                 "id", string(),
                 "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
                 "name", string(),
-                "parameters", object(Map.of(), Set.of()),
+                "parameters", object(),
                 "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
                 "data", object(Map.of(
                         "jsonPath", string(),
+                        "jsonPatch", array(object()),
                         "flatten", bool(),
                         "merge", bool()),
                         Set.of("jsonPath"))),

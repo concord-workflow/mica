@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.InvalidJsonPatchException;
 import com.flipkart.zjsonpatch.JsonPatch;
+import com.flipkart.zjsonpatch.JsonPatchApplicationException;
 import com.jayway.jsonpath.*;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
@@ -115,7 +116,20 @@ public class ViewProcessor {
                 }
 
                 data = data.stream()
-                        .map(node -> JsonPatch.apply(patchData, node))
+                        .map(node -> {
+                            if (!node.isContainerNode()) {
+                                throw new ViewProcessorException(
+                                        "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of "
+                                                + node.getNodeType() + "s");
+                            }
+
+                            try {
+                                return JsonPatch.apply(patchData, node);
+                            } catch (JsonPatchApplicationException e) {
+                                throw new ViewProcessorException(
+                                        "Error while applying data.jsonPatch: " + e.getMessage());
+                            }
+                        })
                         .toList();
             }
         }

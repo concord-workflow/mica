@@ -44,6 +44,12 @@ public record ObjectSchemaNode(Optional<String> type,
                 .build();
     }
 
+    public static ObjectSchemaNode object() {
+        return new Builder()
+                .type(OBJECT.key())
+                .build();
+    }
+
     public static ObjectSchemaNode string() {
         return new Builder()
                 .type(STRING.key())
