@@ -19,11 +19,16 @@ import static java.util.Objects.requireNonNull;
 public class EntityKindStore {
 
     private final EntityStore entityStore;
+    private final BuiltinSchemas builtinSchemas;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public EntityKindStore(EntityStore entityStore, ObjectMapper objectMapper) {
+    public EntityKindStore(EntityStore entityStore,
+                           BuiltinSchemas builtinSchemas,
+                           ObjectMapper objectMapper) {
+
         this.entityStore = requireNonNull(entityStore);
+        this.builtinSchemas = requireNonNull(builtinSchemas);
         this.objectMapper = requireNonNull(objectMapper);
     }
 
@@ -32,11 +37,13 @@ public class EntityKindStore {
     }
 
     public Optional<ObjectSchemaNode> getSchemaForKind(String kind) {
-        return entityStore.getByName(kind)
-                .map(EntityKindStore::assertKind)
-                .flatMap(e -> Optional.ofNullable(e.getProperty(MICA_KIND_SCHEMA_PROPERTY)))
-                .map(v -> objectMapper.convertValue(v, ObjectSchemaNode.class))
-                .map(EntityKindStore::sanityCheck);
+        assert kind != null;
+        return builtinSchemas.get(kind)
+                .or(() -> entityStore.getByName(kind)
+                        .map(EntityKindStore::assertKind)
+                        .flatMap(e -> Optional.ofNullable(e.getProperty(MICA_KIND_SCHEMA_PROPERTY)))
+                        .map(v -> objectMapper.convertValue(v, ObjectSchemaNode.class))
+                        .map(EntityKindStore::sanityCheck));
     }
 
     private static <T extends EntityLike> T assertKind(T entity) {

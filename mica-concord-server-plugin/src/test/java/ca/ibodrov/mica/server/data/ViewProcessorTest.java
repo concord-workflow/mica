@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static ca.ibodrov.mica.server.data.BuiltinSchemas.asView;
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -25,7 +25,7 @@ public class ViewProcessorTest {
     private static final ViewProcessor processor = new ViewProcessor(yamlMapper);
 
     @Test
-    public void testSimpleRender() {
+    public void simpleExample() {
         var view = parseView("""
                 kind: /mica/view/v1
                 name: %s
@@ -48,14 +48,14 @@ public class ViewProcessorTest {
                 data: Some data from B
                 """);
 
-        var result = processor.render(view, Stream.of(entityA, entityB));
+        var result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals("Some data from A", result.data().get("data").get(0).asText());
-        assertEquals("Some data from B", result.data().get("data").get(1).asText());
+        assertEquals("Some data from A", result.data().get(0).asText());
+        assertEquals("Some data from B", result.data().get(1).asText());
     }
 
     @Test
-    public void testComplex() {
+    public void complexExample() {
         var entityA = parseYaml("""
                 kind: ClientList
                 name: Client List 2023
@@ -86,9 +86,9 @@ public class ViewProcessorTest {
                   jsonPath: $.clients[*].['name', 'id', 'validationUrl']
                 """);
 
-        var result = processor.render(view, Stream.of(entityA, entityB));
+        var result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals(2, result.data().get("data").size());
+        assertEquals(2, result.data().size());
 
         var expected = """
                 ---
@@ -105,7 +105,7 @@ public class ViewProcessorTest {
                     id: 2
                     validationUrl: "https://alice.example.com"
                 """;
-        assertEquals(expected, toYaml(result.data().get("data")));
+        assertEquals(expected, toYaml(result.data()));
 
         // now with flatten=true
 
@@ -119,9 +119,9 @@ public class ViewProcessorTest {
                   flatten: true
                 """);
 
-        result = processor.render(view, Stream.of(entityA, entityB));
+        result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals(4, result.data().get("data").size());
+        assertEquals(4, result.data().size());
 
         expected = """
                 ---
@@ -138,11 +138,11 @@ public class ViewProcessorTest {
                   id: 2
                   validationUrl: "https://alice.example.com"
                 """;
-        assertEquals(expected, toYaml(result.data().get("data")));
+        assertEquals(expected, toYaml(result.data()));
     }
 
     @Test
-    public void testSimpleParameters() {
+    public void useSimpleParameters() {
         var entityA = parseYaml("""
                 kind: ClientList
                 name: Client List 2023
@@ -177,19 +177,20 @@ public class ViewProcessorTest {
                   flatten: true
                 """);
 
-        var result = processor.render(view, Map.of("clientId", IntNode.valueOf(1)), Stream.of(entityA, entityB));
+        var result = processor.render(view, Map.of("clientId", IntNode.valueOf(1)),
+                Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals(1, result.data().get("data").size());
+        assertEquals(1, result.data().size());
 
         var expected = """
                 ---
                 - "Bob"
                 """;
-        assertEquals(expected, toYaml(result.data().get("data")));
+        assertEquals(expected, toYaml(result.data()));
     }
 
     @Test
-    public void testMerge() {
+    public void mergeMultipleEntities() {
         var entityA = parseYaml("""
                 kind: Item
                 name: item-a
@@ -216,13 +217,13 @@ public class ViewProcessorTest {
                 selector:
                   entityKind: Item
                 data:
-                  jsonPath: $
+                  jsonPath: $.['qux', 'foo', 'baz']
                   merge: true
                 """);
 
         var result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
-        assertEquals(1, result.data().get("data").size());
+        assertEquals(1, result.data().size());
 
         var expected = """
                 ---
@@ -236,11 +237,11 @@ public class ViewProcessorTest {
                   - 4
                   - 5
                 """;
-        assertEquals(expected, toYaml(result.data().get("data")));
+        assertEquals(expected, toYaml(result.data()));
     }
 
     @Test
-    public void testJsonPatch() {
+    public void applySimpleJsonPatch() {
         var entity = parseYaml("""
                 kind: ListOfItems
                 name: my-items
@@ -270,12 +271,42 @@ public class ViewProcessorTest {
 
         var result = processor.render(view, Map.of(), Stream.of(entity));
         assertNotNull(result);
-        assertEquals(1, result.data().get("data").size());
-        assertEquals("Blamf", result.data().get("data").get(0).get("widgets").get(3).get("name").asText());
+        assertEquals(1, result.data().size());
+        assertEquals("Blamf", result.data().get(0).get("widgets").get(3).get("name").asText());
+    }
+
+    @Test
+    public void viewsMustReturnAllEntityFields() {
+        var foo = parseYaml("""
+                id: 88eccc0c-99e1-11ee-b9d1-0242ac120002
+                kind: MyRecord
+                name: foo
+                status: active
+                """);
+
+        var bar = parseYaml("""
+                id: 8d762a34-99e1-11ee-b9d1-0242ac120002
+                kind: MyRecord
+                name: bar
+                status: inactive
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: MyRecord
+                data:
+                  jsonPath: $
+                """);
+
+        var result = processor.render(view, Map.of(), Stream.of(foo, bar));
+        assertEquals(2, result.data().size());
+        assertEquals("88eccc0c-99e1-11ee-b9d1-0242ac120002", result.data().get(0).get("id").asText());
     }
 
     private static ViewLike parseView(@Language("yaml") String yaml) {
-        return asView(yamlMapper, parseYaml(yaml));
+        return asViewLike(yamlMapper, parseYaml(yaml));
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {

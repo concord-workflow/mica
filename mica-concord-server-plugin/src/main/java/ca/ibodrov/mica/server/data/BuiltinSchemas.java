@@ -61,20 +61,23 @@ public final class BuiltinSchemas {
                 "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
                 "name", string(),
                 MICA_KIND_SCHEMA_PROPERTY, objectSchemaNodeSchema),
-                Set.of("kind", "name", "schema"));
+                Set.of("kind", "name", MICA_KIND_SCHEMA_PROPERTY));
+
+        var viewSelector = object(Map.of("entityKind", string()), Set.of("entityKind"));
+        var viewData = object(Map.of(
+                "jsonPath", string(),
+                "jsonPatch", array(object()),
+                "flatten", bool(),
+                "merge", bool()),
+                Set.of("jsonPath"));
 
         this.micaViewV1Schema = object(Map.of(
                 "id", string(),
                 "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
                 "name", string(),
                 "parameters", object(),
-                "selector", object(Map.of("entityKind", string()), Set.of("entityKind")),
-                "data", object(Map.of(
-                        "jsonPath", string(),
-                        "jsonPatch", array(object()),
-                        "flatten", bool(),
-                        "merge", bool()),
-                        Set.of("jsonPath"))),
+                "selector", viewSelector,
+                "data", viewData),
                 Set.of("kind", "name", "selector", "data"));
     }
 
@@ -106,11 +109,8 @@ public final class BuiltinSchemas {
         return micaViewV1Schema;
     }
 
-    public Optional<ObjectSchemaNode> getByRef(String ref) {
-        if (ref == null) {
-            return Optional.empty();
-        }
-        return switch (ref) {
+    public Optional<ObjectSchemaNode> get(String kind) {
+        return switch (kind) {
             case MICA_OBJECT_SCHEMA_NODE_V1 -> Optional.of(objectSchemaNodeSchema);
             case MICA_RECORD_V1 -> Optional.of(micaRecordV1Schema);
             case MICA_KIND_V1 -> Optional.of(micaKindV1Schema);
@@ -119,9 +119,9 @@ public final class BuiltinSchemas {
         };
     }
 
-    public static ViewLike asView(ObjectMapper objectMapper, EntityLike entity) {
+    public static ViewLike asViewLike(ObjectMapper objectMapper, EntityLike entity) {
         if (!entity.kind().equals(MICA_VIEW_V1)) {
-            throw ApiException.badRequest("Expected a /mica/view/v1 entity, got: " + entity.kind());
+            throw ApiException.badRequest("Expected a %s entity, got: %s".formatted(MICA_VIEW_V1, entity.kind()));
         }
 
         var name = entity.name();
@@ -129,17 +129,9 @@ public final class BuiltinSchemas {
         var parameters = Optional.ofNullable(entity.data().get("parameters"))
                 .map(object -> parseParameters(objectMapper, object));
 
-        var selectorEntityKind = select(entity, "selector", "entityKind", JsonNode::asText)
-                .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));
+        var selector = asViewLikeSelector(entity);
 
-        var dataJsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
-                .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
-
-        var dataJsonPatch = select(entity, "data", "jsonPatch", Function.identity());
-
-        var flatten = select(entity, "data", "flatten", JsonNode::asBoolean);
-
-        var merge = select(entity, "data", "merge", JsonNode::asBoolean);
+        var data = asViewLikeData(entity);
 
         return new ViewLike() {
             @Override
@@ -154,32 +146,51 @@ public final class BuiltinSchemas {
 
             @Override
             public Selector selector() {
-                return () -> selectorEntityKind;
+                return selector;
             }
 
             @Override
             public Data data() {
-                return new Data() {
-                    @Override
-                    public String jsonPath() {
-                        return dataJsonPath;
-                    }
+                return data;
+            }
+        };
+    }
 
-                    @Override
-                    public Optional<JsonNode> jsonPatch() {
-                        return dataJsonPatch;
-                    }
+    private static ViewLike.Selector asViewLikeSelector(EntityLike entity) {
+        var selectorEntityKind = select(entity, "selector", "entityKind", JsonNode::asText)
+                .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));
+        return () -> selectorEntityKind;
+    }
 
-                    @Override
-                    public Optional<Boolean> flatten() {
-                        return flatten;
-                    }
+    private static ViewLike.Data asViewLikeData(EntityLike entity) {
+        var dataJsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
+                .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
-                    @Override
-                    public Optional<Boolean> merge() {
-                        return merge;
-                    }
-                };
+        var dataJsonPatch = select(entity, "data", "jsonPatch", Function.identity());
+
+        var flatten = select(entity, "data", "flatten", JsonNode::asBoolean);
+
+        var merge = select(entity, "data", "merge", JsonNode::asBoolean);
+
+        return new ViewLike.Data() {
+            @Override
+            public String jsonPath() {
+                return dataJsonPath;
+            }
+
+            @Override
+            public Optional<JsonNode> jsonPatch() {
+                return dataJsonPatch;
+            }
+
+            @Override
+            public Optional<Boolean> flatten() {
+                return flatten;
+            }
+
+            @Override
+            public Optional<Boolean> merge() {
+                return merge;
             }
         };
     }

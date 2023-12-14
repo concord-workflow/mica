@@ -139,6 +139,16 @@ const EditEntityPage = () => {
         createPreviewRequest(editorRef.current?.getValue() ?? ''),
     );
 
+    const handlePreviewSwitch = React.useCallback(
+        (enable: boolean) => {
+            setShowPreview(enable);
+            if (enable) {
+                setPreviewRequest(createPreviewRequest(editorRef.current?.getValue() ?? ''));
+            }
+        },
+        [createPreviewRequest],
+    );
+
     const syncValueToState = React.useCallback(
         (value: string | undefined) => {
             if (!value) {
@@ -223,7 +233,9 @@ const EditEntityPage = () => {
                                     control={
                                         <Switch
                                             value={showPreview}
-                                            onChange={(ev) => setShowPreview(ev.target.checked)}
+                                            onChange={(ev) =>
+                                                handlePreviewSwitch(ev.target.checked)
+                                            }
                                         />
                                     }
                                     label="Preview"

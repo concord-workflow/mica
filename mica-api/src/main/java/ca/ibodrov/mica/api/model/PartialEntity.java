@@ -43,4 +43,9 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
     public void setProperty(String name, JsonNode value) {
         data.put(name, value);
     }
+
+    public PartialEntity withVersion(EntityVersion version) {
+        return new PartialEntity(Optional.of(version.id()), name(), kind(), createdAt(),
+                Optional.of(version.updatedAt()), data());
+    }
 }

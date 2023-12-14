@@ -26,9 +26,9 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     public static void setUp() {
         yamlMapper = objectMapper.copyWith(new YAMLFactory());
         var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
-        var entityKindStore = new EntityKindStore(entityStore, objectMapper);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
-        controller = new EntityController(entityStore, entityKindStore, builtinSchemas, objectMapper);
+        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
+        controller = new EntityController(entityStore, entityKindStore, objectMapper);
 
         // insert the built-in entity kinds
         new InitialDataLoader(builtinSchemas, entityStore, objectMapper).load();

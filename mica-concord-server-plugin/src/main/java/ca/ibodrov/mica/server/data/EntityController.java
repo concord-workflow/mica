@@ -5,6 +5,7 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.EntityValidationException;
+import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,14 +23,12 @@ public class EntityController {
     @Inject
     public EntityController(EntityStore entityStore,
                             EntityKindStore entityKindStore,
-                            BuiltinSchemas builtinSchemas,
                             ObjectMapper objectMapper) {
 
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
         this.objectMapper = requireNonNull(objectMapper);
-        this.validator = new Validator(ref -> builtinSchemas.getByRef(ref)
-                .or(() -> entityKindStore.getSchemaForKind(ref)));
+        this.validator = new Validator(entityKindStore::getSchemaForKind);
     }
 
     public EntityVersion createOrUpdate(PartialEntity entity) {
@@ -44,9 +43,11 @@ public class EntityController {
             throw EntityValidationException.from(validatedInput);
         }
 
-        if (entity.id().isEmpty()) {
-            if (entityStore.isNameExists(entity.name())) {
-                throw ApiException.badRequest("Entity with name '%s' already exists".formatted(entity.name()));
+        var existingId = entityStore.getIdByName(entity.name());
+        if (existingId.isPresent()) {
+            if (entity.id().isEmpty() || !entity.id().equals(existingId)) {
+                throw new StoreException("Entity '%s' already exists (with ID=%s)"
+                        .formatted(entity.name(), existingId.get().toExternalForm()));
             }
         }
 

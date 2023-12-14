@@ -1,0 +1,3 @@
+name: /examples/simple/example-record-b
+kind: /mica/record/v1
+data: "bye!"

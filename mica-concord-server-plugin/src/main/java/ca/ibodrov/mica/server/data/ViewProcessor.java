@@ -1,12 +1,10 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
-import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.InvalidJsonPatchException;
 import com.flipkart.zjsonpatch.JsonPatch;
@@ -25,8 +23,6 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
 public class ViewProcessor {
-
-    private static final String RESULT_ENTITY_KIND = "MicaMaterializedView/v1";
 
     private final ObjectMapper objectMapper;
     private final ParseContext parseContext;
@@ -63,28 +59,27 @@ public class ViewProcessor {
     }
 
     /**
-     * @see #render(ViewLike, Map, Stream)
+     * Render a /mica/view/v1 using the given entities and parameters.
      */
-    public PartialEntity render(ViewLike view, Stream<EntityLike> entities) {
-        return render(view, Map.of(), entities);
-    }
+    public RenderedView render(ViewLike view,
+                               Map<String, JsonNode> parameters,
+                               Stream<? extends EntityLike> entities) {
 
-    /**
-     * Materialize (or "render") a /mica/view/v1 using the given entities and
-     * parameters.
-     */
-    public PartialEntity render(ViewLike view, Map<String, JsonNode> parameters, Stream<EntityLike> entities) {
         // TODO validate supplied parameters according to the view's schema
 
+        // interpolate JSON path using the supplied parameters
         var jsonPath = requireNonNull(view.data().jsonPath());
         var effectiveJsonPath = interpolate(jsonPath, parameters);
 
-        var data = entities.filter(entity -> entity.kind().equals(view.selector().entityKind()))
-                .map(entity -> applyJsonPath(entity.name(), entity.data(), effectiveJsonPath))
+        // apply JSON path
+        var data = entities
+                .map(row -> applyJsonPath(row.name(), objectMapper.convertValue(row, JsonNode.class),
+                        effectiveJsonPath))
                 .flatMap(Optional::stream)
                 .toList();
 
         if (!data.isEmpty()) {
+            // flatten - convert an array of arrays into a single array
             var flatten = view.data().flatten().orElse(false);
             if (flatten && data.stream().allMatch(JsonNode::isArray)) {
                 data = data.stream()
@@ -92,6 +87,7 @@ public class ViewProcessor {
                         .toList();
             }
 
+            // merge - convert an array of objects into a single object
             var merge = view.data().merge().orElse(false);
             if (merge && data.stream().allMatch(JsonNode::isObject)) {
                 var mergedData = data.stream()
@@ -100,15 +96,10 @@ public class ViewProcessor {
                 data = List.of(mergedData);
             }
 
+            // apply JSON patch
             var patch = view.data().jsonPatch();
             if (patch.isPresent()) {
                 var patchData = patch.get();
-                if (!patchData.isArray()) {
-                    throw new ViewProcessorException(
-                            "Expected an array of JSON patch operations in data.jsonPatch, got: "
-                                    + patchData.getNodeType());
-                }
-
                 try {
                     JsonPatch.validate(patchData);
                 } catch (InvalidJsonPatchException e) {
@@ -119,8 +110,8 @@ public class ViewProcessor {
                         .map(node -> {
                             if (!node.isContainerNode()) {
                                 throw new ViewProcessorException(
-                                        "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of "
-                                                + node.getNodeType() + "s");
+                                        "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of %ss"
+                                                .formatted(node.getNodeType()));
                             }
 
                             try {
@@ -134,12 +125,10 @@ public class ViewProcessor {
             }
         }
 
-        return PartialEntity.create(view.name(), RESULT_ENTITY_KIND,
-                Map.of("data", objectMapper.convertValue(data, JsonNode.class),
-                        "length", IntNode.valueOf(data.size())));
+        return new RenderedView(view, data);
     }
 
-    private Optional<JsonNode> applyJsonPath(String entityName, Map<String, JsonNode> data, String jsonPath) {
+    private Optional<JsonNode> applyJsonPath(String entityName, JsonNode data, String jsonPath) {
         Object result;
         try {
             result = parseContext.parse(data).read(jsonPath);

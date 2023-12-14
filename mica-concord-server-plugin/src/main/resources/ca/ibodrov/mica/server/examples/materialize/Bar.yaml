@@ -1,0 +1,3 @@
+name: /examples/materialize/Bar
+kind: /examples/materialize/MyRecord/v1
+validationUrl: "http://bar.example.org"

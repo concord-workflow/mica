@@ -153,29 +153,21 @@ public class EntityStore {
                 .map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)), r.get(MICA_ENTITIES.UPDATED_AT))));
     }
 
-    public boolean isNameExists(String entityName) {
-        return dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName));
-    }
-
     public boolean isNameAndKindExists(String entityName, String entityKind) {
         return dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName).and(MICA_ENTITIES.KIND.eq(entityKind)));
     }
 
     public Optional<EntityVersion> upsert(PartialEntity entity) {
-        var existingId = getIdByName(entity.name());
-        if (existingId.isPresent()) {
-            if (entity.id().isEmpty() || !entity.id().equals(existingId)) {
-                throw new StoreException("Another entity with name '%s' already exists (with ID=%s)"
-                        .formatted(entity.name(), existingId.get().toExternalForm()));
-            }
-        }
+        return dsl.transactionResult(tx -> upsert(tx.dsl(), entity));
+    }
 
+    public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity) {
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
 
         var data = serializeData(entity.data());
 
-        return dsl.transactionResult(tx -> tx.dsl().insertInto(MICA_ENTITIES)
+        return tx.insertInto(MICA_ENTITIES)
                 .set(MICA_ENTITIES.ID, id)
                 .set(MICA_ENTITIES.NAME, entity.name())
                 .set(MICA_ENTITIES.KIND, entity.kind())
@@ -189,7 +181,7 @@ public class EntityStore {
                 .where(entity.updatedAt().map(MICA_ENTITIES.UPDATED_AT::eq).orElseGet(DSL::noCondition))
                 .returning(MICA_ENTITIES.UPDATED_AT)
                 .fetchOptional()
-                .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt())));
+                .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt()));
     }
 
     private Entity toEntity(Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {

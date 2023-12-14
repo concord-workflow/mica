@@ -1,0 +1,6 @@
+name: /examples/simple/example-view
+kind: /mica/view/v1
+selector:
+  entityKind: /mica/record/v1
+data:
+  jsonPath: $.data

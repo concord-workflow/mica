@@ -30,9 +30,9 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
         var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
-        var entityKindStore = new EntityKindStore(entityStore, objectMapper);
         var builtInSchemas = new BuiltinSchemas(objectMapper);
-        var controller = new EntityController(entityStore, entityKindStore, builtInSchemas, objectMapper);
+        var entityKindStore = new EntityKindStore(entityStore, builtInSchemas, objectMapper);
+        var controller = new EntityController(entityStore, entityKindStore, objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
                 .buildValidatorFactory()

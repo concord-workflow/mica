@@ -35,7 +35,7 @@ public class SystemResource implements Resource {
     }
 
     @GET
-    @Operation(description = "Returns Mica's system info (e.g. version)", operationId = "getSystemInfo")
+    @Operation(summary = "Returns Mica's system info (e.g. version)", operationId = "getSystemInfo")
     public SystemInfo getSystemInfo() {
         return systemInfo;
     }

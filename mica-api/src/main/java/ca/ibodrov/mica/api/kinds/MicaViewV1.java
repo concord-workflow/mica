@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -45,10 +46,12 @@ public record MicaViewV1(@ValidName String name,
     }
 
     public PartialEntity asPartialEntity(ObjectMapper objectMapper) {
-        return PartialEntity.create(this.name, MICA_VIEW_V1,
-                Map.of("parameters", objectMapper.convertValue(this.parameters, JsonNode.class),
-                        "selector", objectMapper.convertValue(this.selector, JsonNode.class),
-                        "data", objectMapper.convertValue(this.data, JsonNode.class)));
+        var props = new HashMap<String, JsonNode>();
+        this.parameters.ifPresent(stringObjectSchemaNodeMap -> props.put("parameters",
+                objectMapper.convertValue(stringObjectSchemaNodeMap, JsonNode.class)));
+        props.put("selector", objectMapper.convertValue(this.selector, JsonNode.class));
+        props.put("data", objectMapper.convertValue(this.data, JsonNode.class));
+        return PartialEntity.create(this.name, MICA_VIEW_V1, props);
     }
 
     public static class Builder {

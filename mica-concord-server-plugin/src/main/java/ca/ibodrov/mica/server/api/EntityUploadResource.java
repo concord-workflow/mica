@@ -44,7 +44,7 @@ public class EntityUploadResource implements Resource {
     @PUT
     @Path("yaml")
     @Consumes("*/yaml")
-    @Operation(description = "Upload an entity in YAML format", operationId = "putYaml")
+    @Operation(summary = "Upload an entity in YAML format", operationId = "putYaml")
     public EntityVersion putYaml(InputStream in) {
         // assume the name is present in the document
         return putPartialYaml(null, null, in);
@@ -53,7 +53,7 @@ public class EntityUploadResource implements Resource {
     @PUT
     @Path("partialYaml")
     @Consumes("*/yaml")
-    @Operation(description = "Upload a (possibly) partial entity in YAML format with 'name' or 'kind' overrides", operationId = "putPartialYaml")
+    @Operation(summary = "Upload a partial entity in YAML format", description = "Upload a (possibly) partial entity in YAML format with 'name' or 'kind' overrides", operationId = "putPartialYaml")
     public EntityVersion putPartialYaml(@Nullable @QueryParam("entityName") String entityName,
                                         @Nullable @QueryParam("entityKind") String entityKind,
                                         InputStream in) {

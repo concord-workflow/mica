@@ -6,15 +6,17 @@ import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.Map;
 
-import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
-import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_V1;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_RECORD_V1;
 import static java.util.Objects.requireNonNull;
@@ -49,12 +51,18 @@ public class InitialDataLoader {
         createOrReplace(schema(MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()));
         createOrReplace(schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()));
 
-        // examples/simple
-        createOrReplace(build(new MicaViewV1.Builder().name("/examples/simple/example-view")
-                .selector(byEntityKind(MICA_RECORD_V1))
-                .data(jsonPath("$.data"))));
-        createOrReplace(record("/examples/simple/example-record-a", TextNode.valueOf("hello!")));
-        createOrReplace(record("/examples/simple/example-record-b", TextNode.valueOf("bye!")));
+        // load example files
+        var cl = getClass().getClassLoader();
+        var yamlMapper = objectMapper.copyWith(new YAMLFactory());
+        var reflections = new Reflections("ca.ibodrov.mica.server.examples", new ResourcesScanner());
+        reflections.getResources(s -> s.endsWith(".yaml")).forEach(resourceName -> {
+            try (var in = cl.getResourceAsStream(resourceName)) {
+                var entity = yamlMapper.readValue(in, PartialEntity.class);
+                createOrReplace(entity);
+            } catch (IOException e) {
+                throw new RuntimeException("Error loading " + resourceName, e);
+            }
+        });
     }
 
     private void createOrReplace(PartialEntity entity) {

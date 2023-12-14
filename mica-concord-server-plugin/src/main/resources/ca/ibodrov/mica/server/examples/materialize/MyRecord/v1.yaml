@@ -1,0 +1,9 @@
+name: /examples/materialize/MyRecord/v1
+kind: /mica/kind/v1
+schema:
+  properties:
+    name:
+      type: string
+    validationUrl:
+      type: string
+  required: ['name', 'validationUrl']

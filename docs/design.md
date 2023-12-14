@@ -6,9 +6,10 @@
 - [Views](#views)
 - [View Flattening](#view-flattening)
 - [Merge Results](#merge-results)
+- [JSON Patch Support](#json-patch-support)
 - [Parametrized Views](#parametrized-views)
-- [Entity Validation](#entity-validation)
 - [Save View Data As Entities](#save-view-data-as-entities)
+- [Entity Validation](#entity-validation)
 - [Supported JSON Schema Features](#supported-json-schema-features)
 - [Database Design](#database-design)
 
@@ -75,7 +76,8 @@ ObjectSchemaNode:
 There are several built-in entity kinds:
 - `/mica/record/v1` -- basic data record, no attached behaviors;
 - `/mica/kind/v1` -- a `kind` definition, aka entity "template";
-- `/mica/view/v1` -- entity view object.
+- `/mica/view/v1` -- entity view object;
+- `/mica/transformer/v1` -- an entity transformer (aka data migration).
 
 ## Views
 
@@ -347,64 +349,106 @@ To pass the parameters, use the `parameters` field in the request body:
 curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
 
-## Save View Data As Entities
+## Materialize View Data As Entities
 
 _This section is a work in progress._
 
-Given a view definition:
+Mica provides an option to save (materialize) the rendered view data as entities:
+
+```
+curl -i --json '{"viewName": "/examples/materialize/v1-to-v2"}' 'http://localhost:8080/api/mica/v1/view/materialize'
+```
+
+The endpoint accepts the same parameters as the `render` endpoint.
+
+The view must return a JSON array of objects in `data`. Each object in
+the `data` array is saved as a separate entity. Each resulting entity must
+pass the validation according to its `kind` before it can be saved.
+
+For example, given an existing kind `MyRecord/v1`:
 
 ```yaml
+name: /examples/materialize/MyRecord/v1
+kind: /mica/kind/v1
+schema:
+  properties:
+    name:
+      type: string
+    validationUrl:
+      type: string
+  required: ['name', 'validationUrl']
+```
+
+And a set of entities:
+
+```yaml
+name: /examples/materialize/Foo
+kind: /examples/materialize/MyRecord/v1
+validationUrl: "http://foo.example.org"
+```
+
+```yaml
+name: /examples/materialize/Bar
+kind: /examples/materialize/MyRecord/v1
+validationUrl: "http://bar.example.org"
+```
+
+Let's create a view to migrate the entities to `MyRecord/v2`, which
+introduces an additional property `status` and is defined as follows:
+
+```yaml
+name: /examples/materialize/MyRecord/v2
+kind: /mica/kind/v1
+schema:
+  properties:
+    name:
+      type: string
+    status:
+      type: string
+      enum: [active, retired]
+    validationUrl:
+      type: string
+  required: ['name', 'status', 'validationUrl']
+```
+
+A view definition:
+
+```yaml
+name: /examples/materialize/v1-to-v2
 kind: /mica/view/v1
-name: /migrations/2021-01-01
 selector:
-  entityName: /clients/20230101
+  entityKind: /examples/materialize/MyRecord/v1
 data:
+  jsonPath: $
   jsonPatch:
     - op: add
-      path: /clients
-      value:
-        id: newco
-        name: NewCo
-        validationUrl: "http://newco.example.org"
+      path: /status
+      value: "active"
+    - op: replace
+      path: /kind
+      value: /examples/materialize/MyRecord/v2
 ```
 
-And an entity:
+Calling the `migration` endpoints renders and saves the following data:
 
-```yaml
-name: /clients/20230101
-kind: /schemas/AcmeClientList
-clients:
-  - id: qux
-    status: active
-    validationUrl: "http://qux.example.org"
-  - id: eek
-    status: retired
-    validationUrl: "http://eek.example.org"
+```json
+{
+    "data": [
+        {
+            "name": "/examples/materialize/MyRecord/Foo",
+            "kind": "/MyRecord/v2",
+            "status": "active",
+            "validationUrl": "http://foo.example.org"
+        },
+        {
+            "name": "/examples/materialize/MyRecord/Bar",
+            "kind": "/MyRecord/v2",
+            "status": "active",
+            "validationUrl": "http://bar.example.org"
+        }
+    ]
+}
 ```
-
-Produces:
-
-```yaml
-data:
-  clients:
-    - id: qux
-      status: active
-      validationUrl: "http://qux.example.org"
-    - id: eek
-      status: retired
-      validationUrl: "http://eek.example.org"
-    - id: newco
-      name: NewCo
-      validationUrl: "http://newco.example.org"
-```
-
-The API allows to save the resulting `data` as a new entity, or to update the existing one:
-
-```
-curl -i --json '{"viewName": "/migrations/2021-01-01", "saveAs": { "name": "/clients/20240102", "kind": "/schemas/AcmeClientList" }}' 'http://localhost:8080/api/mica/v1/view/render'
-```
-
-The resulting entity must pass the validation according to the specified `kind` before it can be saved. 
 
 ## Entity Validation
 

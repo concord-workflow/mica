@@ -30,12 +30,12 @@ public class BuiltinSchemasTest {
     public static void setUp() {
         yamlMapper = new ObjectMapperProvider().get().copyWith(new YAMLFactory());
         builtinSchemas = new BuiltinSchemas(yamlMapper);
-        validator = new Validator(ref -> builtinSchemas.getByRef(ref));
+        validator = new Validator(ref -> builtinSchemas.get(ref));
     }
 
     @Test
     public void testMigration() {
-        var yaml = """
+        var entity = parseEntityYaml("""
                 kind: /mica/kind/v1
                 name: foobar
                 schema:
@@ -45,9 +45,8 @@ public class BuiltinSchemasTest {
                       type: string
                   required:
                     - foo
-                """;
+                """);
 
-        var entity = parseEntityYaml(yaml);
         var input = yamlMapper.convertValue(entity, JsonNode.class);
 
         var oldSchema = object(Map.of(
@@ -55,7 +54,7 @@ public class BuiltinSchemasTest {
                 "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
                 "name", string(),
                 MICA_KIND_SCHEMA_PROPERTY, any()),
-                Set.of("kind", "name", "schema"));
+                Set.of("kind", "name", MICA_KIND_SCHEMA_PROPERTY));
 
         var newSchema = builtinSchemas.getMicaKindV1Schema();
 
@@ -79,7 +78,7 @@ public class BuiltinSchemasTest {
                   jsonPath: $
                 """);
 
-        assertThrows(ApiException.class, () -> asView(yamlMapper, entity));
+        assertThrows(ApiException.class, () -> asViewLike(yamlMapper, entity));
     }
 
     @Test

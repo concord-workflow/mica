@@ -1,0 +1,12 @@
+name: /examples/materialize/MyRecord/v2
+kind: /mica/kind/v1
+schema:
+  properties:
+    name:
+      type: string
+    status:
+      type: string
+      enum: [active, retired]
+    validationUrl:
+      type: string
+  required: ['name', 'status', 'validationUrl']

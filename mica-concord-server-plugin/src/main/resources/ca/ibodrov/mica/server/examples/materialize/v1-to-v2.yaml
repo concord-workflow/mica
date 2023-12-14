@@ -1,0 +1,13 @@
+name: /examples/materialize/v1-to-v2
+kind: /mica/view/v1
+selector:
+  entityKind: /examples/materialize/MyRecord/v1
+data:
+  jsonPath: $
+  jsonPatch:
+    - op: add
+      path: /status
+      value: "active"
+    - op: add
+      path: /kind
+      value: /examples/materialize/MyRecord/v2

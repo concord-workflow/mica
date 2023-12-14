@@ -48,7 +48,7 @@ public class EntityResource implements Resource {
     }
 
     @GET
-    @Operation(description = "List known entities", operationId = "listEntities")
+    @Operation(summary = "List known entities", operationId = "listEntities")
     public EntityList listEntities(@Nullable @QueryParam("search") String search,
                                    @Nullable @QueryParam("entityNameStartsWith") String entityNameStartsWith,
                                    @Nullable @QueryParam("entityName") String entityName,
@@ -68,7 +68,7 @@ public class EntityResource implements Resource {
 
     @GET
     @Path("{id}")
-    @Operation(description = "Get entity by ID", operationId = "getEntityById")
+    @Operation(summary = "Get entity by ID", operationId = "getEntityById")
     public Entity getEntityById(@PathParam("id") EntityId entityId) {
         return entityStore.getById(entityId)
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
@@ -76,7 +76,7 @@ public class EntityResource implements Resource {
 
     @GET
     @Path("{id}/yaml")
-    @Operation(description = "Get entity by ID in YAML format", operationId = "getEntityAsYamlString")
+    @Operation(summary = "Get entity by ID in YAML format", operationId = "getEntityAsYamlString")
     public Response getEntityAsYamlString(@PathParam("id") EntityId entityId) {
         var entity = getEntityById(entityId);
         try {
@@ -91,7 +91,7 @@ public class EntityResource implements Resource {
 
     @DELETE
     @Path("{id}")
-    @Operation(description = "Delete an existing entity by its ID", operationId = "deleteById")
+    @Operation(summary = "Delete an existing entity by its ID", operationId = "deleteById")
     public EntityVersion deleteById(@PathParam("id") UUID entityId) {
         return entityStore.deleteById(new EntityId(entityId))
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
