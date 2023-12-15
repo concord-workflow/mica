@@ -106,14 +106,11 @@ const EditEntityPage = () => {
         success !== null && success !== undefined,
     );
 
-    // stuff for the live preview feature
-    const [showPreview, setShowPreview] = React.useState<boolean>(false);
-    const [yamlParseError, setYamlParseError] = React.useState<string | undefined>();
-
     // the entity ID and kind can be changed by the user, we need to keep track of them
     const [selectedId, setSelectedId] = React.useState(entityId);
     const [selectedName, setSelectedName] = React.useState(searchParams.get('name') ?? undefined);
     const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind') ?? undefined);
+    const [yamlParseError, setYamlParseError] = React.useState<string | undefined>();
 
     const createPreviewRequest: (yaml: string) => PreviewRequest | undefined = React.useCallback(
         (yaml: string) => {
@@ -122,6 +119,10 @@ const EditEntityPage = () => {
             }
             try {
                 const view = parseYaml(yaml);
+
+                // we don't need view ID for preview and invalid IDs will cause errors that we don't care about here
+                delete view.id;
+
                 setYamlParseError(undefined);
                 return {
                     view,
@@ -135,6 +136,8 @@ const EditEntityPage = () => {
         [],
     );
 
+    // stuff for the live preview feature
+    const [showPreview, setShowPreview] = React.useState<boolean>(false);
     const [previewRequest, setPreviewRequest] = React.useState<PreviewRequest | undefined>(() =>
         createPreviewRequest(editorRef.current?.getValue() ?? ''),
     );
@@ -144,6 +147,8 @@ const EditEntityPage = () => {
             setShowPreview(enable);
             if (enable) {
                 setPreviewRequest(createPreviewRequest(editorRef.current?.getValue() ?? ''));
+            } else {
+                setPreviewRequest(undefined);
             }
         },
         [createPreviewRequest],

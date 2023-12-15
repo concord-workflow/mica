@@ -22,7 +22,7 @@ const PreviewView = ({ request }: Props) => {
         },
     });
 
-    const debouncedRequest = useDebounce(request, 250);
+    const debouncedRequest = useDebounce(request, 100);
     React.useEffect(() => {
         if (!debouncedRequest.view) {
             return;
@@ -31,6 +31,8 @@ const PreviewView = ({ request }: Props) => {
         mutateAsync(debouncedRequest);
     }, [mutateAsync, debouncedRequest]);
 
+    const showLoadingIndicator = useDebounce(isLoading, 250);
+
     return (
         <>
             {error && (
@@ -38,8 +40,8 @@ const PreviewView = ({ request }: Props) => {
                     <ReadableApiError error={error} />
                 </Alert>
             )}
-            <Box marginLeft={2}>
-                {isLoading && (
+            <Box>
+                {showLoadingIndicator && (
                     <Box
                         display="flex"
                         alignItems="center"
@@ -51,7 +53,11 @@ const PreviewView = ({ request }: Props) => {
                         <CircularProgress color="secondary" />
                     </Box>
                 )}
-                {lastGoodData && <JsonView src={lastGoodData} />}
+                {lastGoodData && (
+                    <Box margin={1}>
+                        <JsonView src={lastGoodData} />
+                    </Box>
+                )}
             </Box>
         </>
     );
