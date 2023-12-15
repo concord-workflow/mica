@@ -25,7 +25,7 @@ import Editor, { OnMount } from '@monaco-editor/react';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'react-query';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useBeforeUnload, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 type RouteParams = {
     entityId: string;
@@ -195,6 +195,7 @@ const EditEntityPage = () => {
             const { data, error } = await refetch();
             if (error) {
                 console.error("Couldn't re-fetch the entity:", error);
+                return;
             }
             if (data) {
                 editor.setValue(data);
@@ -204,20 +205,53 @@ const EditEntityPage = () => {
 
         setDirty(false);
         setShowSuccess(true);
+
+        // remove unsaved changes from local storage
+        localStorage.removeItem(`dirty-${entityId}`);
     }, [entityId, mutateAsync, navigate, refetch, syncValueToState]);
 
-    // provide a default value for the editor
-    const defaultValue =
-        selectedId === '_new'
-            ? selectedKind
-                ? kindToTemplate(selectedName ?? '/myEntity', selectedKind)
-                : '# new entity'
-            : serverValue;
+    // provide the default value for the editor
+    let defaultValue: string | undefined;
+    if (selectedId === '_new') {
+        if (selectedKind) {
+            defaultValue = kindToTemplate(selectedName ?? '/myEntity', selectedKind);
+        } else {
+            defaultValue = '# new entity';
+        }
+    } else {
+        defaultValue = serverValue;
+    }
 
     // on the first load, sync the default value to the state
     useEffect(() => {
         syncValueToState(defaultValue);
     }, [syncValueToState, defaultValue]);
+
+    // save any changes to local storage before navigating away
+    useBeforeUnload(
+        React.useCallback(() => {
+            const value = editorRef.current?.getValue();
+            if (!value) {
+                return;
+            }
+            localStorage.setItem(`dirty-${entityId}`, value);
+        }, [editorRef, entityId]),
+    );
+
+    // load any unsaved changes from local storage
+    const [showUnsavedChangesRestored, setShowUnsavedChangesRestored] =
+        React.useState<boolean>(false);
+    useEffect(() => {
+        const value = localStorage.getItem(`dirty-${entityId}`);
+        if (!value) {
+            return;
+        }
+
+        editorRef.current?.setValue(value);
+        syncValueToState(value);
+
+        setShowUnsavedChangesRestored(true);
+    }, [entityId, editorRef, syncValueToState]);
 
     return (
         <>
@@ -226,6 +260,12 @@ const EditEntityPage = () => {
                 autoHideDuration={5000}
                 onClose={() => setShowSuccess(false)}
                 message="Data saved successfully"
+            />
+            <Snackbar
+                open={showUnsavedChangesRestored}
+                autoHideDuration={5000}
+                onClose={() => setShowSuccess(false)}
+                message="Unsaved changes restored"
             />
             <Box display="flex" flexDirection="column" height="100%">
                 <Box sx={{ m: 2 }}>
