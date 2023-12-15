@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.testing;
+package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.db.MicaDataSourceProvider;
 import ca.ibodrov.mica.db.MicaDatabaseModule;

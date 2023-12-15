@@ -3,7 +3,6 @@ package ca.ibodrov.mica.server;
 import ca.ibodrov.mica.server.data.BuiltinSchemas;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
-import ca.ibodrov.mica.testing.TestDatabase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.jooq.DSLContext;

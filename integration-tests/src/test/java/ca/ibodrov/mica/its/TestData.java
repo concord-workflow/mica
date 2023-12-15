@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.testing;
+package ca.ibodrov.mica.its;
 
 import org.jooq.Configuration;
 

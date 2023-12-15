@@ -9,6 +9,8 @@ import com.walmartlabs.concord.runtime.v2.sdk.Variables;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -17,7 +19,6 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 
-import static ca.ibodrov.mica.common.HttpClientUtils.parseResponseAsJson;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -67,5 +68,19 @@ public class MicaTask implements Task {
         return HttpRequest.newBuilder()
                 .uri(baseUri.resolve(path))
                 .header("X-Concord-SessionToken", sessionToken);
+    }
+
+    private static <T> T parseResponseAsJson(ObjectMapper objectMapper,
+                                             HttpResponse<InputStream> response,
+                                             Class<T> type)
+            throws IOException {
+        if (response.headers().firstValue("Content-Type")
+                .filter(contentType -> contentType.toLowerCase().contains("json"))
+                .isEmpty()) {
+            throw new RuntimeException("Not a JSON response, status code: " + response.statusCode());
+        }
+        try (var responseBody = response.body()) {
+            return objectMapper.readValue(responseBody, type);
+        }
     }
 }

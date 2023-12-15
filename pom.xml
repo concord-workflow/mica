@@ -34,13 +34,11 @@
     <modules>
         <module>integration-tests</module>
         <module>mica-api</module>
-        <module>mica-common</module>
         <module>mica-concord-server-plugin</module>
         <module>mica-concord-task</module>
         <module>mica-db</module>
         <module>mica-schema</module>
         <module>mica-ui</module>
-        <module>test-support</module>
         <module>docker</module>
     </modules>
 

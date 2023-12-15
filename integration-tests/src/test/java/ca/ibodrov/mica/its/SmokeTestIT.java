@@ -2,7 +2,6 @@ package ca.ibodrov.mica.its;
 
 import ca.ibodrov.mica.api.client.MicaApiClient;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.testing.TestData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.inject.Key;
