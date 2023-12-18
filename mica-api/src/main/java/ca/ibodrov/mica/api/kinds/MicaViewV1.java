@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.validation.constraints.NotNull;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,16 +23,21 @@ public record MicaViewV1(@ValidName String name,
     public static final String MICA_VIEW_V1 = "/mica/view/v1";
 
     public MicaViewV1 {
-        requireNonNull(name);
-        requireNonNull(selector);
-        requireNonNull(data);
-        requireNonNull(parameters);
+        requireNonNull(name, "missing 'name'");
+        requireNonNull(selector, "missing 'selector'");
+        requireNonNull(data, "missing 'data'");
+        requireNonNull(parameters, "missing 'parameters'");
     }
 
-    public record Selector(@ValidName String entityKind) implements ViewLike.Selector {
+    public record Selector(@ValidName String entityKind,
+            @NotNull Optional<List<String>> namePatterns) implements ViewLike.Selector {
 
         public static Selector byEntityKind(String entityKind) {
-            return new Selector(entityKind);
+            return new Selector(entityKind, Optional.empty());
+        }
+
+        public Selector withNamePatterns(List<String> namePatterns) {
+            return new Selector(this.entityKind, Optional.of(namePatterns));
         }
     }
 
@@ -43,9 +49,13 @@ public record MicaViewV1(@ValidName String name,
         public static Data jsonPath(String jsonPath) {
             return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty());
         }
+
+        public Data withMerge() {
+            return new Data(this.jsonPath, this.jsonPatch, this.flatten, Optional.of(true));
+        }
     }
 
-    public PartialEntity asPartialEntity(ObjectMapper objectMapper) {
+    public PartialEntity toPartialEntity(ObjectMapper objectMapper) {
         var props = new HashMap<String, JsonNode>();
         this.parameters.ifPresent(stringObjectSchemaNodeMap -> props.put("parameters",
                 objectMapper.convertValue(stringObjectSchemaNodeMap, JsonNode.class)));

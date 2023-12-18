@@ -5,17 +5,17 @@ import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.schema.ValueType;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
+import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
+import static ca.ibodrov.mica.api.kinds.MicaKindV1.SCHEMA_PROPERTY;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
 import static ca.ibodrov.mica.schema.ValueType.OBJECT;
@@ -23,11 +23,11 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 
 public final class BuiltinSchemas {
 
+    private static final TypeReference<List<String>> LIST_OF_STRINGS = new TypeReference<>() {
+    };
+
     public static final String MICA_OBJECT_SCHEMA_NODE_V1 = "/mica/objectSchemaNode/v1";
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
-    public static final String MICA_KIND_V1 = "/mica/kind/v1";
-
-    public static final String MICA_KIND_SCHEMA_PROPERTY = "schema";
 
     private final ObjectSchemaNode objectSchemaNodeSchema;
     private final ObjectSchemaNode micaRecordV1Schema;
@@ -60,8 +60,8 @@ public final class BuiltinSchemas {
                 "id", string(),
                 "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
                 "name", string(),
-                MICA_KIND_SCHEMA_PROPERTY, objectSchemaNodeSchema),
-                Set.of("kind", "name", MICA_KIND_SCHEMA_PROPERTY));
+                SCHEMA_PROPERTY, objectSchemaNodeSchema),
+                Set.of("kind", "name", SCHEMA_PROPERTY));
 
         var viewSelector = object(Map.of("entityKind", string()), Set.of("entityKind"));
         var viewData = object(Map.of(
@@ -129,7 +129,7 @@ public final class BuiltinSchemas {
         var parameters = Optional.ofNullable(entity.data().get("parameters"))
                 .map(object -> parseParameters(objectMapper, object));
 
-        var selector = asViewLikeSelector(entity);
+        var selector = asViewLikeSelector(objectMapper, entity);
 
         var data = asViewLikeData(entity);
 
@@ -156,31 +156,40 @@ public final class BuiltinSchemas {
         };
     }
 
-    private static ViewLike.Selector asViewLikeSelector(EntityLike entity) {
-        var selectorEntityKind = select(entity, "selector", "entityKind", JsonNode::asText)
+    private static ViewLike.Selector asViewLikeSelector(ObjectMapper objectMapper, EntityLike entity) {
+        var entityKind = select(entity, "selector", "entityKind", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));
-        return () -> selectorEntityKind;
+
+        var namePatterns = select(entity, "selector", "namePatterns",
+                n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
+
+        return new ViewLike.Selector() {
+            @Override
+            public String entityKind() {
+                return entityKind;
+            }
+
+            @Override
+            public Optional<List<String>> namePatterns() {
+                return namePatterns;
+            }
+        };
     }
 
     private static ViewLike.Data asViewLikeData(EntityLike entity) {
-        var dataJsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
+        var jsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
-
-        var dataJsonPatch = select(entity, "data", "jsonPatch", Function.identity());
 
         var flatten = select(entity, "data", "flatten", JsonNode::asBoolean);
 
         var merge = select(entity, "data", "merge", JsonNode::asBoolean);
 
+        var jsonPatch = select(entity, "data", "jsonPatch", Function.identity());
+
         return new ViewLike.Data() {
             @Override
             public String jsonPath() {
-                return dataJsonPath;
-            }
-
-            @Override
-            public Optional<JsonNode> jsonPatch() {
-                return dataJsonPatch;
+                return jsonPath;
             }
 
             @Override
@@ -191,6 +200,11 @@ public final class BuiltinSchemas {
             @Override
             public Optional<Boolean> merge() {
                 return merge;
+            }
+
+            @Override
+            public Optional<JsonNode> jsonPatch() {
+                return jsonPatch;
             }
         };
     }

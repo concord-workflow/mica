@@ -47,7 +47,7 @@ public class EntityUploadResource implements Resource {
     @Operation(summary = "Upload an entity in YAML format", operationId = "putYaml")
     public EntityVersion putYaml(InputStream in) {
         // assume the name is present in the document
-        return putPartialYaml(null, null, in);
+        return putPartialYaml(null, null, false, in);
     }
 
     @PUT
@@ -56,6 +56,7 @@ public class EntityUploadResource implements Resource {
     @Operation(summary = "Upload a partial entity in YAML format", description = "Upload a (possibly) partial entity in YAML format with 'name' or 'kind' overrides", operationId = "putPartialYaml")
     public EntityVersion putPartialYaml(@Nullable @QueryParam("entityName") String entityName,
                                         @Nullable @QueryParam("entityKind") String entityKind,
+                                        @QueryParam("replace") @DefaultValue("false") boolean replace,
                                         InputStream in) {
         // TODO validate entityName
         PartialEntity entity;
@@ -72,6 +73,10 @@ public class EntityUploadResource implements Resource {
             throw ApiException.badRequest("Error parsing YAML: " + e.getMessage());
         }
         assertValid(entity);
+        // TODO single transaction
+        if (replace) {
+            controller.deleteIfExists(entity.name());
+        }
         return controller.createOrUpdate(entity);
     }
 

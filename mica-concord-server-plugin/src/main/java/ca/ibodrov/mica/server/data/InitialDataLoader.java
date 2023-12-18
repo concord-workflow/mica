@@ -5,7 +5,6 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -16,8 +15,8 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
 
+import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
-import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_V1;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_RECORD_V1;
 import static java.util.Objects.requireNonNull;
 
@@ -81,7 +80,7 @@ public class InitialDataLoader {
     }
 
     private PartialEntity build(MicaViewV1.Builder builder) {
-        return builder.build().asPartialEntity(objectMapper);
+        return builder.build().toPartialEntity(objectMapper);
     }
 
     private PartialEntity record(String name, JsonNode data) {

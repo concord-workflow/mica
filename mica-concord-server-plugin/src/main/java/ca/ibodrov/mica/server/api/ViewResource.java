@@ -1,12 +1,10 @@
 package ca.ibodrov.mica.server.api;
 
-import ca.ibodrov.mica.api.model.EntityId;
-import ca.ibodrov.mica.api.model.EntityLike;
-import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.data.BuiltinSchemas;
 import ca.ibodrov.mica.server.data.EntityStore;
-import ca.ibodrov.mica.server.data.ViewProcessor;
+import ca.ibodrov.mica.server.data.ViewRenderer;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +20,9 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import static ca.ibodrov.mica.server.data.ViewRenderer.interpolate;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -36,7 +36,7 @@ public class ViewResource implements Resource {
     private final EntityStore entityStore;
     private final ObjectMapper objectMapper;
     private final DSLContext dsl;
-    private final ViewProcessor viewProcessor;
+    private final ViewRenderer viewRenderer;
 
     @Inject
     public ViewResource(EntityStore entityStore,
@@ -46,7 +46,7 @@ public class ViewResource implements Resource {
         this.entityStore = requireNonNull(entityStore);
         this.objectMapper = requireNonNull(objectMapper);
         this.dsl = requireNonNull(dsl);
-        this.viewProcessor = new ViewProcessor(objectMapper);
+        this.viewRenderer = new ViewRenderer(objectMapper);
     }
 
     @POST
@@ -56,8 +56,8 @@ public class ViewResource implements Resource {
     public PartialEntity render(@Valid RenderRequest request) {
         var view = BuiltinSchemas.asViewLike(objectMapper, assertViewEntity(request));
         var parameters = request.parameters().orElseGet(Map::of);
-        var entities = entityStore.getAllByKind(view.selector().entityKind(), request.limit()).stream();
-        var renderedView = viewProcessor.render(view, parameters, entities);
+        var entities = fetch(view, parameters, request.limit());
+        var renderedView = viewRenderer.render(view, parameters, entities);
         return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class));
     }
 
@@ -76,9 +76,9 @@ public class ViewResource implements Resource {
     @Operation(summary = "Preview a view", operationId = "preview")
     public PartialEntity preview(@Valid PreviewRequest request) {
         var view = BuiltinSchemas.asViewLike(objectMapper, request.view());
-        var entities = entityStore.getAllByKind(view.selector().entityKind(), request.limit).stream();
         var parameters = request.parameters().orElseGet(Map::of);
-        var renderedView = viewProcessor.render(view, parameters, entities);
+        var entities = fetch(view, parameters, request.limit());
+        var renderedView = viewRenderer.render(view, parameters, entities);
         return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class));
     }
 
@@ -89,8 +89,8 @@ public class ViewResource implements Resource {
     public PartialEntity materialize(@Valid RenderRequest request) {
         var view = BuiltinSchemas.asViewLike(objectMapper, assertViewEntity(request));
         var parameters = request.parameters().orElseGet(Map::of);
-        var entities = entityStore.getAllByKind(view.selector().entityKind(), request.limit()).stream();
-        var renderedView = viewProcessor.render(view, parameters, entities);
+        var entities = fetch(view, parameters, request.limit());
+        var renderedView = viewRenderer.render(view, parameters, entities);
         // TODO optimistic locking
         return dsl.transactionResult(tx -> {
             var data = renderedView.data().stream().map(row -> {
@@ -101,6 +101,29 @@ public class ViewResource implements Resource {
             });
             return toEntity(view.name(), objectMapper.convertValue(data, JsonNode.class));
         });
+    }
+
+    private Stream<Entity> fetch(ViewLike view, Map<String, JsonNode> parameters, int limit) {
+        // grab all entities matching the selector's entity kind
+        var entities = entityStore.getAllByKind(view.selector().entityKind(), limit);
+
+        // if namePatterns are specified, filter the entities and return them in the
+        // order of the patterns
+        var result = entities.stream();
+        if (view.selector().namePatterns().isPresent()) {
+            // interpolate patterns, ignore any unknown variables
+            var patterns = view.selector().namePatterns().get().stream()
+                    .map(p -> interpolate(p, parameters, false)
+                            .replace("$", "\\$")
+                            .replace("{", "\\{"))
+                    .toList();
+            result = Stream.empty();
+            for (var pattern : patterns) {
+                result = Stream.concat(result, entities.stream().filter(e -> e.name().matches(pattern)));
+            }
+        }
+
+        return result;
     }
 
     private EntityLike assertViewEntity(@Valid RenderRequest request) {
@@ -126,8 +149,16 @@ public class ViewResource implements Resource {
 
     public record RenderRequest(Optional<EntityId> viewId,
             Optional<String> viewName,
-            int limit,
+            int limit, // TODO limit is not very useful right now
             Optional<Map<String, JsonNode>> parameters) {
+
+        public static RenderRequest of(String viewName, int limit) {
+            return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.empty());
+        }
+
+        public static RenderRequest parameterized(String viewName, Map<String, JsonNode> parameters, int limit) {
+            return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.of(parameters));
+        }
     }
 
     public record PreviewRequest(@NotNull PartialEntity view, int limit, Optional<Map<String, JsonNode>> parameters) {

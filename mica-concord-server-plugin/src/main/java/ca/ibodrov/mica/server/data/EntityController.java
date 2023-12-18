@@ -57,6 +57,10 @@ public class EntityController {
                 .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
     }
 
+    public void deleteIfExists(String name) {
+        entityStore.getIdByName(name).ifPresent(entityStore::deleteById);
+    }
+
     private String validateKind(String kind) {
         if (kind == null || kind.isBlank()) {
             throw ApiException.badRequest("Missing 'kind'");

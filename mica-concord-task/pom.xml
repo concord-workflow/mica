@@ -18,11 +18,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>ca.ibodrov.mica</groupId>
-            <artifactId>mica-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.walmartlabs.concord.runtime.v2</groupId>
             <artifactId>concord-runtime-sdk-v2</artifactId>
             <scope>provided</scope>

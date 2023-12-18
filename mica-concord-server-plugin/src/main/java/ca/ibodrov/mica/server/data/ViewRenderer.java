@@ -22,12 +22,12 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public class ViewProcessor {
+public class ViewRenderer {
 
     private final ObjectMapper objectMapper;
     private final ParseContext parseContext;
 
-    public ViewProcessor(ObjectMapper objectMapper) {
+    public ViewRenderer(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
 
         this.parseContext = JsonPath.using(Configuration.builder()
@@ -69,7 +69,11 @@ public class ViewProcessor {
 
         // interpolate JSON path using the supplied parameters
         var jsonPath = requireNonNull(view.data().jsonPath());
-        var effectiveJsonPath = interpolate(jsonPath, parameters);
+        var effectiveJsonPath = interpolate(jsonPath, parameters, true);
+        // TODO might not be enough
+        if (effectiveJsonPath.matches(".*\\$[a-zA-Z_]+.*")) {
+            throw new ViewProcessorException("Unresolved parameters in JSON path: " + effectiveJsonPath);
+        }
 
         // apply JSON path
         var data = entities
@@ -164,26 +168,30 @@ public class ViewProcessor {
         return left;
     }
 
-    private static String interpolate(String s, Map<String, JsonNode> parameters) {
-        if (!parameters.isEmpty()) {
-            for (var e : parameters.entrySet()) {
-                var key = "$" + e.getKey();
+    public static String interpolate(String s, Map<String, JsonNode> parameters, boolean quote) {
+        if (parameters.isEmpty()) {
+            return s;
+        }
+
+        for (var e : parameters.entrySet()) {
+            var key = "$" + e.getKey();
+            if (!s.contains(key)) {
+                key = "${" + e.getKey() + "}";
                 if (!s.contains(key)) {
                     continue;
                 }
+            }
 
-                var value = e.getValue();
-                if (value.isTextual()) {
+            var value = e.getValue();
+            if (value.isTextual()) {
+                if (quote) {
                     s = s.replace(key, "'" + value.asText() + "'");
                 } else {
-                    s = s.replace(key, value.asText("unknown"));
+                    s = s.replace(key, value.asText());
                 }
+            } else {
+                s = s.replace(key, value.asText("unknown"));
             }
-        }
-
-        // TODO might not be enough
-        if (s.matches(".*\\$[a-zA-Z_]+.*")) {
-            throw new ViewProcessorException("Unresolved parameters in JSON path: " + s);
         }
 
         return s;

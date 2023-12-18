@@ -9,8 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.inject.Inject;
 import java.util.Optional;
 
+import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
+import static ca.ibodrov.mica.api.kinds.MicaKindV1.SCHEMA_PROPERTY;
 import static ca.ibodrov.mica.schema.ValueType.OBJECT;
-import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_KIND_SCHEMA_PROPERTY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -33,7 +34,7 @@ public class EntityKindStore {
     }
 
     public boolean isKindExists(String kind) {
-        return entityStore.isNameAndKindExists(kind, BuiltinSchemas.MICA_KIND_V1);
+        return entityStore.isNameAndKindExists(kind, MICA_KIND_V1);
     }
 
     public Optional<ObjectSchemaNode> getSchemaForKind(String kind) {
@@ -41,15 +42,15 @@ public class EntityKindStore {
         return builtinSchemas.get(kind)
                 .or(() -> entityStore.getByName(kind)
                         .map(EntityKindStore::assertKind)
-                        .flatMap(e -> Optional.ofNullable(e.getProperty(MICA_KIND_SCHEMA_PROPERTY)))
+                        .flatMap(e -> Optional.ofNullable(e.getProperty(SCHEMA_PROPERTY)))
                         .map(v -> objectMapper.convertValue(v, ObjectSchemaNode.class))
                         .map(EntityKindStore::sanityCheck));
     }
 
     private static <T extends EntityLike> T assertKind(T entity) {
-        if (!BuiltinSchemas.MICA_KIND_V1.equals(entity.kind())) {
+        if (!MICA_KIND_V1.equals(entity.kind())) {
             throw new StoreException("Expected a %s entity, got something else. Entity '%s' is a %s"
-                    .formatted(BuiltinSchemas.MICA_KIND_V1, entity.name(), entity.kind()));
+                    .formatted(MICA_KIND_V1, entity.name(), entity.kind()));
         }
         return entity;
     }

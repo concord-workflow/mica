@@ -176,6 +176,17 @@ curl 'http://localhost:8080/api/mica/v1/view/render/ActiveClients'
 }
 ```
 
+When a view is "rendered", first the `selector` is applied to find entities to
+return. Currently, the following selectors are supported:
+- `entityKind` -- selects entities of a given kind. Mandatory value, must be a
+  path to a `/mica/kind/v1` entity, e.g. `/mica/record/v1`;
+- `namePatterns` -- optional list of regular expressions to match entity names
+  against. If not specified, all entities of the given kind are selected.
+
+When `namePatterns` is specified, the view returns entities in the order in
+which they match the patterns. The entities that match the first pattern will
+be grouped first, then the entities that match the second pattern, and so on. 
+
 The `data` object is a JSON array where each element corresponds to a selected
 entity.
 

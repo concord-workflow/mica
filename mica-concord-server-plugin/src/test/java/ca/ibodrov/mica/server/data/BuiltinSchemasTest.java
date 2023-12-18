@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
+import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
+import static ca.ibodrov.mica.api.kinds.MicaKindV1.SCHEMA_PROPERTY;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
-import static ca.ibodrov.mica.server.data.BuiltinSchemas.*;
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class BuiltinSchemasTest {
@@ -53,8 +55,8 @@ public class BuiltinSchemasTest {
                 "id", string(),
                 "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
                 "name", string(),
-                MICA_KIND_SCHEMA_PROPERTY, any()),
-                Set.of("kind", "name", MICA_KIND_SCHEMA_PROPERTY));
+                SCHEMA_PROPERTY, any()),
+                Set.of("kind", "name", SCHEMA_PROPERTY));
 
         var newSchema = builtinSchemas.getMicaKindV1Schema();
 

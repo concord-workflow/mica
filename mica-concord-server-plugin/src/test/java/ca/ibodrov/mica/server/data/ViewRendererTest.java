@@ -17,12 +17,12 @@ import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class ViewProcessorTest {
+public class ViewRendererTest {
 
     private static final ObjectMapper yamlMapper = new ObjectMapperProvider().get()
             .copyWith(new YAMLFactory());
 
-    private static final ViewProcessor processor = new ViewProcessor(yamlMapper);
+    private static final ViewRenderer renderer = new ViewRenderer(yamlMapper);
 
     @Test
     public void simpleExample() {
@@ -48,7 +48,7 @@ public class ViewProcessorTest {
                 data: Some data from B
                 """);
 
-        var result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals("Some data from A", result.data().get(0).asText());
         assertEquals("Some data from B", result.data().get(1).asText());
@@ -86,7 +86,7 @@ public class ViewProcessorTest {
                   jsonPath: $.clients[*].['name', 'id', 'validationUrl']
                 """);
 
-        var result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(2, result.data().size());
 
@@ -119,7 +119,7 @@ public class ViewProcessorTest {
                   flatten: true
                 """);
 
-        result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
+        result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(4, result.data().size());
 
@@ -177,7 +177,7 @@ public class ViewProcessorTest {
                   flatten: true
                 """);
 
-        var result = processor.render(view, Map.of("clientId", IntNode.valueOf(1)),
+        var result = renderer.render(view, Map.of("clientId", IntNode.valueOf(1)),
                 Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());
@@ -221,7 +221,7 @@ public class ViewProcessorTest {
                   merge: true
                 """);
 
-        var result = processor.render(view, Map.of(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());
 
@@ -269,7 +269,7 @@ public class ViewProcessorTest {
                         name: Blamf
                 """);
 
-        var result = processor.render(view, Map.of(), Stream.of(entity));
+        var result = renderer.render(view, Map.of(), Stream.of(entity));
         assertNotNull(result);
         assertEquals(1, result.data().size());
         assertEquals("Blamf", result.data().get(0).get("widgets").get(3).get("name").asText());
@@ -300,7 +300,7 @@ public class ViewProcessorTest {
                   jsonPath: $
                 """);
 
-        var result = processor.render(view, Map.of(), Stream.of(foo, bar));
+        var result = renderer.render(view, Map.of(), Stream.of(foo, bar));
         assertEquals(2, result.data().size());
         assertEquals("88eccc0c-99e1-11ee-b9d1-0242ac120002", result.data().get(0).get("id").asText());
     }
