@@ -447,6 +447,50 @@ public class ValidatorTest {
         assertEquals("/properties/foo", properties.get("fields").value().orElseThrow().get(0).get("$ref").asText());
     }
 
+    @Test
+    public void failOnObjectRefTooDeep() {
+        var schema = parseYaml(ObjectSchemaNode.class, """
+                $ref: "#/schemas/foo"
+                """);
+
+        var result = new Validator(id -> Optional.of(schema))
+                .validateObject(schema, toJsonNode(Map.of()));
+        assertFalse(result.isValid());
+        assertEquals(ValidationError.Kind.INVALID_SCHEMA, result.error().orElseThrow().kind());
+        assertTrue(result.error().orElseThrow().metadata().get("details").asText().contains("too deep"));
+    }
+
+    @Test
+    public void failOnPropertyRefTooDeep() {
+        var schemaFoo = parseYaml(ObjectSchemaNode.class, """
+                properties:
+                  bar:
+                    $ref: "bar"
+                """);
+
+        var schemaBar = parseYaml(ObjectSchemaNode.class, """
+                $ref: "baz"
+                """);
+
+        var schemaBaz = parseYaml(ObjectSchemaNode.class, """
+                $ref: "bar"
+                """);
+
+        var validator = new Validator(id -> switch (id) {
+            case "foo" -> Optional.of(schemaFoo);
+            case "bar" -> Optional.of(schemaBar);
+            case "baz" -> Optional.of(schemaBaz);
+            default -> Optional.empty();
+        });
+
+        var result = validator.validateObject(schemaFoo, toJsonNode(Map.of()));
+        assertFalse(result.isValid());
+        assertEquals(ValidationError.Kind.INVALID_SCHEMA,
+                result.properties().orElseThrow().get("bar").error().orElseThrow().kind());
+        assertTrue(result.properties().get().get("bar").error().orElseThrow().metadata().get("details").asText()
+                .contains("too deep"));
+    }
+
     private static void assertInvalidProperty(ValidatedProperty property, String key) {
         var properties = property.properties().orElseGet(Map::of);
         assertTrue(properties.containsKey(key));

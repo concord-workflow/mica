@@ -27,6 +27,16 @@ import static ca.ibodrov.mica.schema.ValueType.*;
  */
 public class Validator {
 
+    /**
+     * Maximum depth of nested $ref references.
+     */
+    private static final int MAX_REF_DEPTH = 32;
+
+    /**
+     * Maximum depth of "nested" properties.
+     */
+    private static final int MAX_PROPERTY_DEPTH = 256;
+
     private final Function<String, Optional<ObjectSchemaNode>> schemaResolver;
 
     public Validator() {
@@ -48,9 +58,21 @@ public class Validator {
      * @return validated data.
      */
     public ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {
+        return validateObject(property, input, 0);
+    }
+
+    private ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input, int depth) {
         if (!input.isObject()) {
             return invalidType(OBJECT, input);
         }
+
+        var propertyOrError = resolveRef("$", property);
+        if (propertyOrError.error.isPresent()) {
+            return propertyOrError.error.get();
+        }
+
+        assert propertyOrError.value.isPresent();
+        property = propertyOrError.value.get();
 
         // validate the enum value
         var enums = property.enumeratedValues();
@@ -65,12 +87,13 @@ public class Validator {
         // check "properties"
         var validatedProperties = new HashMap<String, ValidatedProperty>();
         var properties = property.properties().orElseGet(Map::of);
+        var requiredProperties = property.required();
         properties.forEach((key, prop) -> {
             unknownInputKeys.remove(key);
 
-            var required = property.required().map(props -> props.contains(key)).orElse(false);
+            var required = requiredProperties.map(props -> props.contains(key)).orElse(false);
             var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
-            var validatedProp = validateProperty(key, prop, required, value);
+            var validatedProp = validateProperty(key, prop, required, value, depth + 1);
             validatedProperties.put(key, validatedProp);
         });
 
@@ -90,7 +113,7 @@ public class Validator {
                 var validatedAdditionalProperties = new HashMap<String, ValidatedProperty>();
                 unknownInputKeys.forEach(key -> {
                     var value = Optional.ofNullable(input.get(key)).orElse(NullNode.getInstance());
-                    var validatedProp = validateProperty(key, schema, false, value);
+                    var validatedProp = validateProperty(key, schema, false, value, depth + 1);
                     validatedAdditionalProperties.put(key, validatedProp);
                 });
                 validatedProperties.putAll(validatedAdditionalProperties);
@@ -110,22 +133,20 @@ public class Validator {
     private ValidatedProperty validateProperty(String name,
                                                ObjectSchemaNode property,
                                                boolean required,
-                                               JsonNode input) {
+                                               JsonNode input,
+                                               int depth) {
 
-        // follow the $ref until all references are resolved
-        while (true) {
-            var ref = property.ref();
-            if (ref.isEmpty()) {
-                break;
-            }
-
-            var schema = ref.flatMap(schemaResolver);
-            if (schema.isEmpty()) {
-                return invalidSchema("Schema not found, $ref: " + ref);
-            }
-
-            property = schema.get();
+        if (depth > MAX_PROPERTY_DEPTH) {
+            return invalidSchema("Invalid property '%s': too deep (max depth %s)".formatted(name, MAX_PROPERTY_DEPTH));
         }
+
+        var propertyOrError = resolveRef(name, property);
+        if (propertyOrError.error.isPresent()) {
+            return propertyOrError.error.get();
+        }
+
+        assert propertyOrError.value.isPresent();
+        property = propertyOrError.value.get();
 
         // looks ugly
         Optional<ValueType> firstEnumValueType = Optional.empty();
@@ -159,16 +180,39 @@ public class Validator {
 
         return switch (type) {
             case ANY -> validateAny(property, input);
-            case ARRAY -> validateArray(property, input);
+            case ARRAY -> validateArray(property, input, depth);
             case BOOLEAN -> validateBoolean(property, input);
             case NUMBER -> validateNumber(property, input);
-            case OBJECT -> validateObject(property, input);
+            case OBJECT -> validateObject(property, input, depth);
             case STRING -> validateString(property, input);
             case NULL -> validateNull(property, input);
         };
     }
 
-    private ValidatedProperty validateArray(ObjectSchemaNode property, JsonNode input) {
+    private Result<ObjectSchemaNode, ValidatedProperty> resolveRef(String name, ObjectSchemaNode property) {
+        // follow the $ref until all references are resolved
+        var refDepth = 0;
+        while (true) {
+            if (refDepth++ > MAX_REF_DEPTH) {
+                return Result.error(
+                        invalidSchema("Invalid $ref in '%s': too deep (max depth %s)".formatted(name, MAX_REF_DEPTH)));
+            }
+
+            var ref = property.ref();
+            if (ref.isEmpty()) {
+                return Result.ok(property);
+            }
+
+            var schema = ref.flatMap(schemaResolver);
+            if (schema.isEmpty()) {
+                return Result.error(invalidSchema("Schema not found, $ref: " + ref));
+            }
+
+            property = schema.get();
+        }
+    }
+
+    private ValidatedProperty validateArray(ObjectSchemaNode property, JsonNode input, int depth) {
         if (!input.isArray()) {
             return invalidType(ARRAY, input);
         }
@@ -189,7 +233,7 @@ public class Validator {
         var itemSchema = maybeItems.get();
         for (int i = 0; i < input.size(); i++) {
             var propertyKey = String.valueOf(i);
-            var validatedItem = validateProperty(propertyKey, itemSchema, false, input.get(i));
+            var validatedItem = validateProperty(propertyKey, itemSchema, false, input.get(i), depth + 1);
             validatedItems.put(propertyKey, validatedItem);
         }
 
@@ -272,5 +316,15 @@ public class Validator {
                 .findFirst()
                 .map(ValidatedProperty::valid)
                 .orElseGet(() -> ValidatedProperty.unexpectedValue(expectedType, firstExpectedValue, input));
+    }
+
+    record Result<V, E>(Optional<V> value, Optional<E> error) {
+        static <V, E> Result<V, E> ok(V value) {
+            return new Result<>(Optional.of(value), Optional.empty());
+        }
+
+        static <V, E> Result<V, E> error(E error) {
+            return new Result<>(Optional.empty(), Optional.of(error));
+        }
     }
 }
