@@ -3,8 +3,10 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.InvalidJsonPatchException;
 import com.flipkart.zjsonpatch.JsonPatch;
@@ -154,18 +156,16 @@ public class ViewRenderer {
     }
 
     private ObjectNode deepMerge(ObjectNode left, ObjectNode right) {
-        right.fieldNames().forEachRemaining(rightKey -> {
-            var leftValue = left.get(rightKey);
-            var rightValue = right.get(rightKey);
+        var mapper = objectMapper.copy();
 
-            var result = rightValue;
-            if (leftValue instanceof ObjectNode leftObject && rightValue instanceof ObjectNode rightObject) {
-                result = deepMerge(leftObject, rightObject);
-            }
+        mapper.configOverride(ArrayNode.class)
+                .setMergeable(false);
 
-            left.set(rightKey, result);
-        });
-        return left;
+        try {
+            return mapper.updateValue(left, right);
+        } catch (JsonProcessingException e) {
+            throw new ViewProcessorException("Error while merging JSON objects: " + e.getMessage());
+        }
     }
 
     public static String interpolate(String s, Map<String, JsonNode> parameters, boolean quote) {
