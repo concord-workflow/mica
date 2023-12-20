@@ -32,6 +32,7 @@ import {
     TableHead,
     TableRow,
     Tooltip,
+    Typography,
 } from '@mui/material';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
@@ -324,7 +325,9 @@ const EntityListPage = () => {
                         {data && data.length < 1 && (
                             <TableRow>
                                 <TableCell colSpan={3} align="center">
-                                    No data
+                                    <Typography variant="caption">
+                                        {isFetching ? 'Loading...' : 'No data'}
+                                    </Typography>
                                 </TableCell>
                             </TableRow>
                         )}
