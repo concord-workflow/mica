@@ -27,11 +27,6 @@ public record ValidatedProperty(Optional<JsonNode> value,
         return new ValidatedProperty(Optional.empty(), Optional.of(error), Optional.empty());
     }
 
-    public static ValidatedProperty unexpectedType(ValueType unexpectedType) {
-        return invalid(
-                new ValidationError(INVALID_SCHEMA, Map.of("unexpectedType", TextNode.valueOf(unexpectedType.key()))));
-    }
-
     public static ValidatedProperty unexpectedValue(ValueType expectedType,
                                                     JsonNode expectedValue,
                                                     JsonNode actualValue) {

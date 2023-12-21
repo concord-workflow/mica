@@ -70,6 +70,7 @@ public final class BuiltinSchemas {
                 "flatten", bool(),
                 "merge", bool()),
                 Set.of("jsonPath"));
+        var viewValidation = object(Map.of("asEntityKind", string()), Set.of("asEntityKind"));
 
         this.micaViewV1Schema = object(Map.of(
                 "id", string(),
@@ -77,8 +78,10 @@ public final class BuiltinSchemas {
                 "name", string(),
                 "parameters", object(),
                 "selector", viewSelector,
-                "data", viewData),
+                "data", viewData,
+                "validation", viewValidation),
                 Set.of("kind", "name", "selector", "data"));
+        // TODO disallow other properties
     }
 
     /**
@@ -133,6 +136,8 @@ public final class BuiltinSchemas {
 
         var data = asViewLikeData(entity);
 
+        var validation = asViewLikeValidation(entity);
+
         return new ViewLike() {
             @Override
             public String name() {
@@ -152,6 +157,11 @@ public final class BuiltinSchemas {
             @Override
             public Data data() {
                 return data;
+            }
+
+            @Override
+            public Optional<? extends Validation> validation() {
+                return validation;
             }
         };
     }
@@ -207,6 +217,11 @@ public final class BuiltinSchemas {
                 return jsonPatch;
             }
         };
+    }
+
+    private static Optional<ViewLike.Validation> asViewLikeValidation(EntityLike entity) {
+        var entityKind = select(entity, "validation", "asEntityKind", JsonNode::asText);
+        return entityKind.map(v -> () -> v);
     }
 
     private static Map<String, ObjectSchemaNode> parseParameters(ObjectMapper objectMapper, JsonNode parameters) {

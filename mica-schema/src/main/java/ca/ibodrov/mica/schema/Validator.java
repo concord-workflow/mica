@@ -47,21 +47,29 @@ public class Validator {
         this.schemaResolver = schemaResolver;
     }
 
+    public ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {
+        return validateObject(property, input, Set.of(), 0);
+    }
+
     /**
      * Validates input against the given schema. Returns a {@link ValidatedProperty}
      * instance that contains all schema fields and their validation results.
      * Additional properties are returned only if their types or values are
      * validated.
      *
-     * @param property the schema
-     * @param input    input data
+     * @param property         the schema
+     * @param input            input data
+     * @param ignoreProperties a set of property names to ignore
      * @return validated data.
      */
-    public ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input) {
-        return validateObject(property, input, 0);
+    public ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input, Set<String> ignoreProperties) {
+        return validateObject(property, input, ignoreProperties, 0);
     }
 
-    private ValidatedProperty validateObject(ObjectSchemaNode property, JsonNode input, int depth) {
+    private ValidatedProperty validateObject(ObjectSchemaNode property,
+                                             JsonNode input,
+                                             Set<String> ignoreProperties,
+                                             int depth) {
         if (!input.isObject()) {
             return invalidType(OBJECT, input);
         }
@@ -82,7 +90,11 @@ public class Validator {
 
         // track any unknown properties in the input object
         var unknownInputKeys = new HashSet<String>(input.size());
-        input.fieldNames().forEachRemaining(unknownInputKeys::add);
+        input.fieldNames().forEachRemaining(key -> {
+            if (!ignoreProperties.contains(key)) {
+                unknownInputKeys.add(key);
+            }
+        });
 
         // check "properties"
         var validatedProperties = new HashMap<String, ValidatedProperty>();
@@ -183,7 +195,7 @@ public class Validator {
             case ARRAY -> validateArray(property, input, depth);
             case BOOLEAN -> validateBoolean(property, input);
             case NUMBER -> validateNumber(property, input);
-            case OBJECT -> validateObject(property, input, depth);
+            case OBJECT -> validateObject(property, input, Set.of(), depth);
             case STRING -> validateString(property, input);
             case NULL -> validateNull(property, input);
         };

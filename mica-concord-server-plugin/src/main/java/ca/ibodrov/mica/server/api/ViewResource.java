@@ -2,13 +2,13 @@ package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.server.data.BuiltinSchemas;
-import ca.ibodrov.mica.server.data.EntityStore;
-import ca.ibodrov.mica.server.data.ViewRenderer;
+import ca.ibodrov.mica.schema.Validator;
+import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jooq.DSLContext;
@@ -20,6 +20,7 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.ViewRenderer.interpolate;
@@ -33,20 +34,30 @@ public class ViewResource implements Resource {
 
     private static final String RESULT_ENTITY_KIND = "MicaMaterializedView/v1";
 
-    private final EntityStore entityStore;
-    private final ObjectMapper objectMapper;
+    /**
+     * Don't validate these properties, they are added by the system.
+     */
+    private static final Set<String> STANDARD_PROPERTIES = Set.of("id", "kind", "name", "createdAt", "updatedAt");
+
     private final DSLContext dsl;
+    private final EntityStore entityStore;
+    private final EntityKindStore entityKindStore;
+    private final ObjectMapper objectMapper;
     private final ViewRenderer viewRenderer;
+    private final Validator validator;
 
     @Inject
-    public ViewResource(EntityStore entityStore,
-                        ObjectMapper objectMapper,
-                        @MicaDB DSLContext dsl) {
+    public ViewResource(@MicaDB DSLContext dsl,
+                        EntityStore entityStore,
+                        EntityKindStore entityKindStore,
+                        ObjectMapper objectMapper) {
 
-        this.entityStore = requireNonNull(entityStore);
-        this.objectMapper = requireNonNull(objectMapper);
         this.dsl = requireNonNull(dsl);
+        this.entityStore = requireNonNull(entityStore);
+        this.entityKindStore = requireNonNull(entityKindStore);
+        this.objectMapper = requireNonNull(objectMapper);
         this.viewRenderer = new ViewRenderer(objectMapper);
+        this.validator = new Validator(entityKindStore::getSchemaForKind);
     }
 
     @POST
@@ -58,7 +69,8 @@ public class ViewResource implements Resource {
         var parameters = request.parameters().orElseGet(Map::of);
         var entities = fetch(view, parameters, request.limit());
         var renderedView = viewRenderer.render(view, parameters, entities);
-        return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class));
+        var validation = validate(view, renderedView);
+        return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
     }
 
     @GET
@@ -79,7 +91,8 @@ public class ViewResource implements Resource {
         var parameters = request.parameters().orElseGet(Map::of);
         var entities = fetch(view, parameters, request.limit());
         var renderedView = viewRenderer.render(view, parameters, entities);
-        return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class));
+        var validation = validate(view, renderedView);
+        return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
     }
 
     @POST
@@ -91,6 +104,7 @@ public class ViewResource implements Resource {
         var parameters = request.parameters().orElseGet(Map::of);
         var entities = fetch(view, parameters, request.limit());
         var renderedView = viewRenderer.render(view, parameters, entities);
+        // TODO validation
         // TODO optimistic locking
         return dsl.transactionResult(tx -> {
             var data = renderedView.data().stream().map(row -> {
@@ -99,7 +113,7 @@ public class ViewResource implements Resource {
                         .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
                 return entity.withVersion(version);
             });
-            return toEntity(view.name(), objectMapper.convertValue(data, JsonNode.class));
+            return toEntity(view.name(), objectMapper.convertValue(data, JsonNode.class), Optional.empty());
         });
     }
 
@@ -126,6 +140,18 @@ public class ViewResource implements Resource {
         return result;
     }
 
+    private Optional<JsonNode> validate(ViewLike view, RenderedView renderedView) {
+        return view.validation().map(v -> {
+            var schema = entityKindStore.getSchemaForKind(v.asEntityKind())
+                    .orElseThrow(() -> ApiException
+                            .badRequest("Can't validate the view, schema not found: " + v.asEntityKind()));
+            var validatedEntities = renderedView.data().stream()
+                    .map(row -> validator.validateObject(schema, row, STANDARD_PROPERTIES))
+                    .toList();
+            return objectMapper.convertValue(validatedEntities, JsonNode.class);
+        });
+    }
+
     private EntityLike assertViewEntity(@Valid RenderRequest request) {
         if (request.viewId().isPresent()) {
             return entityStore.getById(request.viewId().get())
@@ -140,10 +166,11 @@ public class ViewResource implements Resource {
         throw ApiException.badRequest("viewId or viewName is required");
     }
 
-    private PartialEntity toEntity(String name, JsonNode data) {
+    private PartialEntity toEntity(String name, JsonNode data, Optional<JsonNode> validation) {
         return PartialEntity.create(name, RESULT_ENTITY_KIND,
                 Map.of("data", data,
-                        "length", IntNode.valueOf(data.size())));
+                        "length", IntNode.valueOf(data.size()),
+                        "validation", validation.orElseGet(NullNode::getInstance)));
 
     }
 

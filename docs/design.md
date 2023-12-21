@@ -461,23 +461,63 @@ Calling the `migration` endpoints renders and saves the following data:
 }
 ```
 
+## Validate View Entities
+
+_This section is a work in progress._
+
+Mica provides an option to validate the rendered view data as entities.
+Using the example above, the view definition would look like this:
+
+```yaml
+name: /examples/materialize/v1-to-v2
+kind: /mica/view/v1
+selector:
+  entityKind: /examples/materialize/MyRecord/v1
+data:
+  jsonPath: $
+  jsonPatch:
+    - op: add
+      path: /status
+      value: "active"
+    - op: add
+      path: /foo
+      value: "bar"
+    - op: replace
+      path: /kind
+      value: /examples/materialize/MyRecord/v2
+validation:
+  asEntityKind: /examples/materialize/MyRecord/v2
+```
+
+The `validation.asEntityKind` field references a /mica/kind/v1 schema to use
+for validation. The schema is applied to each entity in `data`. Validation
+results are returned in a separate field:
+
+```json
+{
+  "name":"/examples/materialize/v1-to-v2",
+  "kind":"MicaMaterializedView/v1",
+  "length":2,
+  "data": [
+    {...cut...,"validationUrl":"http://foo.example.org","foo":123,"status":"active"},
+    {...cut...,"validationUrl":"http://bar.example.org","foo":123,"status":"active"}
+  ],
+  "validation": [
+    {"error":{"kind":"UNEXPECTED_VALUE","metadata":{"details":"Additional properties are not allowed: [foo]","propertyNames":["foo"]}}},
+    {"error":{"kind":"UNEXPECTED_VALUE","metadata":{"details":"Additional properties are not allowed: [foo]","propertyNames":["foo"]}}}
+  ]
+}
+```
+
+In this example, we changed /examples/materialize/v1-to-v2 to disallow any
+extra properties (by adding `additionalProperties: false`). As the result, the
+validation fails for both entities.
+
 ## Entity Validation
 
 To validate an entity of kind `K`, Mica looks up the `/mica/kind/v1` entity
 with name `K`. An entity cannot be created or updated if the schema is not
 found.
-
-_This section is a work in progress._
-
-When the schema entity is updated, Mica re-validates all entities of that kind.
-If validation fails, the entity is marked as invalid.
-
-The re-validation is a background process which compares the schema's
-`updatedAt` with the entity's `validatedAt`. If the schema is newer, the entity
-is re-validated. If the entity changes in the meantime and its `validatedAt`
-becomes newer than the schema's `updatedAt`, the entity is not re-validated.
-
-Invalid entities are not returned by views unless specified explicitly.
 
 ## Supported JSON Schema Features
 

@@ -15,6 +15,8 @@ public interface ViewLike {
 
     Data data();
 
+    Optional<? extends Validation> validation();
+
     Optional<Map<String, ObjectSchemaNode>> parameters();
 
     interface Selector {
@@ -33,5 +35,10 @@ public interface ViewLike {
         Optional<Boolean> merge();
 
         Optional<JsonNode> jsonPatch();
+    }
+
+    interface Validation {
+
+        String asEntityKind();
     }
 }

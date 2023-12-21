@@ -15,9 +15,14 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * @implNote when adding or removing fields here, make sure to update
+ *           {@link #toPartialEntity(ObjectMapper)}
+ */
 public record MicaViewV1(@ValidName String name,
         @NotNull Selector selector,
         @NotNull Data data,
+        @NotNull Optional<Validation> validation,
         @NotNull Optional<Map<String, ObjectSchemaNode>> parameters) implements ViewLike {
 
     public static final String MICA_VIEW_V1 = "/mica/view/v1";
@@ -26,7 +31,8 @@ public record MicaViewV1(@ValidName String name,
         requireNonNull(name, "missing 'name'");
         requireNonNull(selector, "missing 'selector'");
         requireNonNull(data, "missing 'data'");
-        requireNonNull(parameters, "missing 'parameters'");
+        requireNonNull(validation, "'validation' cannot be null");
+        requireNonNull(parameters, "'parameters' cannot be null");
     }
 
     public record Selector(@ValidName String entityKind,
@@ -55,12 +61,20 @@ public record MicaViewV1(@ValidName String name,
         }
     }
 
+    public record Validation(String asEntityKind) implements ViewLike.Validation {
+
+        public static Validation asEntityKind(String asEntityKind) {
+            return new Validation(asEntityKind);
+        }
+    }
+
     public PartialEntity toPartialEntity(ObjectMapper objectMapper) {
         var props = new HashMap<String, JsonNode>();
         this.parameters.ifPresent(stringObjectSchemaNodeMap -> props.put("parameters",
                 objectMapper.convertValue(stringObjectSchemaNodeMap, JsonNode.class)));
         props.put("selector", objectMapper.convertValue(this.selector, JsonNode.class));
         props.put("data", objectMapper.convertValue(this.data, JsonNode.class));
+        props.put("validation", objectMapper.convertValue(this.validation, JsonNode.class));
         return PartialEntity.create(this.name, MICA_VIEW_V1, props);
     }
 
@@ -69,6 +83,7 @@ public record MicaViewV1(@ValidName String name,
         private String name;
         private Selector selector;
         private Data data;
+        private Optional<Validation> validation = Optional.empty();
         private Optional<Map<String, ObjectSchemaNode>> parameters = Optional.empty();
 
         public Builder name(String name) {
@@ -86,13 +101,18 @@ public record MicaViewV1(@ValidName String name,
             return this;
         }
 
+        public Builder validation(Validation validation) {
+            this.validation = Optional.of(validation);
+            return this;
+        }
+
         public Builder parameters(Map<String, ObjectSchemaNode> parameters) {
             this.parameters = Optional.of(parameters);
             return this;
         }
 
         public MicaViewV1 build() {
-            return new MicaViewV1(name, selector, data, parameters);
+            return new MicaViewV1(name, selector, data, validation, parameters);
         }
     }
 }

@@ -6,6 +6,8 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.api.ViewResource.RenderRequest;
+import ca.ibodrov.mica.server.data.BuiltinSchemas;
+import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -19,6 +21,7 @@ import java.util.Set;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
+import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.string;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -33,7 +36,9 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
-        viewResource = new ViewResource(entityStore, objectMapper, dsl());
+        var builtinSchemas = new BuiltinSchemas(objectMapper);
+        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
+        viewResource = new ViewResource(dsl(), entityStore, entityKindStore, objectMapper);
     }
 
     @Test
@@ -109,5 +114,47 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         assertEquals(1, result.data().get("data").size());
         assertEquals("/second/record", result.data().get("data").get(0).get("name").asText());
         assertEquals(2, result.data().get("data").get(0).get("value").asInt());
+    }
+
+    @Test
+    public void validateViewData() {
+        // create v1 of the schema
+        var recordKindV1 = "/test-kind-v1-" + System.currentTimeMillis();
+        entityStore.upsert(new MicaKindV1.Builder()
+                .name(recordKindV1)
+                .schema(object(Map.of("foo", string()), Set.of("foo")))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // create v2 of the schema in which we replace the "foo" property with "bar"
+        var recordKindV2 = "/test-kind-v2-" + System.currentTimeMillis();
+        entityStore.upsert(new MicaKindV1.Builder()
+                .name(recordKindV2)
+                .schema(object(Map.of("bar", string()), Set.of("bar")))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // create test records
+        entityStore.upsert(PartialEntity.create("/first/record", recordKindV1, Map.of("foo", TextNode.valueOf("1"))));
+        entityStore.upsert(PartialEntity.create("/second/record", recordKindV1, Map.of("foo", TextNode.valueOf("2"))));
+
+        // create view
+        entityStore.upsert(new MicaViewV1.Builder()
+                .name("/test-view-validation")
+                .parameters(Map.of("x", string()))
+                .selector(byEntityKind(recordKindV1))
+                .data(jsonPath("$"))
+                .validation(asEntityKind(recordKindV2))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // we expect the view to return the original data plus the validation errors
+        var result = viewResource.render(RenderRequest.parameterized("/test-view-validation", Map.of(), 10));
+        assertEquals(2, result.data().get("data").size());
+        assertEquals(2, result.data().get("validation").size());
+        assertEquals("MISSING_PROPERTY",
+                result.data().get("validation").get(0).get("properties").get("bar").get("error").get("kind").asText());
+        assertEquals("MISSING_PROPERTY",
+                result.data().get("validation").get(1).get("properties").get("bar").get("error").get("kind").asText());
     }
 }

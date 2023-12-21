@@ -84,51 +84,53 @@ public class ViewRenderer {
                 .flatMap(Optional::stream)
                 .toList();
 
-        if (!data.isEmpty()) {
-            // flatten - convert an array of arrays into a single array
-            var flatten = view.data().flatten().orElse(false);
-            if (flatten && data.stream().allMatch(JsonNode::isArray)) {
-                data = data.stream()
-                        .flatMap(node -> stream(spliteratorUnknownSize(node.elements(), Spliterator.ORDERED), false))
-                        .toList();
+        if (data.isEmpty()) {
+            return new RenderedView(view, data);
+        }
+
+        // flatten - convert an array of arrays into a single array
+        var flatten = view.data().flatten().orElse(false);
+        if (flatten && data.stream().allMatch(JsonNode::isArray)) {
+            data = data.stream()
+                    .flatMap(node -> stream(spliteratorUnknownSize(node.elements(), Spliterator.ORDERED), false))
+                    .toList();
+        }
+
+        // merge - convert an array of objects into a single object
+        var merge = view.data().merge().orElse(false);
+        if (merge && data.stream().allMatch(JsonNode::isObject)) {
+            var mergedData = data.stream()
+                    .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
+                    .orElseThrow(() -> new ViewProcessorException("Expected a merge result, got nothing"));
+            data = List.of(mergedData);
+        }
+
+        // apply JSON patch
+        var patch = view.data().jsonPatch();
+        if (patch.isPresent()) {
+            var patchData = patch.get();
+            try {
+                JsonPatch.validate(patchData);
+            } catch (InvalidJsonPatchException e) {
+                throw new ViewProcessorException("Invalid data.jsonPatch: " + e.getMessage());
             }
 
-            // merge - convert an array of objects into a single object
-            var merge = view.data().merge().orElse(false);
-            if (merge && data.stream().allMatch(JsonNode::isObject)) {
-                var mergedData = data.stream()
-                        .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
-                        .orElseThrow(() -> new ViewProcessorException("Expected a merge result, got nothing"));
-                data = List.of(mergedData);
-            }
+            data = data.stream()
+                    .map(node -> {
+                        if (!node.isContainerNode()) {
+                            throw new ViewProcessorException(
+                                    "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of %ss"
+                                            .formatted(node.getNodeType()));
+                        }
 
-            // apply JSON patch
-            var patch = view.data().jsonPatch();
-            if (patch.isPresent()) {
-                var patchData = patch.get();
-                try {
-                    JsonPatch.validate(patchData);
-                } catch (InvalidJsonPatchException e) {
-                    throw new ViewProcessorException("Invalid data.jsonPatch: " + e.getMessage());
-                }
-
-                data = data.stream()
-                        .map(node -> {
-                            if (!node.isContainerNode()) {
-                                throw new ViewProcessorException(
-                                        "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of %ss"
-                                                .formatted(node.getNodeType()));
-                            }
-
-                            try {
-                                return JsonPatch.apply(patchData, node);
-                            } catch (JsonPatchApplicationException e) {
-                                throw new ViewProcessorException(
-                                        "Error while applying data.jsonPatch: " + e.getMessage());
-                            }
-                        })
-                        .toList();
-            }
+                        try {
+                            return JsonPatch.apply(patchData, node);
+                        } catch (JsonPatchApplicationException e) {
+                            throw new ViewProcessorException(
+                                    "Error while applying data.jsonPatch: " + e.getMessage());
+                        }
+                    })
+                    .toList();
         }
 
         return new RenderedView(view, data);
