@@ -7,6 +7,7 @@ import com.walmartlabs.concord.runtime.v2.sdk.Context;
 import com.walmartlabs.concord.runtime.v2.sdk.Task;
 import com.walmartlabs.concord.runtime.v2.sdk.TaskResult;
 import com.walmartlabs.concord.runtime.v2.sdk.Variables;
+import com.walmartlabs.concord.sdk.MapUtils;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -34,8 +35,10 @@ public class MicaTask implements Task {
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
-    private final URI baseUri;
+    private final URI defaultBaseUri;
     private final String sessionToken;
+
+    private final Map<String, Object> defaultVariables;
 
     @Inject
     public MicaTask(ObjectMapper objectMapper, Context ctx) {
@@ -47,9 +50,10 @@ public class MicaTask implements Task {
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
 
-        this.baseUri = URI.create(ctx.apiConfiguration().baseUrl());
+        this.defaultBaseUri = URI.create(ctx.apiConfiguration().baseUrl());
         this.sessionToken = requireNonNull(ctx.processConfiguration().processInfo().sessionToken(),
                 "sessionToken is null");
+        this.defaultVariables = ctx.defaultVariables().toMap();
     }
 
     @Override
@@ -67,7 +71,8 @@ public class MicaTask implements Task {
 
     private TaskResult listEntities(Variables input) throws Exception {
         var search = input.getString("search", "");
-        var request = newRequest("/api/mica/v1/entity?search=" + URLEncoder.encode(search, UTF_8)).build();
+        var request = newRequest(baseUri(input), auth(input),
+                "/api/mica/v1/entity?search=" + URLEncoder.encode(search, UTF_8)).build();
         var response = httpClient.send(request, ofInputStream());
         var entityList = parseResponseAsJson(objectMapper, response, EntityList.class);
         // TODO figure out when date-time becomes a timestamp
@@ -81,7 +86,7 @@ public class MicaTask implements Task {
         var name = input.assertString("name");
         var uri = "/api/mica/v1/upload/partialYaml?entityKind=" + encodeUriComponent(kind) + "&entityName="
                 + encodeUriComponent(name) + "&replace=true";
-        var request = newRequest(uri)
+        var request = newRequest(baseUri(input), auth(input), uri)
                 .header("Content-Type", "text/yaml") // TODO allow .json
                 .PUT(ofFile(Path.of(src)))
                 .build();
@@ -94,7 +99,7 @@ public class MicaTask implements Task {
         var view = input.assertString("name");
         var parameters = input.getMap("parameters", Map.of());
         var limit = input.getNumber("limit", -1);
-        var request = newRequest("/api/mica/v1/view/render")
+        var request = newRequest(baseUri(input), auth(input), "/api/mica/v1/view/render")
                 .header("Content-Type", "application/json")
                 .POST(ofString(objectMapper.writeValueAsString(Map.of(
                         "viewName", view,
@@ -107,10 +112,27 @@ public class MicaTask implements Task {
                 .value("data", objectMapper.convertValue(rendered.data().get("data"), List.class));
     }
 
-    private HttpRequest.Builder newRequest(String path) {
-        return HttpRequest.newBuilder()
-                .uri(baseUri.resolve(path))
-                .header("X-Concord-SessionToken", sessionToken);
+    private URI baseUri(Variables input) {
+        var baseUrl = input.getString("baseUrl", MapUtils.getString(defaultVariables, "baseUrl"));
+        if (baseUrl != null) {
+            return URI.create(baseUrl);
+        }
+        return defaultBaseUri;
+    }
+
+    private Authorization auth(Variables input) {
+        var apiKey = input.getString("apiKey", MapUtils.getString(defaultVariables, "apiKey"));
+        if (apiKey != null) {
+            return new ApiKey(apiKey);
+        }
+
+        return new SessionToken(sessionToken);
+    }
+
+    private static HttpRequest.Builder newRequest(URI baseUri, Authorization auth, String path) {
+        return auth.applyTo(
+                HttpRequest.newBuilder()
+                        .uri(baseUri.resolve(path)));
     }
 
     private static <T> T parseResponseAsJson(ObjectMapper objectMapper,
@@ -136,5 +158,38 @@ public class MicaTask implements Task {
 
     private static String encodeUriComponent(String s) {
         return URLEncoder.encode(s, UTF_8);
+    }
+
+    interface Authorization {
+
+        HttpRequest.Builder applyTo(HttpRequest.Builder requesBuilder);
+    }
+
+    static class ApiKey implements Authorization {
+
+        private final String key;
+
+        public ApiKey(String key) {
+            this.key = key;
+        }
+
+        @Override
+        public HttpRequest.Builder applyTo(HttpRequest.Builder requesBuilder) {
+            return requesBuilder.setHeader("Authorization", key);
+        }
+    }
+
+    static class SessionToken implements Authorization {
+
+        private final String token;
+
+        public SessionToken(String token) {
+            this.token = token;
+        }
+
+        @Override
+        public HttpRequest.Builder applyTo(HttpRequest.Builder requesBuilder) {
+            return requesBuilder.setHeader("X-Concord-SessionToken", token);
+        }
     }
 }
