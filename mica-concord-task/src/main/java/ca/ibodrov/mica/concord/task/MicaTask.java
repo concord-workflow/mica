@@ -130,9 +130,8 @@ public class MicaTask implements Task {
     }
 
     private static HttpRequest.Builder newRequest(URI baseUri, Authorization auth, String path) {
-        return auth.applyTo(
-                HttpRequest.newBuilder()
-                        .uri(baseUri.resolve(path)));
+        var builder = HttpRequest.newBuilder().uri(baseUri.resolve(path));
+        return auth.applyTo(builder);
     }
 
     private static <T> T parseResponseAsJson(ObjectMapper objectMapper,
@@ -165,13 +164,7 @@ public class MicaTask implements Task {
         HttpRequest.Builder applyTo(HttpRequest.Builder requesBuilder);
     }
 
-    static class ApiKey implements Authorization {
-
-        private final String key;
-
-        public ApiKey(String key) {
-            this.key = key;
-        }
+    record ApiKey(String key) implements Authorization {
 
         @Override
         public HttpRequest.Builder applyTo(HttpRequest.Builder requesBuilder) {
@@ -179,13 +172,7 @@ public class MicaTask implements Task {
         }
     }
 
-    static class SessionToken implements Authorization {
-
-        private final String token;
-
-        public SessionToken(String token) {
-            this.token = token;
-        }
+    record SessionToken(String token) implements Authorization {
 
         @Override
         public HttpRequest.Builder applyTo(HttpRequest.Builder requesBuilder) {
