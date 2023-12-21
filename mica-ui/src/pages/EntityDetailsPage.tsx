@@ -2,6 +2,7 @@ import { Entity, MICA_VIEW_KIND, STANDARD_ENTITY_PROPERTIES, getEntity } from '.
 import ActionBar from '../components/ActionBar.tsx';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
+import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
@@ -153,7 +154,7 @@ const EntityDetailsPage = () => {
                     <PageTitle help={HELP}>
                         {entity && (
                             <>
-                                {entity.name}
+                                <PathBreadcrumbs path={entity.name} />
                                 <CopyToClipboardButton text={entity.name} />
                             </>
                         )}

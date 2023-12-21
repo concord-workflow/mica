@@ -2,6 +2,7 @@ import { MICA_VIEW_KIND, getEntityAsYamlString, kindToTemplate } from '../api/en
 import { usePutYamlString } from '../api/upload.ts';
 import { PreviewRequest } from '../api/view.ts';
 import ActionBar from '../components/ActionBar.tsx';
+import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
@@ -276,7 +277,12 @@ const EditEntityPage = () => {
                 <Box sx={{ m: 2 }}>
                     <ActionBar>
                         <PageTitle help={HELP}>
-                            {selectedName && <PathBreadcrumbs path={selectedName} />}
+                            {selectedName && (
+                                <>
+                                    <PathBreadcrumbs path={selectedName} />
+                                    <CopyToClipboardButton text={selectedName} />
+                                </>
+                            )}
                         </PageTitle>
                         <Spacer />
                         {selectedKind === MICA_VIEW_KIND && (
