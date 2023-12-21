@@ -6,7 +6,7 @@
     <parent>
         <groupId>ca.ibodrov.mica</groupId>
         <artifactId>mica</artifactId>
-        <version>0.0.13</version>
+        <version>0.0.14-SNAPSHOT</version>
     </parent>
 
     <artifactId>docker</artifactId>
