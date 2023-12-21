@@ -1,0 +1,8 @@
+name: /examples/parametrized/example-kind
+kind: /mica/kind/v1
+schema:
+  properties:
+    x:
+      type: string
+    y:
+      type: string

@@ -30,12 +30,14 @@ const RenderView = ({ request }: Props) => {
                 </Alert>
             )}
             <Box>
-                <Box sx={{ float: 'right' }}>
-                    <ShowRenderedViewDetailsToggle
-                        checked={showDetails}
-                        onChange={(value) => setShowDetails(value)}
-                    />
-                </Box>
+                {data && (
+                    <Box sx={{ float: 'right' }}>
+                        <ShowRenderedViewDetailsToggle
+                            checked={showDetails}
+                            onChange={(value) => setShowDetails(value)}
+                        />
+                    </Box>
+                )}
                 {isLoading && (
                     <Box
                         display="flex"
