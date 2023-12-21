@@ -71,7 +71,7 @@ public class ViewRenderer {
 
         // interpolate JSON path using the supplied parameters
         var jsonPath = requireNonNull(view.data().jsonPath());
-        var effectiveJsonPath = interpolate(jsonPath, parameters, true);
+        var effectiveJsonPath = interpolate(jsonPath, parameters, false);
         // TODO might not be enough
         if (effectiveJsonPath.matches(".*\\$[a-zA-Z_]+.*")) {
             throw new ViewProcessorException("Unresolved parameters in JSON path: " + effectiveJsonPath);
