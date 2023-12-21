@@ -219,7 +219,7 @@ const EditEntityPage = () => {
             defaultValue = '# new entity';
         }
     } else {
-        defaultValue = serverValue;
+        defaultValue = editorRef?.current?.getValue() ?? serverValue;
     }
 
     // on the first load, sync the default value to the state
