@@ -1,5 +1,6 @@
 import { Entity, MICA_VIEW_KIND, STANDARD_ENTITY_PROPERTIES, getEntity } from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
+import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
@@ -157,16 +158,29 @@ const EntityDetailsPage = () => {
             </Grid>
             <MetadataGrid sx={{ mb: 2 }}>
                 <MetadataItem label="ID">
-                    {entityId} {isFetching && <CircularProgress size={16} />}
+                    {entityId} {entityId && <CopyToClipboardButton text={entityId} />}{' '}
+                    {isFetching && <CircularProgress size={16} />}
                 </MetadataItem>
-                <MetadataItem label="Name">{entity ? entity.name : '?'}</MetadataItem>
+                <MetadataItem label="Name">
+                    {entity ? (
+                        <>
+                            {entity.name}
+                            <CopyToClipboardButton text={entity.name} />
+                        </>
+                    ) : (
+                        '?'
+                    )}
+                </MetadataItem>
                 <MetadataItem label="Kind">
                     {entity ? (
-                        <Link
-                            component={RouterLink}
-                            to={`/redirect?type=entityByName&entityName=${entity.kind}`}>
-                            {entity.kind}
-                        </Link>
+                        <>
+                            <Link
+                                component={RouterLink}
+                                to={`/redirect?type=entityByName&entityName=${entity.kind}`}>
+                                {entity.kind}
+                            </Link>
+                            <CopyToClipboardButton text={entity.kind} />
+                        </>
                     ) : (
                         '?'
                     )}
