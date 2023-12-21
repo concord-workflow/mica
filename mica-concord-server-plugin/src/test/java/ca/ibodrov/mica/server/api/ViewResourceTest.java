@@ -42,7 +42,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     }
 
     @Test
-    public void validateOrderOfEntitiesWhenUsingNamePatterns() {
+    public void entityOrderMustBePreservedWhenUsingNamePatterns() {
         // create entity kind
         entityStore.upsert(new MicaKindV1.Builder()
                 .name("/test-record-kind")
@@ -80,7 +80,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     }
 
     @Test
-    public void validateNamePatternSubstitutions() {
+    public void namePatternShouldSupportSubstitutions() {
         var recordKind = "/test-record-kind-" + System.currentTimeMillis();
 
         // create entity kind
@@ -117,7 +117,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     }
 
     @Test
-    public void validateViewData() {
+    public void viewDataCanBeValidated() {
         // create v1 of the schema
         var recordKindV1 = "/test-kind-v1-" + System.currentTimeMillis();
         entityStore.upsert(new MicaKindV1.Builder()
@@ -135,8 +135,10 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // create test records
-        entityStore.upsert(PartialEntity.create("/first/record", recordKindV1, Map.of("foo", TextNode.valueOf("1"))));
-        entityStore.upsert(PartialEntity.create("/second/record", recordKindV1, Map.of("foo", TextNode.valueOf("2"))));
+        entityStore.upsert(PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
+                Map.of("foo", TextNode.valueOf("1"))));
+        entityStore.upsert(PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
+                Map.of("foo", TextNode.valueOf("2"))));
 
         // create view
         entityStore.upsert(new MicaViewV1.Builder()
@@ -156,5 +158,9 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 result.data().get("validation").get(0).get("properties").get("bar").get("error").get("kind").asText());
         assertEquals("MISSING_PROPERTY",
                 result.data().get("validation").get(1).get("properties").get("bar").get("error").get("kind").asText());
+    }
+
+    private static String randomPathPrefix() {
+        return "/test-" + System.currentTimeMillis();
     }
 }
