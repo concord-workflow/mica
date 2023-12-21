@@ -239,10 +239,14 @@ const EditEntityPage = () => {
         }, [editorRef, entityId]),
     );
 
-    // load any unsaved changes from local storage
+    // load any unsaved changes from local storage (except for the new entities)
     const [showUnsavedChangesRestored, setShowUnsavedChangesRestored] =
         React.useState<boolean>(false);
     useEffect(() => {
+        if (entityId === '_new') {
+            return;
+        }
+
         const value = localStorage.getItem(`dirty-${entityId}`);
         if (!value || value === editorRef.current?.getValue()) {
             return;

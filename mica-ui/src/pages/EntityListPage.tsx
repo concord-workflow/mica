@@ -15,6 +15,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FolderIcon from '@mui/icons-material/Folder';
 import {
+    Box,
     Button,
     CircularProgress,
     Container,
@@ -240,7 +241,7 @@ const EntityListPage = () => {
             />
             <ActionBar sx={{ mb: 2 }}>
                 <FormControl>
-                    <CreateEntityButton />
+                    <CreateEntityButton path={selectedPath} />
                 </FormControl>
                 <FormControl>
                     <Button
@@ -257,7 +258,9 @@ const EntityListPage = () => {
                 </FormControl>
                 <SearchField onChange={(value) => setSearch(value)} />
             </ActionBar>
-            <PathBreadcrumbs path={selectedPath} />
+            <Box sx={{ mb: 2 }}>
+                <PathBreadcrumbs path={selectedPath} />
+            </Box>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>

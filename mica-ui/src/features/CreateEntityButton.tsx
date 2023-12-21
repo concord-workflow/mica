@@ -8,7 +8,11 @@ import React from 'react';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 
-const CreateEntityButton = () => {
+interface Props {
+    path: string;
+}
+
+const CreateEntityButton = ({ path }: Props) => {
     const navigate = useNavigate();
 
     const { data, isFetching } = useQuery(
@@ -40,7 +44,13 @@ const CreateEntityButton = () => {
                     data.map((row) => (
                         <MenuItem
                             key={row.id}
-                            onClick={() => navigate(`/entity/_new/edit?kind=${row.name}`)}>
+                            onClick={() =>
+                                navigate(
+                                    `/entity/_new/edit?kind=${row.name}&name=${encodeURIComponent(
+                                        path + '/myEntity',
+                                    )}`,
+                                )
+                            }>
                             <ListItemIcon>{entityKindToIcon(row.name)}</ListItemIcon>
                             {row.name}
                         </MenuItem>
