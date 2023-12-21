@@ -1,6 +1,7 @@
 import { EntityEntry, OrderBy, listEntities } from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
+import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import RowMenu from '../components/RowMenu.tsx';
 import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
@@ -13,9 +14,7 @@ import UploadEntityDialog from '../features/UploadEntityDialog.tsx';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FolderIcon from '@mui/icons-material/Folder';
-import HomeIcon from '@mui/icons-material/Home';
 import {
-    Box,
     Button,
     CircularProgress,
     Container,
@@ -109,30 +108,6 @@ const filterAndSortData = (data: EntityEntry[], selectedPath: string): DataRow[]
         ...folders.sort((a, b) => a.label.localeCompare(b.label)),
         ...files.sort((a, b) => a.label.localeCompare(b.label)),
     ];
-};
-
-const Breadcrumbs = ({ path }: { path: string }) => {
-    const parts = path.split('/').filter((part) => part.length > 0);
-    return (
-        <Box marginBottom={2}>
-            <Tooltip title="Back to /">
-                <Link component={RouterLink} to={`/entity?path=/`}>
-                    <HomeIcon fontSize="small" sx={{ position: 'relative', top: '3px' }} />
-                </Link>
-            </Tooltip>
-            {parts.map((part, index) => (
-                <React.Fragment key={index}>
-                    &nbsp;&nbsp;
-                    <Link
-                        component={RouterLink}
-                        to={`/entity?path=/${parts.slice(0, index + 1).join('/')}`}>
-                        {'/'}
-                        {part}
-                    </Link>
-                </React.Fragment>
-            ))}
-        </Box>
-    );
 };
 
 const EntityTableRow = ({
@@ -282,7 +257,7 @@ const EntityListPage = () => {
                 </FormControl>
                 <SearchField onChange={(value) => setSearch(value)} />
             </ActionBar>
-            <Breadcrumbs path={selectedPath} />
+            <PathBreadcrumbs path={selectedPath} />
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>

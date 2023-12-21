@@ -3,6 +3,7 @@ import { usePutYamlString } from '../api/upload.ts';
 import { PreviewRequest } from '../api/view.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
+import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
 import PreviewView from '../features/PreviewView.tsx';
@@ -243,7 +244,7 @@ const EditEntityPage = () => {
         React.useState<boolean>(false);
     useEffect(() => {
         const value = localStorage.getItem(`dirty-${entityId}`);
-        if (!value) {
+        if (!value || value === editorRef.current?.getValue()) {
             return;
         }
 
@@ -270,14 +271,16 @@ const EditEntityPage = () => {
             <Box display="flex" flexDirection="column" height="100%">
                 <Box sx={{ m: 2 }}>
                     <ActionBar>
-                        <PageTitle help={HELP}>{selectedName}</PageTitle>
+                        <PageTitle help={HELP}>
+                            {selectedName && <PathBreadcrumbs path={selectedName} />}
+                        </PageTitle>
                         <Spacer />
                         {selectedKind === MICA_VIEW_KIND && (
                             <FormControl>
                                 <FormControlLabel
                                     control={
                                         <Switch
-                                            value={showPreview}
+                                            checked={showPreview}
                                             onChange={(ev) =>
                                                 handlePreviewSwitch(ev.target.checked)
                                             }
@@ -328,10 +331,16 @@ const EditEntityPage = () => {
                             variant="permanent"
                             sx={{
                                 '.MuiPaper-root': {
-                                    maxHeight: '50%',
+                                    minHeight: '40%',
+                                    maxHeight: '40%',
                                 },
                             }}>
-                            {previewRequest && <PreviewView request={previewRequest} />}
+                            {previewRequest && (
+                                <PreviewView
+                                    request={previewRequest}
+                                    onClose={() => handlePreviewSwitch(false)}
+                                />
+                            )}
                         </Drawer>
                     )}
                 </Box>

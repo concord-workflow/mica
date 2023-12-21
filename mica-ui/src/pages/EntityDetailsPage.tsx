@@ -6,8 +6,10 @@ import SearchField from '../components/SearchField.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
+import RenderView from '../features/RenderView.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import PreviewIcon from '@mui/icons-material/Preview';
 import {
     Button,
     CircularProgress,
@@ -22,6 +24,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -34,7 +37,17 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
-        <b>Entity Details</b> page provides overview of an entity.
+        <p>
+            <b>Entity Details</b> page shows the properties of a single entity. Only top-level
+            properties are shown. The values are rendered as JSON.
+        </p>
+        <p>
+            Use <b>Search</b> to search by property name.
+        </p>
+        <p>
+            Views (<i>/mica/view/v1</i>) entities can be previewed by clicking on the{' '}
+            <b>Preview data</b> button.
+        </p>
     </>
 );
 
@@ -71,11 +84,15 @@ interface MetadataGridProps {
     children: React.ReactNode;
 }
 
-const MetadataGrid = ({ sx, children }: MetadataGridProps) => (
-    <Grid container sx={{ fontFamily: 'Roboto Mono', ...sx }}>
-        {children}
-    </Grid>
-);
+const MetadataGrid = ({ sx, children }: MetadataGridProps) => {
+    return (
+        <>
+            <Grid container sx={{ fontFamily: 'Roboto Mono', fontSize: 12, ...sx }}>
+                {children}
+            </Grid>
+        </>
+    );
+};
 
 interface MetadataItemProps {
     label: string;
@@ -118,6 +135,8 @@ const EntityDetailsPage = () => {
         [entity, search],
     );
 
+    const [showPreview, setShowPreview] = React.useState(false);
+
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
             {entity && (
@@ -131,7 +150,14 @@ const EntityDetailsPage = () => {
             )}
             <Grid container>
                 <Grid xs={10}>
-                    <PageTitle help={HELP}>Entity Details</PageTitle>
+                    <PageTitle help={HELP}>
+                        {entity && (
+                            <>
+                                {entity.name}
+                                <CopyToClipboardButton text={entity.name} />
+                            </>
+                        )}
+                    </PageTitle>
                 </Grid>
                 <Grid xs={2} display="flex" justifyContent="flex-end">
                     <Stack direction="row" spacing={2}>
@@ -161,16 +187,6 @@ const EntityDetailsPage = () => {
                     {entityId} {entityId && <CopyToClipboardButton text={entityId} />}{' '}
                     {isFetching && <CircularProgress size={16} />}
                 </MetadataItem>
-                <MetadataItem label="Name">
-                    {entity ? (
-                        <>
-                            {entity.name}
-                            <CopyToClipboardButton text={entity.name} />
-                        </>
-                    ) : (
-                        '?'
-                    )}
-                </MetadataItem>
                 <MetadataItem label="Kind">
                     {entity ? (
                         <>
@@ -193,7 +209,20 @@ const EntityDetailsPage = () => {
                 </MetadataItem>
             </MetadataGrid>
             {entity && entity.kind == MICA_VIEW_KIND && (
-                <FormControl sx={{ mt: 2, mb: 2 }}>TODO</FormControl>
+                <FormControl sx={{ mt: 2, mb: 2 }}>
+                    <Tooltip title="Render this view using a small subset of data">
+                        <Button
+                            startIcon={<PreviewIcon />}
+                            onClick={() => setShowPreview((prev) => !prev)}>
+                            {showPreview ? 'Hide preview' : 'Preview data'}
+                        </Button>
+                    </Tooltip>
+                </FormControl>
+            )}
+            {entityId && showPreview && (
+                <Paper sx={{ p: 2, mb: 2 }}>
+                    <RenderView request={{ viewId: entityId, limit: 10 }} />
+                </Paper>
             )}
             {entity && (
                 <>

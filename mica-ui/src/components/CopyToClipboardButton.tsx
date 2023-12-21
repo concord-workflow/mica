@@ -27,14 +27,9 @@ const CopyToClipboardButton = ({ text }: Props) => {
         });
     }, [text]);
     return (
-        <Tooltip
-            title={tooltip}
-            open={open}
-            onOpen={handleOpen}
-            onClose={handleClose}
-            TransitionProps={{ timeout: 0 }}>
-            <IconButton onClick={handleClick}>
-                <ContentCopyIcon fontSize="small" />
+        <Tooltip title={tooltip} open={open} onOpen={handleOpen} onClose={handleClose}>
+            <IconButton onClick={handleClick} sx={{ fontSize: 'inherit' }}>
+                <ContentCopyIcon fontSize="inherit" />
             </IconButton>
         </Tooltip>
     );
