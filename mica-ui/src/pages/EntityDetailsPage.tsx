@@ -228,9 +228,9 @@ const EntityDetailsPage = () => {
             )}
             {entity && (
                 <>
-                    <Divider sx={{ mb: 2 }} />
+                    <Divider />
                     <SectionTitle>{kindToPayloadTitle(entity.kind)}</SectionTitle>
-                    <ActionBar sx={{ mt: 2, mb: 2 }}>
+                    <ActionBar sx={{ mb: 2 }}>
                         <Spacer />
                         <SearchField onChange={(search) => setSearch(search)} />
                     </ActionBar>
