@@ -1,4 +1,5 @@
 import { createRouter } from './router.tsx';
+import WithMicaTheme from './theme.tsx';
 import CssBaseline from '@mui/material/CssBaseline';
 
 import React from 'react';
@@ -18,9 +19,11 @@ const router = createRouter();
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <CssBaseline>
-            <QueryClientProvider client={queryClient}>
-                <RouterProvider router={router} />
-            </QueryClientProvider>
+            <WithMicaTheme>
+                <QueryClientProvider client={queryClient}>
+                    <RouterProvider router={router} />
+                </QueryClientProvider>
+            </WithMicaTheme>
         </CssBaseline>
     </React.StrictMode>,
 );

@@ -7,16 +7,15 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ open }: { open: boolean }) => {
-    const navigate = useNavigate();
     const location = useLocation();
 
     return (
         <List component="nav">
             {/*Dashboard*/}
-            <ListItemButton onClick={() => navigate('/')} selected={location.pathname === '/'}>
+            <ListItemButton component={Link} to="/" selected={location.pathname === '/'}>
                 <ListItemIcon>
                     <DashboardIcon />
                 </ListItemIcon>
@@ -24,9 +23,7 @@ const Sidebar = ({ open }: { open: boolean }) => {
             </ListItemButton>
 
             {/*API*/}
-            <ListItemButton
-                onClick={() => navigate('/api')}
-                selected={location.pathname === '/api'}>
+            <ListItemButton component={Link} to="/api" selected={location.pathname === '/api'}>
                 <ListItemIcon>
                     <ApiIcon />
                 </ListItemIcon>
@@ -35,7 +32,8 @@ const Sidebar = ({ open }: { open: boolean }) => {
 
             {/*Entities*/}
             <ListItemButton
-                onClick={() => navigate('/entity')}
+                component={Link}
+                to="/entity"
                 selected={location.pathname === '/entity'}>
                 <ListItemIcon>
                     <CorporateFareIcon />

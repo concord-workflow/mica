@@ -4,6 +4,7 @@ import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import SearchField from '../components/SearchField.tsx';
+import SectionTitle from '../components/SectionTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
@@ -15,6 +16,7 @@ import {
     Button,
     CircularProgress,
     Container,
+    Divider,
     FormControl,
     Link,
     Paper,
@@ -26,7 +28,6 @@ import {
     TableHead,
     TableRow,
     Tooltip,
-    Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import { Theme } from '@mui/material/styles';
@@ -227,8 +228,9 @@ const EntityDetailsPage = () => {
             )}
             {entity && (
                 <>
-                    <Typography variant="h6">{kindToPayloadTitle(entity.kind)}</Typography>
-                    <ActionBar sx={{ mb: 2 }}>
+                    <Divider sx={{ mb: 2 }} />
+                    <SectionTitle>{kindToPayloadTitle(entity.kind)}</SectionTitle>
+                    <ActionBar sx={{ mt: 2, mb: 2 }}>
                         <Spacer />
                         <SearchField onChange={(search) => setSearch(search)} />
                     </ActionBar>
