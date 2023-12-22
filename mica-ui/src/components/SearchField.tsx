@@ -1,19 +1,26 @@
-import { TextField, debounce } from '@mui/material';
-
-import { useMemo } from 'react';
+import ClearIcon from '@mui/icons-material/Clear';
+import { IconButton, TextField } from '@mui/material';
 
 interface Props {
+    value: string;
     onChange: (value: string) => void;
 }
 
-const SearchField = ({ onChange }: Props) => {
-    const debouncedOnChange = useMemo(() => debounce(onChange, 100), [onChange]);
+const SearchField = ({ value, onChange }: Props) => {
     return (
         <TextField
             placeholder="Search"
             type="search"
             size="small"
-            onChange={(ev) => debouncedOnChange(ev.target.value)}
+            value={value}
+            onChange={(ev) => onChange(ev.target.value)}
+            InputProps={{
+                endAdornment: (
+                    <IconButton size="small" onClick={() => onChange('')}>
+                        <ClearIcon />
+                    </IconButton>
+                ),
+            }}
         />
     );
 };

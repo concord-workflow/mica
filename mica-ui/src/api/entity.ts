@@ -116,7 +116,6 @@ const qp = (key: string, value: string | number | undefined): string =>
     value ? `${key}=${encodeURIComponent(value)}` : '';
 
 export interface ListEntitiesRequest {
-    search?: string;
     entityNameStartsWith?: string;
     entityName?: string;
     entityKind?: string;

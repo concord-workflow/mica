@@ -48,7 +48,7 @@ const HELP: React.ReactNode = (
     </>
 );
 
-const DEFAULT_ROW_LIMIT = 1000;
+const DEFAULT_ROW_LIMIT = 100;
 
 interface FileRow {
     key: string;
@@ -153,7 +153,7 @@ const FolderTableRow = ({ row, search }: { row: FolderRow; search: string }) => 
                 </Tooltip>
             </TableCell>
             <TableCell>
-                <Link component={RouterLink} to={`/entity?path=${row.path}`}>
+                <Link component={RouterLink} to={`/entity?path=${encodeURIComponent(row.path)}`}>
                     {highlightSubstring(row.label, search)}
                 </Link>
             </TableCell>
@@ -164,19 +164,20 @@ const FolderTableRow = ({ row, search }: { row: FolderRow; search: string }) => 
 
 const EntityListPage = () => {
     const [searchParams] = useSearchParams();
-
-    const [openUpload, setOpenUpload] = React.useState(false);
-
-    const [search, setSearch] = React.useState<string>('');
     const selectedPath = searchParams.get('path') ?? '/';
+    const [search, setSearch] = React.useState<string>(searchParams.get('search') ?? '');
+    // reset search when path changes
+    React.useEffect(() => {
+        setSearch('');
+    }, [selectedPath]);
+
     const [selectedKind, setSelectedKind] = React.useState<string | undefined>(
         searchParams.get('kind') ?? undefined,
     );
     const { data, isFetching } = useQuery(
-        ['entity', 'list', selectedPath, selectedKind, search],
+        ['entity', 'list', selectedPath, selectedKind],
         () =>
             listEntities({
-                search,
                 entityNameStartsWith: selectedPath,
                 entityKind: selectedKind,
                 orderBy: OrderBy.NAME,
@@ -187,6 +188,8 @@ const EntityListPage = () => {
             select: ({ data }) => data,
         },
     );
+
+    const [openUpload, setOpenUpload] = React.useState(false);
 
     const [successNotification, setSuccessNotification] = React.useState<string | undefined>();
     const handleSuccessfulUpload = React.useCallback(() => {
@@ -256,7 +259,7 @@ const EntityListPage = () => {
                     <InputLabel>Kind</InputLabel>
                     <EntityKindSelect value={selectedKind} onChange={setSelectedKind} />
                 </FormControl>
-                <SearchField onChange={(value) => setSearch(value)} />
+                <SearchField value={search} onChange={(value) => setSearch(value)} />
             </ActionBar>
             <Box sx={{ mb: 2 }}>
                 <PathBreadcrumbs path={selectedPath} />
@@ -276,22 +279,30 @@ const EntityListPage = () => {
                     </TableHead>
                     <TableBody>
                         {effectiveData.length > 0 &&
-                            effectiveData.map((row) => {
-                                if (row.type === 'folder') {
-                                    return (
-                                        <FolderTableRow key={row.key} row={row} search={search} />
-                                    );
-                                } else {
-                                    return (
-                                        <EntityTableRow
-                                            key={row.key}
-                                            row={row}
-                                            search={search}
-                                            handleDelete={handleDelete}
-                                        />
-                                    );
-                                }
-                            })}
+                            effectiveData
+                                .filter((row) =>
+                                    row.label.toLowerCase().includes(search.toLowerCase()),
+                                )
+                                .map((row) => {
+                                    if (row.type === 'folder') {
+                                        return (
+                                            <FolderTableRow
+                                                key={row.key}
+                                                row={row}
+                                                search={search}
+                                            />
+                                        );
+                                    } else {
+                                        return (
+                                            <EntityTableRow
+                                                key={row.key}
+                                                row={row}
+                                                search={search}
+                                                handleDelete={handleDelete}
+                                            />
+                                        );
+                                    }
+                                })}
                         {data && data.length >= DEFAULT_ROW_LIMIT && (
                             <TableRow>
                                 <TableCell colSpan={3} align="center">
