@@ -171,6 +171,9 @@ public final class BuiltinSchemas {
     }
 
     private static ViewLike.Selector asViewLikeSelector(ObjectMapper objectMapper, EntityLike entity) {
+        // TODO better validation, propagate convertValue errors
+        var includes = select(entity, "data", "includes", n -> objectMapper.convertValue(n, LIST_OF_URIS));
+
         var entityKind = select(entity, "selector", "entityKind", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));
 
@@ -178,6 +181,12 @@ public final class BuiltinSchemas {
                 n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
 
         return new ViewLike.Selector() {
+
+            @Override
+            public Optional<List<URI>> includes() {
+                return includes;
+            }
+
             @Override
             public String entityKind() {
                 return entityKind;
@@ -200,9 +209,6 @@ public final class BuiltinSchemas {
 
         var jsonPatch = select(entity, "data", "jsonPatch", Function.identity());
 
-        // TODO better validation, propagate convertValue errors
-        var includes = select(entity, "data", "includes", n -> objectMapper.convertValue(n, LIST_OF_URIS));
-
         return new ViewLike.Data() {
             @Override
             public String jsonPath() {
@@ -222,11 +228,6 @@ public final class BuiltinSchemas {
             @Override
             public Optional<JsonNode> jsonPatch() {
                 return jsonPatch;
-            }
-
-            @Override
-            public Optional<List<URI>> includes() {
-                return includes;
             }
         };
     }

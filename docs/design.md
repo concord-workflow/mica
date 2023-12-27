@@ -353,19 +353,20 @@ curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": 
 kind: /mica/view/v1
 name: /views/effective-config
 parameters:
-  commitId:
+  ref:
     type: string
 selector:
+  includes:
+    - concord+git://orgName/projectName/repoName?path=/stuff/configs&ref=${parameters.ref}  
   entityKind: /mica/record/v1
   namePatterns:
     - /stuff/configs
 data:
-  includes:
-    - concord+git://projectName/repoName?path=/stuff/configs&commitId=${parameters.commitId}
+  jsonPath: $
 ```
 
-The `includes` field is a list of URLs to fetch data from.  Only `concord+git`
-URL scheme is supported at the moment.
+The `includes` field is a list of URLs to fetch data from.  Only `mica` and
+`concord+git` URL schemes are supported at the moment.
 
 The `concord+git` URL must point at existing Concord project `projectName`
 with the repository `repoName`. When rendering the view, Mica will fetch
@@ -373,6 +374,25 @@ the contents of the repository at the given `commitId` and look for YAML files
 in the given `path`. YAML files with the `kind` field set to
 `selector.entityKind` will be considered for further processing, the rest will
 be ignored.
+
+The default value for `includes` contains the URL of the internal entity store:
+
+```yaml
+selector:
+  includes:
+    - mica://internal
+```
+
+When overriding `includes` in a view, the default value is not included. If you
+wish to include both internal entities and external data, use the following
+syntax:
+
+```yaml
+selector:
+  includes:
+    - mica://internal
+    - concord+git://myConcordOrg/myConcordProject/myFavoriteGitRepo?path=/stuff/configs&ref=main  
+```
 
 ## Materialize View Data As Entities
 

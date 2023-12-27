@@ -7,5 +7,5 @@ import java.util.stream.Stream;
 
 public interface EntityFetcher {
 
-    Stream<EntityLike> getAllByKind(URI includeUri, String kind);
+    Stream<EntityLike> getAllByKind(URI uri, String kind, int limit);
 }

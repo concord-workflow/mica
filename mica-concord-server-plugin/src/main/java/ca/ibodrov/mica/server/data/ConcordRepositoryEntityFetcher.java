@@ -40,19 +40,24 @@ public class ConcordRepositoryEntityFetcher implements EntityFetcher {
     }
 
     @Override
-    public Stream<EntityLike> getAllByKind(URI uri, String kind) {
+    public Stream<EntityLike> getAllByKind(URI uri, String kind, int limit) {
+        if (!uri.getScheme().equals("concord+git")) {
+            return Stream.empty();
+        }
+
         var orgName = uri.getHost();
         var projectName = uri.getPath().split("/")[1];
         var repoName = uri.getPath().split("/")[2];
         var path = uri.getQuery(); // TODO fix
-        return getAllByKind(orgName, projectName, repoName, kind, path);
+        return getAllByKind(orgName, projectName, repoName, kind, path, limit);
     }
 
     private Stream<EntityLike> getAllByKind(String orgName,
                                             String projectName,
                                             String repoName,
                                             String kind,
-                                            String path) {
+                                            String path,
+                                            int limit) {
 
         var org = orgManager.assertAccess(orgName, false);
         var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
@@ -64,6 +69,7 @@ public class ConcordRepositoryEntityFetcher implements EntityFetcher {
                     .filter(p -> p.startsWith(basePath))
                     .filter(p -> isMicaYamlFile(p))
                     .filter(p -> isOfValidKind(p, kind))
+                    .limit(limit)
                     .map(this::parseFile);
         } catch (IOException e) {
             throw new StoreException("Error while reading the repository: " + e.getMessage(), e);

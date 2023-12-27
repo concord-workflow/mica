@@ -21,7 +21,8 @@ import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
-import java.util.ArrayList;
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +38,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class ViewResource implements Resource {
 
     private static final String RESULT_ENTITY_KIND = "MicaMaterializedView/v1";
+    private static final URI INTERNAL_ENTITY_STORE_URI = URI.create("mica://internal");
 
     /**
      * Don't validate these properties, they are added by the system.
@@ -126,18 +128,17 @@ public class ViewResource implements Resource {
     private Stream<? extends EntityLike> fetch(ViewLike view, Map<String, JsonNode> parameters, int limit) {
         // TODO limit is not very useful right now
 
+        var includes = view.selector().includes().orElse(List.of(INTERNAL_ENTITY_STORE_URI));
+
         // grab all entities matching the selector's entity kind
-        var entities = new ArrayList<EntityLike>(limit);
-        entities.addAll(entityStore.getAllByKind(view.selector().entityKind(), limit));
-        // ...add the ones from the includes
-        view.data().includes().ifPresent(includes -> {
-            for (var include : includes) {
-                includeFetchers.stream()
-                        .flatMap(fetcher -> fetcher.getAllByKind(include, view.selector().entityKind()))
-                        .limit(limit)
-                        .forEach(entities::add);
-            }
-        });
+        var entities = includes.stream()
+                .flatMap(include -> includeFetchers.stream()
+                        .flatMap(fetcher -> fetcher.getAllByKind(include, view.selector().entityKind(), limit)))
+                .toList();
+
+        if (entities.isEmpty()) {
+            return Stream.empty();
+        }
 
         var result = entities.stream();
         // if namePatterns are specified, filter the entities and return them in the
@@ -149,7 +150,6 @@ public class ViewResource implements Resource {
                             .replace("$", "\\$")
                             .replace("{", "\\{"))
                     .toList();
-            result = Stream.empty();
             for (var pattern : patterns) {
                 result = Stream.concat(result, entities.stream().filter(e -> e.name().matches(pattern)));
             }

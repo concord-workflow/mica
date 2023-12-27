@@ -228,7 +228,7 @@ public class ConfigManagementIT extends EndToEnd {
             var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryEntityFetcher.class);
             var uri = URI.create("concord+git://%s/%s/%s?path=src/test/resources/entities".formatted(orgName,
                     projectName, repoName));
-            return store.getAllByKind(uri, "/mica/record/v1").toList();
+            return store.getAllByKind(uri, "/mica/record/v1", 10).toList();
         });
         assertEquals(2, entities.size());
     }

@@ -36,30 +36,30 @@ public record MicaViewV1(@ValidName String name,
         requireNonNull(parameters, "'parameters' cannot be null");
     }
 
-    public record Selector(@ValidName String entityKind,
+    public record Selector(Optional<List<URI>> includes,
+            @ValidName String entityKind,
             @NotNull Optional<List<String>> namePatterns) implements ViewLike.Selector {
 
         public static Selector byEntityKind(String entityKind) {
-            return new Selector(entityKind, Optional.empty());
+            return new Selector(Optional.empty(), entityKind, Optional.empty());
         }
 
         public Selector withNamePatterns(List<String> namePatterns) {
-            return new Selector(this.entityKind, Optional.of(namePatterns));
+            return new Selector(Optional.empty(), this.entityKind, Optional.of(namePatterns));
         }
     }
 
     public record Data(String jsonPath,
             Optional<JsonNode> jsonPatch,
             Optional<Boolean> flatten,
-            Optional<Boolean> merge,
-            Optional<List<URI>> includes) implements ViewLike.Data {
+            Optional<Boolean> merge) implements ViewLike.Data {
 
         public static Data jsonPath(String jsonPath) {
-            return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+            return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty());
         }
 
         public Data withMerge() {
-            return new Data(this.jsonPath, this.jsonPatch, this.flatten, Optional.of(true), this.includes);
+            return new Data(this.jsonPath, this.jsonPatch, this.flatten, Optional.of(true));
         }
     }
 

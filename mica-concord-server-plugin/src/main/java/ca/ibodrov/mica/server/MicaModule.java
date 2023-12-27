@@ -101,6 +101,7 @@ public class MicaModule implements Module {
         binder.bind(InitialDataLoader.class).asEagerSingleton();
 
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordRepositoryEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(EntityStore.class);
     }
 
     private static Config loadDefaultConfig() {

@@ -22,6 +22,8 @@ public interface ViewLike {
 
     interface Selector {
 
+        Optional<List<URI>> includes();
+
         String entityKind();
 
         Optional<List<String>> namePatterns();
@@ -36,8 +38,6 @@ public interface ViewLike {
         Optional<Boolean> merge();
 
         Optional<JsonNode> jsonPatch();
-
-        Optional<List<URI>> includes();
     }
 
     interface Validation {
