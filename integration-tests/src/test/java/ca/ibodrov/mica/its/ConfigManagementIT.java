@@ -61,7 +61,7 @@ public class ConfigManagementIT extends EndToEnd {
                 .orElseThrow();
 
         var securityContext = micaServer.getServer().getInjector().getInstance(ProcessSecurityContext.class);
-        securityContext.runAs(adminId, () -> {
+        var entities = securityContext.runAs(adminId, () -> {
             var orgName = "org-" + UUID.randomUUID();
             var orgManager = micaServer.getServer().getInjector().getInstance(OrganizationManager.class);
             orgManager.createOrUpdate(new OrganizationEntry(orgName));
@@ -74,10 +74,9 @@ public class ConfigManagementIT extends EndToEnd {
                     Map.of(repoName, new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "main", null))));
 
             var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryPartialEntityStore.class);
-            store.getAllByKind(orgName, projectName, repoName, "/mica/record/v1", "docs/examples", 100);
-
-            return null;
+            return store.getAllByKind(orgName, projectName, repoName, "/mica/record/v1", "docs/examples").toList();
         });
+        assertEquals(2, entities.size());
     }
 
     @Test

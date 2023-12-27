@@ -40,8 +40,7 @@ public class ConcordRepositoryPartialEntityStore {
                                               String projectName,
                                               String repoName,
                                               String kind,
-                                              String path,
-                                              int limit) {
+                                              String path) {
         var org = organizationManager.assertAccess(orgName, false);
         var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
         var repo = repositoryManager.fetch(repoEntry.getProjectId(), repoEntry);
