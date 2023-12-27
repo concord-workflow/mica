@@ -3,6 +3,7 @@ package ca.ibodrov.mica.its;
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.server.data.ConcordRepositoryPartialEntityStore;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +12,14 @@ import com.walmartlabs.concord.client2.ApiException;
 import com.walmartlabs.concord.client2.ProcessApi;
 import com.walmartlabs.concord.client2.ProcessEntry;
 import com.walmartlabs.concord.client2.StartProcessResponse;
+import com.walmartlabs.concord.server.org.OrganizationEntry;
+import com.walmartlabs.concord.server.org.OrganizationManager;
+import com.walmartlabs.concord.server.org.project.ProjectEntry;
+import com.walmartlabs.concord.server.org.project.ProjectManager;
+import com.walmartlabs.concord.server.org.project.RepositoryEntry;
+import com.walmartlabs.concord.server.process.ProcessSecurityContext;
+import com.walmartlabs.concord.server.user.UserManager;
+import com.walmartlabs.concord.server.user.UserType;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -19,6 +28,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
@@ -42,6 +52,32 @@ public class ConfigManagementIT extends EndToEnd {
         var injector = micaServer.getServer().getInjector();
         entityStore = injector.getInstance(EntityStore.class);
         objectMapper = injector.getInstance(ObjectMapper.class);
+    }
+
+    @Test
+    public void useGitImportsInViews() throws Exception {
+        var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
+                .getId("admin", null, UserType.LOCAL)
+                .orElseThrow();
+
+        var securityContext = micaServer.getServer().getInjector().getInstance(ProcessSecurityContext.class);
+        securityContext.runAs(adminId, () -> {
+            var orgName = "org-" + UUID.randomUUID();
+            var orgManager = micaServer.getServer().getInjector().getInstance(OrganizationManager.class);
+            orgManager.createOrUpdate(new OrganizationEntry(orgName));
+
+            var projectName = "project-" + UUID.randomUUID();
+            var repoName = "repo-" + UUID.randomUUID();
+            var repoUrl = "git@github.com:concord-workflow/mica.git";
+            var projectManager = micaServer.getServer().getInjector().getInstance(ProjectManager.class);
+            projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
+                    Map.of(repoName, new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "main", null))));
+
+            var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryPartialEntityStore.class);
+            store.getAllByKind(orgName, projectName, repoName, "/mica/record/v1", "docs/examples", 100);
+
+            return null;
+        });
     }
 
     @Test

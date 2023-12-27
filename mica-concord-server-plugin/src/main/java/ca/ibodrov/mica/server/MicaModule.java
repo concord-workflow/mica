@@ -5,10 +5,7 @@ import ca.ibodrov.mica.server.api.EntityResource;
 import ca.ibodrov.mica.server.api.EntityUploadResource;
 import ca.ibodrov.mica.server.api.SystemResource;
 import ca.ibodrov.mica.server.api.ViewResource;
-import ca.ibodrov.mica.server.data.BuiltinSchemas;
-import ca.ibodrov.mica.server.data.EntityKindStore;
-import ca.ibodrov.mica.server.data.EntityStore;
-import ca.ibodrov.mica.server.data.InitialDataLoader;
+import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.ConstraintViolationExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.EntityValidationExceptionMapper;
@@ -100,6 +97,7 @@ public class MicaModule implements Module {
         binder.bind(EntityKindStore.class).in(SINGLETON);
         binder.bind(EntityStore.class).in(SINGLETON);
         binder.bind(UuidGenerator.class).in(SINGLETON);
+        binder.bind(ConcordRepositoryPartialEntityStore.class).in(SINGLETON);
 
         binder.bind(InitialDataLoader.class).asEagerSingleton();
     }

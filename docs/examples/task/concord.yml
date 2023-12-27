@@ -1,6 +1,6 @@
 configuration:
   dependencies:
-    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.5-SNAPSHOT
+    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.11
 
 flows:
   default:

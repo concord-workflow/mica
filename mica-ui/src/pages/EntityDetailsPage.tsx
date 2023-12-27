@@ -232,7 +232,7 @@ const EntityDetailsPage = () => {
                     <SectionTitle>{kindToPayloadTitle(entity.kind)}</SectionTitle>
                     <ActionBar sx={{ mb: 2 }}>
                         <Spacer />
-                        <SearchField onChange={(search) => setSearch(search)} />
+                        <SearchField value={search} onChange={(search) => setSearch(search)} />
                     </ActionBar>
                     <TableContainer component={Paper}>
                         <Table size="small">

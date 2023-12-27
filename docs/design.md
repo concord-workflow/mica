@@ -1,18 +1,5 @@
 # Mica
 
-## ToC
-
-- [Core Model](#core-model)
-- [Views](#views)
-- [View Flattening](#view-flattening)
-- [Merge Results](#merge-results)
-- [JSON Patch Support](#json-patch-support)
-- [Parametrized Views](#parametrized-views)
-- [Save View Data As Entities](#save-view-data-as-entities)
-- [Entity Validation](#entity-validation)
-- [Supported JSON Schema Features](#supported-json-schema-features)
-- [Database Design](#database-design)
-
 ## Core Model
 
 The primary concept is `Entity` -- a JSON object, validated using rules of the
@@ -359,6 +346,33 @@ To pass the parameters, use the `parameters` field in the request body:
 ```
 curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
+
+## Data Includes
+
+```yaml
+kind: /mica/view/v1
+name: /views/effective-config
+parameters:
+  commitId:
+    type: string
+selector:
+  entityKind: /mica/record/v1
+  namePatterns:
+    - /stuff/configs
+data:
+  includes:
+    - concord+git://projectName/repoName?path=/stuff/configs&commitId=${parameters.commitId}
+```
+
+The `includes` field is a list of URLs to fetch data from.  Only `concord+git`
+URL scheme is supported at the moment.
+
+The `concord+git` URL must point at existing Concord project `projectName`
+with the repository `repoName`. When rendering the view, Mica will fetch
+the contents of the repository at the given `commitId` and look for YAML files
+in the given `path`. YAML files with the `kind` field set to
+`selector.entityKind` will be considered for further processing, the rest will
+be ignored.
 
 ## Materialize View Data As Entities
 
