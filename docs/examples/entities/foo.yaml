@@ -1,4 +1,3 @@
----
 name: foo
 kind: /mica/record/v1
 data: |

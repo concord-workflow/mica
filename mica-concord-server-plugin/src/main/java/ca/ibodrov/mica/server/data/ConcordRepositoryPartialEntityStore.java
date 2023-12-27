@@ -61,7 +61,7 @@ public class ConcordRepositoryPartialEntityStore {
         try (var reader = Files.newBufferedReader(path, UTF_8)) {
             return objectMapper.readValue(reader, PartialEntity.class);
         } catch (IOException e) {
-            throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
+            throw new StoreException("Error while reading %s: %s".formatted(path, e.getMessage()), e);
         }
     }
 

@@ -71,7 +71,7 @@ public class ConfigManagementIT extends EndToEnd {
             var repoUrl = "git@github.com:concord-workflow/mica.git";
             var projectManager = micaServer.getServer().getInjector().getInstance(ProjectManager.class);
             projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
-                    Map.of(repoName, new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "main", null))));
+                    Map.of(repoName, new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "ib/git-imports", null))));
 
             var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryPartialEntityStore.class);
             return store.getAllByKind(orgName, projectName, repoName, "/mica/record/v1", "docs/examples").toList();
