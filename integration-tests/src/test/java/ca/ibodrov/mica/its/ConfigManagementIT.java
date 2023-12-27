@@ -55,32 +55,6 @@ public class ConfigManagementIT extends EndToEnd {
     }
 
     @Test
-    public void useGitImportsInViews() throws Exception {
-        var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
-                .getId("admin", null, UserType.LOCAL)
-                .orElseThrow();
-
-        var securityContext = micaServer.getServer().getInjector().getInstance(ProcessSecurityContext.class);
-        var entities = securityContext.runAs(adminId, () -> {
-            var orgName = "org-" + UUID.randomUUID();
-            var orgManager = micaServer.getServer().getInjector().getInstance(OrganizationManager.class);
-            orgManager.createOrUpdate(new OrganizationEntry(orgName));
-
-            var projectName = "project-" + UUID.randomUUID();
-            var repoName = "repo-" + UUID.randomUUID();
-            var repoUrl = "git@github.com:concord-workflow/mica.git";
-            var projectManager = micaServer.getServer().getInjector().getInstance(ProjectManager.class);
-            projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
-                    Map.of(repoName,
-                            new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "ib/git-imports", null))));
-
-            var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryPartialEntityStore.class);
-            return store.getAllByKind(orgName, projectName, repoName, "/mica/record/v1", "docs/examples").toList();
-        });
-        assertEquals(2, entities.size());
-    }
-
-    @Test
     public void simulateGitflowPattern() throws Exception {
         // one-time setup
 
@@ -228,6 +202,33 @@ public class ConfigManagementIT extends EndToEnd {
         assertTrue(log.contains("name=/acme/configs/env/prod/instance-level-config.yaml"));
         assertTrue(log.contains("level=prod"));
         assertTrue(log.contains("prValue=true"));
+    }
+
+    @Test
+    public void useGitImportsInViews() throws Exception {
+        var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
+                .getId("admin", null, UserType.LOCAL)
+                .orElseThrow();
+
+        var securityContext = micaServer.getServer().getInjector().getInstance(ProcessSecurityContext.class);
+        var entities = securityContext.runAs(adminId, () -> {
+            var orgName = "org-" + UUID.randomUUID();
+            var orgManager = micaServer.getServer().getInjector().getInstance(OrganizationManager.class);
+            orgManager.createOrUpdate(new OrganizationEntry(orgName));
+
+            var projectName = "project-" + UUID.randomUUID();
+            var repoName = "repo-" + UUID.randomUUID();
+            var repoUrl = "git@github.com:concord-workflow/mica.git";
+            var projectManager = micaServer.getServer().getInjector().getInstance(ProjectManager.class);
+            projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
+                    Map.of(repoName,
+                            new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "ib/git-imports", null))));
+
+            var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryPartialEntityStore.class);
+            return store.getAllByKind(orgName, projectName, repoName, "/mica/record/v1",
+                    "integration-tests/src/test/resources/entities").toList();
+        });
+        assertEquals(2, entities.size());
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)

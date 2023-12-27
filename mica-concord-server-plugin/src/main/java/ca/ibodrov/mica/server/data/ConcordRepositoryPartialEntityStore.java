@@ -20,21 +20,21 @@ import static java.util.Objects.requireNonNull;
 
 public class ConcordRepositoryPartialEntityStore {
 
-    private final OrganizationManager organizationManager;
+    private final OrganizationManager orgManager;
     private final ProjectRepositoryManager projectRepositoryManager;
     private final RepositoryManager repositoryManager;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper yamlMapper;
 
     @Inject
-    public ConcordRepositoryPartialEntityStore(OrganizationManager organizationManager,
+    public ConcordRepositoryPartialEntityStore(OrganizationManager orgManager,
                                                ProjectRepositoryManager projectRepositoryManager,
                                                RepositoryManager repositoryManager,
                                                ObjectMapper objectMapper) {
 
-        this.organizationManager = requireNonNull(organizationManager);
+        this.orgManager = requireNonNull(orgManager);
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);
         this.repositoryManager = requireNonNull(repositoryManager);
-        this.objectMapper = requireNonNull(objectMapper).copyWith(new YAMLFactory());
+        this.yamlMapper = requireNonNull(objectMapper).copyWith(new YAMLFactory());
     }
 
     public Stream<PartialEntity> getAllByKind(String orgName,
@@ -42,7 +42,8 @@ public class ConcordRepositoryPartialEntityStore {
                                               String repoName,
                                               String kind,
                                               String path) {
-        var org = organizationManager.assertAccess(orgName, false);
+
+        var org = orgManager.assertAccess(orgName, false);
         var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
         var repo = repositoryManager.fetch(repoEntry.getProjectId(), repoEntry);
         var basePath = repo.path().resolve(path);
@@ -60,7 +61,7 @@ public class ConcordRepositoryPartialEntityStore {
 
     private PartialEntity parseFile(Path path) {
         try (var reader = Files.newBufferedReader(path, UTF_8)) {
-            return objectMapper.readValue(reader, PartialEntity.class);
+            return yamlMapper.readValue(reader, PartialEntity.class);
         } catch (IOException e) {
             throw new StoreException("Error while reading %s: %s".formatted(path, e.getMessage()), e);
         }
