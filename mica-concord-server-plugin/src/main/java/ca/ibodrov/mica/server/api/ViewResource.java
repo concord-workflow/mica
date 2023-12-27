@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ca.ibodrov.mica.server.data.ViewRenderer.interpolate;
+import static ca.ibodrov.mica.server.data.ViewInterpolator.interpolate;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -38,7 +38,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class ViewResource implements Resource {
 
     private static final String RESULT_ENTITY_KIND = "MicaMaterializedView/v1";
-    private static final URI INTERNAL_ENTITY_STORE_URI = URI.create("mica://internal");
+    private static final String INTERNAL_ENTITY_STORE_URI = URI.create("mica://internal").toString();
 
     /**
      * Don't validate these properties, they are added by the system.
@@ -74,10 +74,10 @@ public class ViewResource implements Resource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Render a view", operationId = "render")
     public PartialEntity render(@Valid RenderRequest request) {
-        var view = BuiltinSchemas.asViewLike(objectMapper, assertViewEntity(request));
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
+        var view = interpolateView(assertViewEntity(request), parameters);
         var entities = fetch(view, parameters, request.limit());
-        var renderedView = viewRenderer.render(view, parameters, entities);
+        var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
         return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
     }
@@ -96,10 +96,10 @@ public class ViewResource implements Resource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Preview a view", operationId = "preview")
     public PartialEntity preview(@Valid PreviewRequest request) {
-        var view = BuiltinSchemas.asViewLike(objectMapper, request.view());
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
+        var view = interpolateView(request.view(), parameters);
         var entities = fetch(view, parameters, request.limit());
-        var renderedView = viewRenderer.render(view, parameters, entities);
+        var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
         return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
     }
@@ -109,10 +109,10 @@ public class ViewResource implements Resource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Materialize a view", description = "Render a view and save the result as entities", operationId = "materialize")
     public PartialEntity materialize(@Valid RenderRequest request) {
-        var view = BuiltinSchemas.asViewLike(objectMapper, assertViewEntity(request));
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
+        var view = interpolateView(assertViewEntity(request), parameters);
         var entities = fetch(view, parameters, request.limit());
-        var renderedView = viewRenderer.render(view, parameters, entities);
+        var renderedView = viewRenderer.render(view, entities);
         // TODO validation
         // TODO optimistic locking
         return dsl.transactionResult(tx -> {
@@ -126,6 +126,11 @@ public class ViewResource implements Resource {
         });
     }
 
+    private ViewLike interpolateView(EntityLike viewEntity, JsonNode parameters) {
+        var view = BuiltinSchemas.asViewLike(objectMapper, viewEntity);
+        return interpolate(view, parameters);
+    }
+
     private Stream<? extends EntityLike> fetch(ViewLike view, JsonNode parameters, int limit) {
         // TODO limit is not very useful right now
 
@@ -133,6 +138,7 @@ public class ViewResource implements Resource {
 
         // grab all entities matching the selector's entity kind
         var entities = includes.stream()
+                .map(URI::create)
                 .flatMap(include -> includeFetchers.stream()
                         .flatMap(
                                 fetcher -> fetcher.getAllByKind(include, view.selector().entityKind(), limit).stream()))
@@ -146,12 +152,7 @@ public class ViewResource implements Resource {
         // if namePatterns are specified, filter the entities and return them in the
         // order of the patterns
         if (view.selector().namePatterns().isPresent()) {
-            // interpolate patterns, ignore any unknown variables
-            var patterns = view.selector().namePatterns().get().stream()
-                    .map(p -> interpolate(p, parameters, false)
-                            .replace("$", "\\$")
-                            .replace("{", "\\{"))
-                    .toList();
+            var patterns = view.selector().namePatterns().get();
 
             result = Stream.empty();
             for (var pattern : patterns) {

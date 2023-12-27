@@ -63,24 +63,13 @@ public class ViewRenderer {
     /**
      * Render a /mica/view/v1 using the given entities and parameters.
      */
-    public RenderedView render(ViewLike view,
-                               JsonNode parameters,
-                               Stream<? extends EntityLike> entities) {
-
-        // TODO validate supplied parameters according to the view's schema
-
+    public RenderedView render(ViewLike view, Stream<? extends EntityLike> entities) {
         // interpolate JSON path using the supplied parameters
         var jsonPath = requireNonNull(view.data().jsonPath());
-        var effectiveJsonPath = interpolate(jsonPath, parameters, false);
-        // TODO might not be enough
-        if (effectiveJsonPath.matches(".*\\$[a-zA-Z_]+.*")) {
-            throw new ViewProcessorException("Unresolved parameters in JSON path: " + effectiveJsonPath);
-        }
 
         // apply JSON path
         var data = entities
-                .map(row -> applyJsonPath(row.name(), objectMapper.convertValue(row, JsonNode.class),
-                        effectiveJsonPath))
+                .map(row -> applyJsonPath(row.name(), objectMapper.convertValue(row, JsonNode.class), jsonPath))
                 .flatMap(Optional::stream)
                 .toList();
 
@@ -168,47 +157,5 @@ public class ViewRenderer {
         } catch (JsonProcessingException e) {
             throw new ViewProcessorException("Error while merging JSON objects: " + e.getMessage());
         }
-    }
-
-    public static String interpolate(String s, JsonNode parameters, boolean quote) {
-        if (parameters.isNull() || parameters.isEmpty()) {
-            return s;
-        }
-
-        if (parameters.isObject()) {
-            // TODO support nested parameters ${parameters.foo.bar[0]}
-
-            for (var fields = parameters.fields(); fields.hasNext();) {
-                var field = fields.next();
-
-                var key = "$parameters." + field.getKey();
-                if (!s.contains(key)) {
-                    key = "${parameters." + field.getKey() + "}";
-                    if (!s.contains(key)) {
-                        continue;
-                    }
-                }
-
-                var value = field.getValue();
-                if (value == null || value.isNull()) {
-                    continue;
-                }
-
-                if (value.isTextual()) {
-                    if (quote) {
-                        s = s.replace(key, "'" + value.asText() + "'");
-                    } else {
-                        s = s.replace(key, value.asText());
-                    }
-                } else {
-                    s = s.replace(key, value.asText("unknown"));
-                }
-            }
-        }
-
-        // TODO arrays, etc
-        // TODO report unresolved parameters
-
-        return s;
     }
 }

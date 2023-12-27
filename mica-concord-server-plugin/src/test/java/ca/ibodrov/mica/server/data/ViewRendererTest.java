@@ -50,7 +50,7 @@ public class ViewRendererTest {
                 data: Some data from B
                 """);
 
-        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals("Some data from A", result.data().get(0).asText());
         assertEquals("Some data from B", result.data().get(1).asText());
@@ -88,7 +88,7 @@ public class ViewRendererTest {
                   jsonPath: $.clients[*].['name', 'id', 'validationUrl']
                 """);
 
-        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(2, result.data().size());
 
@@ -121,7 +121,7 @@ public class ViewRendererTest {
                   flatten: true
                 """);
 
-        result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
+        result = renderer.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(4, result.data().size());
 
@@ -180,13 +180,14 @@ public class ViewRendererTest {
                   flatten: true
                 """);
 
-        var result = renderer.render(view, parameters("clientId", IntNode.valueOf(1)), Stream.of(entityA, entityB));
+        var interpolatedView = ViewInterpolator.interpolate(view, parameters("clientId", IntNode.valueOf(2)));
+        var result = renderer.render(interpolatedView, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());
 
         var expected = """
                 ---
-                - "Bob"
+                - "Alice"
                 """;
         assertEquals(expected, toYaml(result.data()));
     }
@@ -223,7 +224,7 @@ public class ViewRendererTest {
                   merge: true
                 """);
 
-        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());
 
@@ -271,7 +272,7 @@ public class ViewRendererTest {
                         name: Blamf
                 """);
 
-        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entity));
+        var result = renderer.render(view, Stream.of(entity));
         assertNotNull(result);
         assertEquals(1, result.data().size());
         assertEquals("Blamf", result.data().get(0).get("widgets").get(3).get("name").asText());
@@ -302,7 +303,7 @@ public class ViewRendererTest {
                   jsonPath: $
                 """);
 
-        var result = renderer.render(view, NullNode.getInstance(), Stream.of(foo, bar));
+        var result = renderer.render(view, Stream.of(foo, bar));
         assertEquals(2, result.data().size());
         assertEquals("88eccc0c-99e1-11ee-b9d1-0242ac120002", result.data().get(0).get("id").asText());
     }

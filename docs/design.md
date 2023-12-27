@@ -341,9 +341,16 @@ data:
 The `parameters` value must be a valid JSON Schema object (with
 `type: object` by default).
 
-The `${parameters.foo}` is used to reference parameters in the `jsonPath`
-expression.  Currently, any JSON value can be used as a parameter. Currently,
-only primitive types are supported.
+The `${parameters.foo}` syntax is used to reference parameters. Currently,
+only top-level fields are supported (i.e. nested parameters like
+`${parameters.foo.bar}` are not supported).
+
+Parameters can be used in:
+- `selector.includes`
+- `selector.entityKind`
+- `selector.namePatterns`
+- `data.jsonPath` expressions
+- `validation.asEntityKind`
 
 To pass the parameters, use the `parameters` field in the request body:
 

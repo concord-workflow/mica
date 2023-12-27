@@ -35,7 +35,7 @@ public record MicaViewV1(@ValidName String name,
         requireNonNull(parameters, "'parameters' cannot be null");
     }
 
-    public record Selector(Optional<List<URI>> includes,
+    public record Selector(Optional<List<String>> includes,
             @ValidName String entityKind,
             @NotNull Optional<List<String>> namePatterns) implements ViewLike.Selector {
 
