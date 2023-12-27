@@ -7,10 +7,7 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.api.ViewResource.RenderRequest;
-import ca.ibodrov.mica.server.data.BuiltinSchemas;
-import ca.ibodrov.mica.server.data.EntityFetcher;
-import ca.ibodrov.mica.server.data.EntityKindStore;
-import ca.ibodrov.mica.server.data.EntityStore;
+import ca.ibodrov.mica.server.data.*;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.Streams;
@@ -41,7 +38,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
-        var entityFetchers = Set.<EntityFetcher>of();
+        var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));
         viewResource = new ViewResource(dsl(), entityStore, entityKindStore, entityFetchers, objectMapper);
     }
 

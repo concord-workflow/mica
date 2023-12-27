@@ -56,7 +56,8 @@ public class ViewResource implements Resource {
     @Inject
     public ViewResource(@MicaDB DSLContext dsl,
                         EntityStore entityStore,
-                        EntityKindStore entityKindStore, Set<EntityFetcher> includeFetchers,
+                        EntityKindStore entityKindStore,
+                        Set<EntityFetcher> includeFetchers,
                         ObjectMapper objectMapper) {
 
         this.dsl = requireNonNull(dsl);
