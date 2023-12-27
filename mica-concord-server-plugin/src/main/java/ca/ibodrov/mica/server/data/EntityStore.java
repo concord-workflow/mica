@@ -96,23 +96,6 @@ public class EntityStore {
                 .fetch(EntityStore::toEntityMetadata);
     }
 
-    public List<Entity> getAllByKind(String entityKind, int limit) {
-        var step = dsl.select(MICA_ENTITIES.ID,
-                MICA_ENTITIES.NAME,
-                MICA_ENTITIES.KIND,
-                MICA_ENTITIES.CREATED_AT,
-                MICA_ENTITIES.UPDATED_AT,
-                MICA_ENTITIES.DATA)
-                .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.KIND.eq(entityKind));
-
-        if (limit > 0) {
-            step.limit(limit);
-        }
-
-        return step.fetch(this::toEntity);
-    }
-
     public Optional<Entity> getById(EntityId entityId) {
         return dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
@@ -185,6 +168,11 @@ public class EntityStore {
     }
 
     private Entity toEntity(Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
+        return toEntity(objectMapper, record);
+    }
+
+    public static Entity toEntity(ObjectMapper objectMapper,
+                                  Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
         var id = new EntityId(record.value1());
         try {
             var data = objectMapper.readValue(record.value6().data(), PROPERTIES_TYPE);

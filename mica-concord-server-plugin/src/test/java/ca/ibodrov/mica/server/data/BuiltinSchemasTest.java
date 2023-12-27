@@ -73,7 +73,7 @@ public class BuiltinSchemasTest {
                 kind: /mica/view/v1
                 # broken parameters
                 parameters:
-                  clientId:
+                  foo:
                 selector:
                   entityKind: /mica/record/v1
                 data:

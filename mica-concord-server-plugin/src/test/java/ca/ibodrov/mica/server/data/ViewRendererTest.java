@@ -2,8 +2,10 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.ViewLike;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.intellij.lang.annotations.Language;
@@ -48,7 +50,7 @@ public class ViewRendererTest {
                 data: Some data from B
                 """);
 
-        var result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals("Some data from A", result.data().get(0).asText());
         assertEquals("Some data from B", result.data().get(1).asText());
@@ -86,7 +88,7 @@ public class ViewRendererTest {
                   jsonPath: $.clients[*].['name', 'id', 'validationUrl']
                 """);
 
-        var result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(2, result.data().size());
 
@@ -119,7 +121,7 @@ public class ViewRendererTest {
                   flatten: true
                 """);
 
-        result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
+        result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(4, result.data().size());
 
@@ -168,17 +170,17 @@ public class ViewRendererTest {
                 kind: /mica/view/v1
                 name: test
                 parameters:
-                  clientId:
-                    type: string
+                  properties:
+                    clientId:
+                        type: string
                 selector:
                   entityKind: ClientList
                 data:
-                  jsonPath: $.clients[?(@.id==$clientId)].name
+                  jsonPath: $.clients[?(@.id==$parameters.clientId)].name
                   flatten: true
                 """);
 
-        var result = renderer.render(view, Map.of("clientId", IntNode.valueOf(1)),
-                Stream.of(entityA, entityB));
+        var result = renderer.render(view, parameters("clientId", IntNode.valueOf(1)), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());
 
@@ -221,7 +223,7 @@ public class ViewRendererTest {
                   merge: true
                 """);
 
-        var result = renderer.render(view, Map.of(), Stream.of(entityA, entityB));
+        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());
 
@@ -269,7 +271,7 @@ public class ViewRendererTest {
                         name: Blamf
                 """);
 
-        var result = renderer.render(view, Map.of(), Stream.of(entity));
+        var result = renderer.render(view, NullNode.getInstance(), Stream.of(entity));
         assertNotNull(result);
         assertEquals(1, result.data().size());
         assertEquals("Blamf", result.data().get(0).get("widgets").get(3).get("name").asText());
@@ -300,7 +302,7 @@ public class ViewRendererTest {
                   jsonPath: $
                 """);
 
-        var result = renderer.render(view, Map.of(), Stream.of(foo, bar));
+        var result = renderer.render(view, NullNode.getInstance(), Stream.of(foo, bar));
         assertEquals(2, result.data().size());
         assertEquals("88eccc0c-99e1-11ee-b9d1-0242ac120002", result.data().get(0).get("id").asText());
     }
@@ -325,4 +327,7 @@ public class ViewRendererTest {
         }
     }
 
+    private static JsonNode parameters(String k1, JsonNode v1) {
+        return yamlMapper.convertValue(Map.of(k1, v1), JsonNode.class);
+    }
 }

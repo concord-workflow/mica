@@ -1,5 +1,4 @@
----
-name: bar
+name: /examples/bar
 kind: /mica/record/v1
 data:
   nested:

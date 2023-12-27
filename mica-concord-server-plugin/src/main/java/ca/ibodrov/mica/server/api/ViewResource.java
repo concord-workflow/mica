@@ -1,6 +1,9 @@
 package ca.ibodrov.mica.server.api;
 
-import ca.ibodrov.mica.api.model.*;
+import ca.ibodrov.mica.api.model.EntityId;
+import ca.ibodrov.mica.api.model.EntityLike;
+import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.data.*;
@@ -18,6 +21,8 @@ import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -33,6 +38,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class ViewResource implements Resource {
 
     private static final String RESULT_ENTITY_KIND = "MicaMaterializedView/v1";
+    private static final URI INTERNAL_ENTITY_STORE_URI = URI.create("mica://internal");
 
     /**
      * Don't validate these properties, they are added by the system.
@@ -42,6 +48,7 @@ public class ViewResource implements Resource {
     private final DSLContext dsl;
     private final EntityStore entityStore;
     private final EntityKindStore entityKindStore;
+    private final Set<EntityFetcher> includeFetchers;
     private final ObjectMapper objectMapper;
     private final ViewRenderer viewRenderer;
     private final Validator validator;
@@ -50,11 +57,13 @@ public class ViewResource implements Resource {
     public ViewResource(@MicaDB DSLContext dsl,
                         EntityStore entityStore,
                         EntityKindStore entityKindStore,
+                        Set<EntityFetcher> includeFetchers,
                         ObjectMapper objectMapper) {
 
         this.dsl = requireNonNull(dsl);
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
+        this.includeFetchers = requireNonNull(includeFetchers);
         this.objectMapper = requireNonNull(objectMapper);
         this.viewRenderer = new ViewRenderer(objectMapper);
         this.validator = new Validator(entityKindStore::getSchemaForKind);
@@ -66,7 +75,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Render a view", operationId = "render")
     public PartialEntity render(@Valid RenderRequest request) {
         var view = BuiltinSchemas.asViewLike(objectMapper, assertViewEntity(request));
-        var parameters = request.parameters().orElseGet(Map::of);
+        var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var entities = fetch(view, parameters, request.limit());
         var renderedView = viewRenderer.render(view, parameters, entities);
         var validation = validate(view, renderedView);
@@ -88,7 +97,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Preview a view", operationId = "preview")
     public PartialEntity preview(@Valid PreviewRequest request) {
         var view = BuiltinSchemas.asViewLike(objectMapper, request.view());
-        var parameters = request.parameters().orElseGet(Map::of);
+        var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var entities = fetch(view, parameters, request.limit());
         var renderedView = viewRenderer.render(view, parameters, entities);
         var validation = validate(view, renderedView);
@@ -101,7 +110,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Materialize a view", description = "Render a view and save the result as entities", operationId = "materialize")
     public PartialEntity materialize(@Valid RenderRequest request) {
         var view = BuiltinSchemas.asViewLike(objectMapper, assertViewEntity(request));
-        var parameters = request.parameters().orElseGet(Map::of);
+        var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var entities = fetch(view, parameters, request.limit());
         var renderedView = viewRenderer.render(view, parameters, entities);
         // TODO validation
@@ -117,13 +126,25 @@ public class ViewResource implements Resource {
         });
     }
 
-    private Stream<Entity> fetch(ViewLike view, Map<String, JsonNode> parameters, int limit) {
-        // grab all entities matching the selector's entity kind
-        var entities = entityStore.getAllByKind(view.selector().entityKind(), limit);
+    private Stream<? extends EntityLike> fetch(ViewLike view, JsonNode parameters, int limit) {
+        // TODO limit is not very useful right now
 
+        var includes = view.selector().includes().orElse(List.of(INTERNAL_ENTITY_STORE_URI));
+
+        // grab all entities matching the selector's entity kind
+        var entities = includes.stream()
+                .flatMap(include -> includeFetchers.stream()
+                        .flatMap(
+                                fetcher -> fetcher.getAllByKind(include, view.selector().entityKind(), limit).stream()))
+                .toList();
+
+        if (entities.isEmpty()) {
+            return Stream.empty();
+        }
+
+        var result = entities.stream();
         // if namePatterns are specified, filter the entities and return them in the
         // order of the patterns
-        var result = entities.stream();
         if (view.selector().namePatterns().isPresent()) {
             // interpolate patterns, ignore any unknown variables
             var patterns = view.selector().namePatterns().get().stream()
@@ -131,6 +152,7 @@ public class ViewResource implements Resource {
                             .replace("$", "\\$")
                             .replace("{", "\\{"))
                     .toList();
+
             result = Stream.empty();
             for (var pattern : patterns) {
                 result = Stream.concat(result, entities.stream().filter(e -> e.name().matches(pattern)));
@@ -177,17 +199,17 @@ public class ViewResource implements Resource {
     public record RenderRequest(Optional<EntityId> viewId,
             Optional<String> viewName,
             int limit, // TODO limit is not very useful right now
-            Optional<Map<String, JsonNode>> parameters) {
+            Optional<JsonNode> parameters) {
 
         public static RenderRequest of(String viewName, int limit) {
             return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.empty());
         }
 
-        public static RenderRequest parameterized(String viewName, Map<String, JsonNode> parameters, int limit) {
+        public static RenderRequest parameterized(String viewName, JsonNode parameters, int limit) {
             return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.of(parameters));
         }
     }
 
-    public record PreviewRequest(@NotNull PartialEntity view, int limit, Optional<Map<String, JsonNode>> parameters) {
+    public record PreviewRequest(@NotNull PartialEntity view, int limit, Optional<JsonNode> parameters) {
     }
 }

@@ -2,7 +2,9 @@ package ca.ibodrov.mica.its;
 
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
+import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.server.data.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,20 +13,31 @@ import com.walmartlabs.concord.client2.ApiException;
 import com.walmartlabs.concord.client2.ProcessApi;
 import com.walmartlabs.concord.client2.ProcessEntry;
 import com.walmartlabs.concord.client2.StartProcessResponse;
+import com.walmartlabs.concord.server.org.OrganizationEntry;
+import com.walmartlabs.concord.server.org.OrganizationManager;
+import com.walmartlabs.concord.server.org.project.ProjectEntry;
+import com.walmartlabs.concord.server.org.project.ProjectManager;
+import com.walmartlabs.concord.server.org.project.RepositoryEntry;
+import com.walmartlabs.concord.server.process.ProcessSecurityContext;
+import com.walmartlabs.concord.server.user.UserManager;
+import com.walmartlabs.concord.server.user.UserType;
+import org.eclipse.jgit.api.Git;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.file.Files;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.any;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -61,9 +74,9 @@ public class ConfigManagementIT extends EndToEnd {
                 .selector(byEntityKind("/acme/kinds/config-layer")
                         .withNamePatterns(List.of(
                                 "/acme/configs/branches/main/instance-level-config.yaml",
-                                "/acme/configs/pulls/${githubPr}/instance-level-config.yaml",
-                                "/acme/configs/env/${env}/instance-level-config.yaml",
-                                "/acme/configs/namespace/${namespace}/foobar/instance-config.yaml")))
+                                "/acme/configs/pulls/${parameters.githubPr}/instance-level-config.yaml",
+                                "/acme/configs/env/${parameters.env}/instance-level-config.yaml",
+                                "/acme/configs/namespace/${parameters.namespace}/foobar/instance-config.yaml")))
                 .data(jsonPath("$").withMerge())
                 .build()
                 .toPartialEntity(objectMapper));
@@ -192,6 +205,82 @@ public class ConfigManagementIT extends EndToEnd {
         assertTrue(log.contains("name=/acme/configs/env/prod/instance-level-config.yaml"));
         assertTrue(log.contains("level=prod"));
         assertTrue(log.contains("prValue=true"));
+    }
+
+    @Test
+    public void validateConcordGitEntityFetcher() throws Exception {
+        // prepare a bare Git repository with YAML files
+
+        var repoBranch = "branch-" + UUID.randomUUID();
+        var repoDir = Files.createTempDirectory("git");
+        var pathInRepo = "nested-" + UUID.randomUUID();
+        try (var git = Git.init()
+                .setInitialBranch(repoBranch)
+                .setDirectory(repoDir.toFile())
+                .call()) {
+
+            // create two entities in the initial branch
+
+            var nestedDir = repoDir.resolve(pathInRepo);
+            Files.createDirectory(nestedDir);
+
+            Files.writeString(nestedDir.resolve("foo.yaml"), """
+                    kind: /mica/record/v1
+                    name: /foo
+                    data:
+                      value: "foo!"
+                    """);
+            Files.writeString(nestedDir.resolve("bar.yaml"), """
+                    kind: /mica/record/v1
+                    name: /bar
+                    data:
+                      value: "bar!"
+                    """);
+            git.add().addFilepattern(".").call();
+            git.commit().setSign(false).setMessage("2 entities").call();
+
+            // create one extra entity in a different branch
+
+            git.checkout().setCreateBranch(true).setName("other").call();
+            Files.writeString(nestedDir.resolve("foo.yaml"), """
+                    kind: /mica/record/v1
+                    name: /baz
+                    data:
+                      value: "baz!"
+                    """);
+            git.add().addFilepattern(".").call();
+            git.commit().setSign(false).setMessage("1 extra entity").call();
+        }
+        var repoUrl = "file://" + repoDir.toAbsolutePath();
+
+        var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
+                .getId("admin", null, UserType.LOCAL)
+                .orElseThrow();
+
+        var securityContext = micaServer.getServer().getInjector().getInstance(ProcessSecurityContext.class);
+        var entities = securityContext.runAs(adminId, () -> {
+            var orgName = "org-" + UUID.randomUUID();
+            var orgManager = micaServer.getServer().getInjector().getInstance(OrganizationManager.class);
+            orgManager.createOrUpdate(new OrganizationEntry(orgName));
+
+            var projectName = "project-" + UUID.randomUUID();
+            var repoName = "repo-" + UUID.randomUUID();
+            var projectManager = micaServer.getServer().getInjector().getInstance(ProjectManager.class);
+            projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
+                    Map.of(repoName,
+                            new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
+
+            var store = micaServer.getServer().getInjector().getInstance(ConcordGitEntityFetcher.class);
+            var uri = URI
+                    .create("concord+git://%s/%s/%s?ref=%s&path=%s".formatted(orgName, projectName, repoName,
+                            URLEncoder.encode(repoBranch, UTF_8), URLEncoder.encode(pathInRepo, UTF_8)));
+            return store.getAllByKind(uri, "/mica/record/v1", 10);
+        });
+
+        assertEquals(2, entities.size());
+        entities = entities.stream().sorted(Comparator.comparing(EntityLike::name)).toList();
+        assertEquals("bar!", entities.get(0).data().get("data").get("value").asText());
+        assertEquals("foo!", entities.get(1).data().get("data").get("value").asText());
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)

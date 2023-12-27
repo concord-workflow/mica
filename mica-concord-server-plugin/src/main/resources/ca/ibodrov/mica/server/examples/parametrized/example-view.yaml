@@ -1,10 +1,11 @@
 name: /examples/parametrized/example-view
 kind: /mica/view/v1
 parameters:
-  recordName:
-    type: string
-  recordKey:
-    type: string
+  properties:
+    recordName:
+      type: string
+    recordKey:
+      type: string
 selector:
   entityKind: /examples/parametrized/example-kind
   namePatterns:

@@ -6,10 +6,10 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.api.ViewResource.RenderRequest;
-import ca.ibodrov.mica.server.data.BuiltinSchemas;
-import ca.ibodrov.mica.server.data.EntityKindStore;
-import ca.ibodrov.mica.server.data.EntityStore;
+import ca.ibodrov.mica.server.data.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.Streams;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,7 +38,8 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
-        viewResource = new ViewResource(dsl(), entityStore, entityKindStore, objectMapper);
+        var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));
+        viewResource = new ViewResource(dsl(), entityStore, entityKindStore, entityFetchers, objectMapper);
     }
 
     @Test
@@ -101,15 +102,15 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // create view
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/test-name-pattern-substitution")
-                .parameters(Map.of("x", string()))
+                .parameters(object("x", string()))
                 .selector(byEntityKind(recordKind)
-                        .withNamePatterns(List.of("/${x}/record", "/${y}/record")))
+                        .withNamePatterns(List.of("/${parameters.x}/record", "/${parameters.y}/record")))
                 .data(jsonPath("$").withMerge())
                 .build()
                 .toPartialEntity(objectMapper));
 
         var result = viewResource.render(RenderRequest.parameterized("/test-name-pattern-substitution",
-                Map.of("x", TextNode.valueOf("first"), "y", TextNode.valueOf("second")),
+                parameters("x", TextNode.valueOf("first"), "y", TextNode.valueOf("second")),
                 10));
         assertEquals(1, result.data().get("data").size());
         assertEquals("/second/record", result.data().get("data").get(0).get("name").asText());
@@ -143,7 +144,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // create view
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/test-view-validation")
-                .parameters(Map.of("x", string()))
+                .parameters(object("x", string()))
                 .selector(byEntityKind(recordKindV1))
                 .data(jsonPath("$"))
                 .validation(asEntityKind(recordKindV2))
@@ -151,7 +152,8 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // we expect the view to return the original data plus the validation errors
-        var result = viewResource.render(RenderRequest.parameterized("/test-view-validation", Map.of(), 10));
+        var result = viewResource
+                .render(RenderRequest.parameterized("/test-view-validation", NullNode.getInstance(), 10));
         assertEquals(2, result.data().get("data").size());
         assertEquals(2, result.data().get("validation").size());
         assertEquals("MISSING_PROPERTY",
@@ -162,5 +164,9 @@ public class ViewResourceTest extends AbstractDatabaseTest {
 
     private static String randomPathPrefix() {
         return "/test-" + System.currentTimeMillis();
+    }
+
+    private static JsonNode parameters(String k1, JsonNode v1, String k2, JsonNode v2) {
+        return objectMapper.convertValue(Map.of(k1, v1, k2, v2), JsonNode.class);
     }
 }

@@ -36,6 +36,13 @@ public record ObjectSchemaNode(Optional<String> type,
                 .build();
     }
 
+    public static ObjectSchemaNode object(String k1, ObjectSchemaNode v1) {
+        return new Builder()
+                .type(OBJECT.key())
+                .properties(Map.of(k1, v1))
+                .build();
+    }
+
     public static ObjectSchemaNode object(Map<String, ObjectSchemaNode> properties, Set<String> required) {
         return new Builder()
                 .type(OBJECT.key())

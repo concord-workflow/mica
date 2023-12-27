@@ -8,9 +8,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.validation.constraints.NotNull;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -23,7 +23,7 @@ public record MicaViewV1(@ValidName String name,
         @NotNull Selector selector,
         @NotNull Data data,
         @NotNull Optional<Validation> validation,
-        @NotNull Optional<Map<String, ObjectSchemaNode>> parameters) implements ViewLike {
+        @NotNull Optional<ObjectSchemaNode> parameters) implements ViewLike {
 
     public static final String MICA_VIEW_V1 = "/mica/view/v1";
 
@@ -35,15 +35,16 @@ public record MicaViewV1(@ValidName String name,
         requireNonNull(parameters, "'parameters' cannot be null");
     }
 
-    public record Selector(@ValidName String entityKind,
+    public record Selector(Optional<List<URI>> includes,
+            @ValidName String entityKind,
             @NotNull Optional<List<String>> namePatterns) implements ViewLike.Selector {
 
         public static Selector byEntityKind(String entityKind) {
-            return new Selector(entityKind, Optional.empty());
+            return new Selector(Optional.empty(), entityKind, Optional.empty());
         }
 
         public Selector withNamePatterns(List<String> namePatterns) {
-            return new Selector(this.entityKind, Optional.of(namePatterns));
+            return new Selector(Optional.empty(), this.entityKind, Optional.of(namePatterns));
         }
     }
 
@@ -84,7 +85,7 @@ public record MicaViewV1(@ValidName String name,
         private Selector selector;
         private Data data;
         private Optional<Validation> validation = Optional.empty();
-        private Optional<Map<String, ObjectSchemaNode>> parameters = Optional.empty();
+        private Optional<ObjectSchemaNode> parameters = Optional.empty();
 
         public Builder name(String name) {
             this.name = name;
@@ -106,7 +107,7 @@ public record MicaViewV1(@ValidName String name,
             return this;
         }
 
-        public Builder parameters(Map<String, ObjectSchemaNode> parameters) {
+        public Builder parameters(ObjectSchemaNode parameters) {
             this.parameters = Optional.of(parameters);
             return this;
         }

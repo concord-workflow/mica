@@ -64,7 +64,7 @@ public class ViewRenderer {
      * Render a /mica/view/v1 using the given entities and parameters.
      */
     public RenderedView render(ViewLike view,
-                               Map<String, JsonNode> parameters,
+                               JsonNode parameters,
                                Stream<? extends EntityLike> entities) {
 
         // TODO validate supplied parameters according to the view's schema
@@ -170,31 +170,44 @@ public class ViewRenderer {
         }
     }
 
-    public static String interpolate(String s, Map<String, JsonNode> parameters, boolean quote) {
-        if (parameters.isEmpty()) {
+    public static String interpolate(String s, JsonNode parameters, boolean quote) {
+        if (parameters.isNull() || parameters.isEmpty()) {
             return s;
         }
 
-        for (var e : parameters.entrySet()) {
-            var key = "$" + e.getKey();
-            if (!s.contains(key)) {
-                key = "${" + e.getKey() + "}";
+        if (parameters.isObject()) {
+            // TODO support nested parameters ${parameters.foo.bar[0]}
+
+            for (var fields = parameters.fields(); fields.hasNext();) {
+                var field = fields.next();
+
+                var key = "$parameters." + field.getKey();
                 if (!s.contains(key)) {
+                    key = "${parameters." + field.getKey() + "}";
+                    if (!s.contains(key)) {
+                        continue;
+                    }
+                }
+
+                var value = field.getValue();
+                if (value == null || value.isNull()) {
                     continue;
                 }
-            }
 
-            var value = e.getValue();
-            if (value.isTextual()) {
-                if (quote) {
-                    s = s.replace(key, "'" + value.asText() + "'");
+                if (value.isTextual()) {
+                    if (quote) {
+                        s = s.replace(key, "'" + value.asText() + "'");
+                    } else {
+                        s = s.replace(key, value.asText());
+                    }
                 } else {
-                    s = s.replace(key, value.asText());
+                    s = s.replace(key, value.asText("unknown"));
                 }
-            } else {
-                s = s.replace(key, value.asText("unknown"));
             }
         }
+
+        // TODO arrays, etc
+        // TODO report unresolved parameters
 
         return s;
     }

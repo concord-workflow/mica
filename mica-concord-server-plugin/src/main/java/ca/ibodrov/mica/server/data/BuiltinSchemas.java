@@ -6,12 +6,17 @@ import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.schema.ValueType;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
@@ -24,6 +29,9 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 public final class BuiltinSchemas {
 
     private static final TypeReference<List<String>> LIST_OF_STRINGS = new TypeReference<>() {
+    };
+
+    private static final TypeReference<List<URI>> LIST_OF_URIS = new TypeReference<>() {
     };
 
     public static final String MICA_OBJECT_SCHEMA_NODE_V1 = "/mica/objectSchemaNode/v1";
@@ -76,7 +84,7 @@ public final class BuiltinSchemas {
                 "id", string(),
                 "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
                 "name", string(),
-                "parameters", object(),
+                "parameters", objectSchemaNodeSchema,
                 "selector", viewSelector,
                 "data", viewData,
                 "validation", viewValidation),
@@ -130,11 +138,12 @@ public final class BuiltinSchemas {
         var name = entity.name();
 
         var parameters = Optional.ofNullable(entity.data().get("parameters"))
+                .filter(n -> !n.isNull())
                 .map(object -> parseParameters(objectMapper, object));
 
         var selector = asViewLikeSelector(objectMapper, entity);
 
-        var data = asViewLikeData(entity);
+        var data = asViewLikeData(objectMapper, entity);
 
         var validation = asViewLikeValidation(entity);
 
@@ -145,7 +154,7 @@ public final class BuiltinSchemas {
             }
 
             @Override
-            public Optional<Map<String, ObjectSchemaNode>> parameters() {
+            public Optional<ObjectSchemaNode> parameters() {
                 return parameters;
             }
 
@@ -167,6 +176,9 @@ public final class BuiltinSchemas {
     }
 
     private static ViewLike.Selector asViewLikeSelector(ObjectMapper objectMapper, EntityLike entity) {
+        // TODO better validation, propagate convertValue errors
+        var includes = select(entity, "data", "includes", n -> objectMapper.convertValue(n, LIST_OF_URIS));
+
         var entityKind = select(entity, "selector", "entityKind", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));
 
@@ -174,6 +186,12 @@ public final class BuiltinSchemas {
                 n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
 
         return new ViewLike.Selector() {
+
+            @Override
+            public Optional<List<URI>> includes() {
+                return includes;
+            }
+
             @Override
             public String entityKind() {
                 return entityKind;
@@ -186,7 +204,7 @@ public final class BuiltinSchemas {
         };
     }
 
-    private static ViewLike.Data asViewLikeData(EntityLike entity) {
+    private static ViewLike.Data asViewLikeData(ObjectMapper objectMapper, EntityLike entity) {
         var jsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
@@ -224,19 +242,13 @@ public final class BuiltinSchemas {
         return entityKind.map(v -> () -> v);
     }
 
-    private static Map<String, ObjectSchemaNode> parseParameters(ObjectMapper objectMapper, JsonNode parameters) {
-        var result = new HashMap<String, ObjectSchemaNode>();
-        parameters.fields().forEachRemaining(field -> {
-            var name = field.getKey();
-            var value = field.getValue();
-            var schema = objectMapper.convertValue(value, ObjectSchemaNode.class);
-            if (schema == null) {
-                throw ApiException
-                        .badRequest("Expected a parameter definition for '%s', got: %s".formatted(name, value));
-            }
-            result.put(name, schema);
-        });
-        return result;
+    private static ObjectSchemaNode parseParameters(ObjectMapper objectMapper, JsonNode parameters) {
+        var strictMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+        try {
+            return strictMapper.convertValue(parameters, ObjectSchemaNode.class);
+        } catch (IllegalArgumentException e) {
+            throw ApiException.badRequest("Error while parsing 'parameters': " + e.getMessage());
+        }
     }
 
     private static <T> Optional<T> select(EntityLike entityLike,

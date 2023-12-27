@@ -1,18 +1,5 @@
 # Mica
 
-## ToC
-
-- [Core Model](#core-model)
-- [Views](#views)
-- [View Flattening](#view-flattening)
-- [Merge Results](#merge-results)
-- [JSON Patch Support](#json-patch-support)
-- [Parametrized Views](#parametrized-views)
-- [Save View Data As Entities](#save-view-data-as-entities)
-- [Entity Validation](#entity-validation)
-- [Supported JSON Schema Features](#supported-json-schema-features)
-- [Database Design](#database-design)
-
 ## Core Model
 
 The primary concept is `Entity` -- a JSON object, validated using rules of the
@@ -341,23 +328,71 @@ Views can declare parameters:
 kind: /mica/view/v1
 name: /views/ActiveClients
 parameters:
-  clientId:
-    type: string
+  properties:
+    clientId:
+      type: string
 selector:
   entityKind: /schemas/AcmeClientList
 data:
-  jsonPath: $.clients[?(@.id==$clientId)].["id", "validationUrl"]
+  jsonPath: $.clients[?(@.id==${parameters.clientId})].["id", "validationUrl"]
   flatten: true
 ```
 
-The `$syntax` is used to reference parameters in the `jsonPath` expression.
-Currently, any JSON value can be used as a parameter. Currently, only primitive
-types are supported.
+The `parameters` value must be a valid JSON Schema object (with
+`type: object` by default).
+
+The `${parameters.foo}` is used to reference parameters in the `jsonPath`
+expression.  Currently, any JSON value can be used as a parameter. Currently,
+only primitive types are supported.
 
 To pass the parameters, use the `parameters` field in the request body:
 
 ```
 curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
+```
+
+## Data Includes
+
+```yaml
+kind: /mica/view/v1
+name: /views/effective-config
+selector:
+  includes:
+    - concord+git://orgName/projectName/repoName?path=/stuff/configs&ref=main  
+  entityKind: /mica/record/v1
+  namePatterns:
+    - /stuff/configs
+data:
+  jsonPath: $
+```
+
+The `includes` field is a list of URLs to fetch data from.  Only `mica` and
+`concord+git` URL schemes are supported at the moment.
+
+The `concord+git` URL must point at existing Concord project `projectName`
+with the repository `repoName`. When rendering the view, Mica will fetch
+the contents of the repository at the given `commitId` and look for YAML files
+in the given `path`. YAML files with the `kind` field set to
+`selector.entityKind` will be considered for further processing, the rest will
+be ignored.
+
+The default value for `includes` contains the URL of the internal entity store:
+
+```yaml
+selector:
+  includes:
+    - mica://internal
+```
+
+When overriding `includes` in a view, the default value is not included. If you
+wish to include both internal entities and external data, use the following
+syntax:
+
+```yaml
+selector:
+  includes:
+    - mica://internal
+    - concord+git://myConcordOrg/myConcordProject/myFavoriteGitRepo?path=/stuff/configs&ref=main  
 ```
 
 ## Materialize View Data As Entities
