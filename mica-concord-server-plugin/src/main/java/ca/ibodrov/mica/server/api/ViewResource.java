@@ -134,7 +134,8 @@ public class ViewResource implements Resource {
         // grab all entities matching the selector's entity kind
         var entities = includes.stream()
                 .flatMap(include -> includeFetchers.stream()
-                        .flatMap(fetcher -> fetcher.getAllByKind(include, view.selector().entityKind(), limit)))
+                        .flatMap(
+                                fetcher -> fetcher.getAllByKind(include, view.selector().entityKind(), limit).stream()))
                 .toList();
 
         if (entities.isEmpty()) {

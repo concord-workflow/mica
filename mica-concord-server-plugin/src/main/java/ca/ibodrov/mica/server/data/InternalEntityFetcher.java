@@ -7,7 +7,7 @@ import org.jooq.DSLContext;
 
 import javax.inject.Inject;
 import java.net.URI;
-import java.util.stream.Stream;
+import java.util.List;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static java.util.Objects.requireNonNull;
@@ -25,9 +25,9 @@ public class InternalEntityFetcher implements EntityFetcher {
 
     // TODO move into a separate class?
     @Override
-    public Stream<EntityLike> getAllByKind(URI uri, String kind, int limit) {
+    public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
         if (!uri.getScheme().equals("mica") && !uri.getPath().equals("internal")) {
-            return Stream.empty();
+            return List.of();
         }
 
         var step = dsl.select(MICA_ENTITIES.ID,
@@ -43,6 +43,6 @@ public class InternalEntityFetcher implements EntityFetcher {
             step.limit(limit);
         }
 
-        return step.fetchStream().map(r -> EntityStore.toEntity(objectMapper, r));
+        return step.fetch(r -> EntityStore.toEntity(objectMapper, r));
     }
 }

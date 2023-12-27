@@ -12,13 +12,16 @@ import com.walmartlabs.concord.server.repository.RepositoryManager;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.*;
 
 public class ConcordGitEntityFetcher implements EntityFetcher {
 
@@ -40,40 +43,52 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     @Override
-    public Stream<EntityLike> getAllByKind(URI uri, String kind, int limit) {
+    public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
         if (!uri.getScheme().equals("concord+git")) {
-            return Stream.empty();
+            return List.of();
+        }
+
+        var pathElements = uri.getPath().split("/");
+        if (pathElements.length != 3) {
+            throw new IllegalArgumentException("Invalid URI: " + uri);
         }
 
         var orgName = uri.getHost();
-        var projectName = uri.getPath().split("/")[1];
-        var repoName = uri.getPath().split("/")[2];
-        var path = uri.getQuery(); // TODO fix
+        var projectName = pathElements[1];
+        var repoName = pathElements[2];
+        var queryParams = parseQueryParameters(uri.getQuery());
+        var path = Optional.ofNullable(queryParams.get("path"))
+                .flatMap(p -> Optional.ofNullable(p.get(0)))
+                .orElse("/");
+
         return getAllByKind(orgName, projectName, repoName, kind, path, limit);
     }
 
-    private Stream<EntityLike> getAllByKind(String orgName,
-                                            String projectName,
-                                            String repoName,
-                                            String kind,
-                                            String path,
-                                            int limit) {
+    private List<EntityLike> getAllByKind(String orgName,
+                                          String projectName,
+                                          String repoName,
+                                          String kind,
+                                          String path,
+                                          int limit) {
 
         var org = orgManager.assertAccess(orgName, false);
         var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
-        var repo = repositoryManager.fetch(repoEntry.getProjectId(), repoEntry);
-        var basePath = repo.path().resolve(path);
-        try {
-            // noinspection Convert2MethodRef,resource
-            return Files.walk(repo.path())
-                    .filter(p -> p.startsWith(basePath))
-                    .filter(p -> isMicaYamlFile(p))
-                    .filter(p -> isOfValidKind(p, kind))
-                    .limit(limit)
-                    .map(this::parseFile);
-        } catch (IOException e) {
-            throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
-        }
+        return repositoryManager.withLock(repoEntry.getUrl(), () -> {
+            var repo = repositoryManager.fetch(repoEntry.getProjectId(), repoEntry);
+            var basePath = repo.path().resolve(path);
+            try {
+                // noinspection Convert2MethodRef,resource
+                return Files.walk(repo.path())
+                        .filter(p -> p.startsWith(basePath))
+                        .filter(p -> isMicaYamlFile(p))
+                        .filter(p -> isOfValidKind(p, kind))
+                        .limit(limit)
+                        .map(this::parseFile)
+                        .toList();
+            } catch (IOException e) {
+                throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
+            }
+        });
     }
 
     private EntityLike parseFile(Path path) {
@@ -96,5 +111,23 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         } catch (IOException e) {
             throw new StoreException("Error while reading %s: %s".formatted(path, e.getMessage()), e);
         }
+    }
+
+    public Map<String, List<String>> parseQueryParameters(String s) {
+        if (s == null || s.isBlank()) {
+            return Map.of();
+        }
+        return Arrays.stream(s.split("&"))
+                .map(this::splitQueryParameter)
+                .collect(groupingBy(Map.Entry::getKey, LinkedHashMap::new, mapping(Map.Entry::getValue, toList())));
+    }
+
+    public SimpleEntry<String, String> splitQueryParameter(String it) {
+        var idx = it.indexOf("=");
+        var key = idx > 0 ? it.substring(0, idx) : it;
+        var value = idx > 0 && it.length() > idx + 1 ? it.substring(idx + 1) : null;
+        return new SimpleEntry<>(
+                URLDecoder.decode(key, UTF_8),
+                value != null ? URLDecoder.decode(value, UTF_8) : null);
     }
 }

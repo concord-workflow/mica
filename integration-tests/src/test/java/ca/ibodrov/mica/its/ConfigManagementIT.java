@@ -211,17 +211,22 @@ public class ConfigManagementIT extends EndToEnd {
 
         var repoBranch = "branch-" + UUID.randomUUID();
         var repoDir = Files.createTempDirectory("git");
+        var pathInRepo = "nested-" + UUID.randomUUID();
         try (var git = Git.init()
                 .setInitialBranch(repoBranch)
                 .setDirectory(repoDir.toFile())
                 .call()) {
-            Files.writeString(repoDir.resolve("foo.yaml"), """
+
+            var nestedDir = repoDir.resolve(pathInRepo);
+            Files.createDirectory(nestedDir);
+
+            Files.writeString(nestedDir.resolve("foo.yaml"), """
                     kind: /mica/record/v1
                     name: /foo
                     data:
                       value: "foo!"
                     """);
-            Files.writeString(repoDir.resolve("bar.yaml"), """
+            Files.writeString(nestedDir.resolve("bar.yaml"), """
                     kind: /mica/record/v1
                     name: /bar
                     data:
@@ -231,7 +236,6 @@ public class ConfigManagementIT extends EndToEnd {
             git.commit().setSign(false).setMessage("test").call();
         }
         var repoUrl = "file://" + repoDir.toAbsolutePath();
-        var pathInRepo = "/";
 
         var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
                 .getId("admin", null, UserType.LOCAL)
@@ -251,8 +255,9 @@ public class ConfigManagementIT extends EndToEnd {
                             new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
 
             var store = micaServer.getServer().getInjector().getInstance(ConcordGitEntityFetcher.class);
-            var uri = URI.create("concord+git://%s/%s/%s?%s".formatted(orgName, projectName, repoName, pathInRepo));
-            return store.getAllByKind(uri, "/mica/record/v1", 10).toList();
+            var uri = URI
+                    .create("concord+git://%s/%s/%s?path=%s".formatted(orgName, projectName, repoName, pathInRepo));
+            return store.getAllByKind(uri, "/mica/record/v1", 10);
         });
         assertEquals(2, entities.size());
         entities = entities.stream().sorted(Comparator.comparing(EntityLike::name)).toList();
