@@ -42,8 +42,8 @@ public class ConcordRepositoryEntityFetcher implements EntityFetcher {
     @Override
     public Stream<EntityLike> getAllByKind(URI uri, String kind) {
         var orgName = uri.getHost();
-        var projectName = uri.getPath().split("/")[0];
-        var repoName = uri.getPath().split("/")[1];
+        var projectName = uri.getPath().split("/")[1];
+        var repoName = uri.getPath().split("/")[2];
         var path = uri.getQuery(); // TODO fix
         return getAllByKind(orgName, projectName, repoName, kind, path);
     }

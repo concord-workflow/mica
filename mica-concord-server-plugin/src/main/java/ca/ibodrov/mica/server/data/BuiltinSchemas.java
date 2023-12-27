@@ -27,6 +27,9 @@ public final class BuiltinSchemas {
     private static final TypeReference<List<String>> LIST_OF_STRINGS = new TypeReference<>() {
     };
 
+    private static final TypeReference<List<URI>> LIST_OF_URIS = new TypeReference<>() {
+    };
+
     public static final String MICA_OBJECT_SCHEMA_NODE_V1 = "/mica/objectSchemaNode/v1";
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
 
@@ -135,7 +138,7 @@ public final class BuiltinSchemas {
 
         var selector = asViewLikeSelector(objectMapper, entity);
 
-        var data = asViewLikeData(entity);
+        var data = asViewLikeData(objectMapper, entity);
 
         var validation = asViewLikeValidation(entity);
 
@@ -187,7 +190,7 @@ public final class BuiltinSchemas {
         };
     }
 
-    private static ViewLike.Data asViewLikeData(EntityLike entity) {
+    private static ViewLike.Data asViewLikeData(ObjectMapper objectMapper, EntityLike entity) {
         var jsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
@@ -197,8 +200,8 @@ public final class BuiltinSchemas {
 
         var jsonPatch = select(entity, "data", "jsonPatch", Function.identity());
 
-        var includes = select(entity, "data", "includes", n -> n.findValuesAsText("uri"))
-                .map(l -> l.stream().map(URI::create).toList());
+        // TODO better validation, propagate convertValue errors
+        var includes = select(entity, "data", "includes", n -> objectMapper.convertValue(n, LIST_OF_URIS));
 
         return new ViewLike.Data() {
             @Override

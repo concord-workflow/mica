@@ -98,9 +98,9 @@ public class MicaModule implements Module {
         binder.bind(EntityStore.class).in(SINGLETON);
         binder.bind(UuidGenerator.class).in(SINGLETON);
 
-        binder.bind(EntityFetcher.class).to(ConcordRepositoryEntityFetcher.class).in(SINGLETON);
-
         binder.bind(InitialDataLoader.class).asEagerSingleton();
+
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordRepositoryEntityFetcher.class);
     }
 
     private static Config loadDefaultConfig() {
