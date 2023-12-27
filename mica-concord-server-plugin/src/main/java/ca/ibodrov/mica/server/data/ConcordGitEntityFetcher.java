@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
-public class ConcordRepositoryEntityFetcher implements EntityFetcher {
+public class ConcordGitEntityFetcher implements EntityFetcher {
 
     private final OrganizationManager orgManager;
     private final ProjectRepositoryManager projectRepositoryManager;
@@ -28,10 +28,10 @@ public class ConcordRepositoryEntityFetcher implements EntityFetcher {
     private final ObjectMapper yamlMapper;
 
     @Inject
-    public ConcordRepositoryEntityFetcher(OrganizationManager orgManager,
-                                          ProjectRepositoryManager projectRepositoryManager,
-                                          RepositoryManager repositoryManager,
-                                          ObjectMapper objectMapper) {
+    public ConcordGitEntityFetcher(OrganizationManager orgManager,
+                                   ProjectRepositoryManager projectRepositoryManager,
+                                   RepositoryManager repositoryManager,
+                                   ObjectMapper objectMapper) {
 
         this.orgManager = requireNonNull(orgManager);
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);

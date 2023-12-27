@@ -100,8 +100,8 @@ public class MicaModule implements Module {
 
         binder.bind(InitialDataLoader.class).asEagerSingleton();
 
-        newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordRepositoryEntityFetcher.class);
-        newSetBinder(binder, EntityFetcher.class).addBinding().to(EntityStore.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
     }
 
     private static Config loadDefaultConfig() {

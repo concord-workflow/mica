@@ -2,8 +2,9 @@ package ca.ibodrov.mica.its;
 
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
+import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.server.data.ConcordRepositoryEntityFetcher;
+import ca.ibodrov.mica.server.data.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,16 +21,15 @@ import com.walmartlabs.concord.server.org.project.RepositoryEntry;
 import com.walmartlabs.concord.server.process.ProcessSecurityContext;
 import com.walmartlabs.concord.server.user.UserManager;
 import com.walmartlabs.concord.server.user.UserType;
+import org.eclipse.jgit.api.Git;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
@@ -207,6 +207,32 @@ public class ConfigManagementIT extends EndToEnd {
 
     @Test
     public void useGitImportsInViews() throws Exception {
+        // prepare a bare Git repository with YAML files
+
+        var repoBranch = "branch-" + UUID.randomUUID();
+        var repoDir = Files.createTempDirectory("git");
+        try (var git = Git.init()
+                .setInitialBranch(repoBranch)
+                .setDirectory(repoDir.toFile())
+                .call()) {
+            Files.writeString(repoDir.resolve("foo.yaml"), """
+                    kind: /mica/record/v1
+                    name: /foo
+                    data:
+                      value: "foo!"
+                    """);
+            Files.writeString(repoDir.resolve("bar.yaml"), """
+                    kind: /mica/record/v1
+                    name: /bar
+                    data:
+                      value: "bar!"
+                    """);
+            git.add().addFilepattern(".").call();
+            git.commit().setSign(false).setMessage("test").call();
+        }
+        var repoUrl = "file://" + repoDir.toAbsolutePath();
+        var pathInRepo = "/";
+
         var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
                 .getId("admin", null, UserType.LOCAL)
                 .orElseThrow();
@@ -219,18 +245,19 @@ public class ConfigManagementIT extends EndToEnd {
 
             var projectName = "project-" + UUID.randomUUID();
             var repoName = "repo-" + UUID.randomUUID();
-            var repoUrl = "git@github.com:concord-workflow/mica.git";
             var projectManager = micaServer.getServer().getInjector().getInstance(ProjectManager.class);
             projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
                     Map.of(repoName,
-                            new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "ib/git-imports", null))));
+                            new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
 
-            var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryEntityFetcher.class);
-            var uri = URI.create("concord+git://%s/%s/%s?path=src/test/resources/entities".formatted(orgName,
-                    projectName, repoName));
+            var store = micaServer.getServer().getInjector().getInstance(ConcordGitEntityFetcher.class);
+            var uri = URI.create("concord+git://%s/%s/%s?%s".formatted(orgName, projectName, repoName, pathInRepo));
             return store.getAllByKind(uri, "/mica/record/v1", 10).toList();
         });
         assertEquals(2, entities.size());
+        entities = entities.stream().sorted(Comparator.comparing(EntityLike::name)).toList();
+        assertEquals("bar!", entities.get(0).data().get("data").get("value").asText());
+        assertEquals("foo!", entities.get(1).data().get("data").get("value").asText());
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)

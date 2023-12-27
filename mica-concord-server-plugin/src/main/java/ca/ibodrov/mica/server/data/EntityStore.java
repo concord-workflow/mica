@@ -16,13 +16,11 @@ import org.jooq.impl.DSL;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.IOException;
-import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static java.util.Objects.requireNonNull;
@@ -33,7 +31,7 @@ import static org.jooq.impl.DSL.noCondition;
 /**
  * TODO use name + kind as unique key
  */
-public class EntityStore implements EntityFetcher {
+public class EntityStore {
 
     private static final TypeReference<Map<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
     };
@@ -96,29 +94,6 @@ public class EntityStore implements EntityFetcher {
         return query
                 .limit(request.limit())
                 .fetch(EntityStore::toEntityMetadata);
-    }
-
-    // TODO move into a separate class?
-    @Override
-    public Stream<EntityLike> getAllByKind(URI uri, String kind, int limit) {
-        if (!uri.getScheme().equals("mica") && !uri.getPath().equals("internal")) {
-            return Stream.empty();
-        }
-
-        var step = dsl.select(MICA_ENTITIES.ID,
-                MICA_ENTITIES.NAME,
-                MICA_ENTITIES.KIND,
-                MICA_ENTITIES.CREATED_AT,
-                MICA_ENTITIES.UPDATED_AT,
-                MICA_ENTITIES.DATA)
-                .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.KIND.eq(kind));
-
-        if (limit > 0) {
-            step.limit(limit);
-        }
-
-        return step.fetchStream().map(this::toEntity);
     }
 
     public Optional<Entity> getById(EntityId entityId) {
@@ -193,6 +168,11 @@ public class EntityStore implements EntityFetcher {
     }
 
     private Entity toEntity(Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
+        return toEntity(objectMapper, record);
+    }
+
+    public static Entity toEntity(ObjectMapper objectMapper,
+                                  Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
         var id = new EntityId(record.value1());
         try {
             var data = objectMapper.readValue(record.value6().data(), PROPERTIES_TYPE);
