@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.*;
@@ -36,6 +37,7 @@ import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.any;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -206,7 +208,7 @@ public class ConfigManagementIT extends EndToEnd {
     }
 
     @Test
-    public void useGitImportsInViews() throws Exception {
+    public void validateConcordGitEntityFetcher() throws Exception {
         // prepare a bare Git repository with YAML files
 
         var repoBranch = "branch-" + UUID.randomUUID();
@@ -216,6 +218,8 @@ public class ConfigManagementIT extends EndToEnd {
                 .setInitialBranch(repoBranch)
                 .setDirectory(repoDir.toFile())
                 .call()) {
+
+            // create two entities in the initial branch
 
             var nestedDir = repoDir.resolve(pathInRepo);
             Files.createDirectory(nestedDir);
@@ -233,7 +237,19 @@ public class ConfigManagementIT extends EndToEnd {
                       value: "bar!"
                     """);
             git.add().addFilepattern(".").call();
-            git.commit().setSign(false).setMessage("test").call();
+            git.commit().setSign(false).setMessage("2 entities").call();
+
+            // create one extra entity in a different branch
+
+            git.checkout().setCreateBranch(true).setName("other").call();
+            Files.writeString(nestedDir.resolve("foo.yaml"), """
+                    kind: /mica/record/v1
+                    name: /baz
+                    data:
+                      value: "baz!"
+                    """);
+            git.add().addFilepattern(".").call();
+            git.commit().setSign(false).setMessage("1 extra entity").call();
         }
         var repoUrl = "file://" + repoDir.toAbsolutePath();
 
@@ -256,9 +272,11 @@ public class ConfigManagementIT extends EndToEnd {
 
             var store = micaServer.getServer().getInjector().getInstance(ConcordGitEntityFetcher.class);
             var uri = URI
-                    .create("concord+git://%s/%s/%s?path=%s".formatted(orgName, projectName, repoName, pathInRepo));
+                    .create("concord+git://%s/%s/%s?ref=%s&path=%s".formatted(orgName, projectName, repoName,
+                            URLEncoder.encode(repoBranch, UTF_8), URLEncoder.encode(pathInRepo, UTF_8)));
             return store.getAllByKind(uri, "/mica/record/v1", 10);
         });
+
         assertEquals(2, entities.size());
         entities = entities.stream().sorted(Comparator.comparing(EntityLike::name)).toList();
         assertEquals("bar!", entities.get(0).data().get("data").get("value").asText());
