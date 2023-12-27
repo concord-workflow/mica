@@ -177,7 +177,7 @@ public final class BuiltinSchemas {
 
     private static ViewLike.Selector asViewLikeSelector(ObjectMapper objectMapper, EntityLike entity) {
         // TODO better validation, propagate convertValue errors
-        var includes = select(entity, "data", "includes", n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
+        var includes = select(entity, "selector", "includes", n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
 
         var entityKind = select(entity, "selector", "entityKind", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing selector.entityKind"));

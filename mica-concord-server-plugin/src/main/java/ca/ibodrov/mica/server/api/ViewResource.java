@@ -38,7 +38,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class ViewResource implements Resource {
 
     private static final String RESULT_ENTITY_KIND = "MicaMaterializedView/v1";
-    private static final String INTERNAL_ENTITY_STORE_URI = URI.create("mica://internal").toString();
+    public static final String INTERNAL_ENTITY_STORE_URI = URI.create("mica://internal").toString();
 
     /**
      * Don't validate these properties, they are added by the system.

@@ -46,6 +46,10 @@ public record MicaViewV1(@ValidName String name,
         public Selector withNamePatterns(List<String> namePatterns) {
             return new Selector(Optional.empty(), this.entityKind, Optional.of(namePatterns));
         }
+
+        public Selector withIncludes(List<String> includes) {
+            return new Selector(Optional.of(includes), this.entityKind, this.namePatterns);
+        }
     }
 
     public record Data(String jsonPath,

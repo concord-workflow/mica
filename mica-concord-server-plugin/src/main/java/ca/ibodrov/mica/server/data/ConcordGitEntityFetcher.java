@@ -93,12 +93,16 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             var result = fetch(repoEntry.getUrl(), ref, pathInRepo, secret.orElse(null));
             try {
                 // noinspection Convert2MethodRef,resource
-                return Files.walk(result.path())
+                var data = Files.walk(result.path())
                         .filter(p -> isMicaYamlFile(p))
                         .filter(p -> isOfValidKind(p, kind))
-                        .limit(limit)
-                        .map(this::parseFile)
-                        .toList();
+                        .map(this::parseFile);
+
+                if (limit > 0) {
+                    data = data.limit(limit);
+                }
+
+                return data.toList();
             } catch (IOException e) {
                 throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
             }

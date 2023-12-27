@@ -2,12 +2,11 @@ package ca.ibodrov.mica.its;
 
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
-import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.server.data.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableMap;
 import com.walmartlabs.concord.client2.ApiException;
 import com.walmartlabs.concord.client2.ProcessApi;
@@ -30,12 +29,16 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.any;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
+import static ca.ibodrov.mica.server.api.ViewResource.INTERNAL_ENTITY_STORE_URI;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -208,7 +211,27 @@ public class ConfigManagementIT extends EndToEnd {
     }
 
     @Test
-    public void validateConcordGitEntityFetcher() throws Exception {
+    public void validateGitIncludesInViews() throws Exception {
+        // add an entity kind to represent a config layer
+
+        entityStore.upsert(new MicaKindV1.Builder()
+                .name("/acme/kinds/entity")
+                .schema(object(Map.of("value", any()), Set.of("value")))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // add some entities to the DB
+
+        entityStore.upsert(PartialEntity.create(
+                "/test/foo",
+                "/acme/kinds/entity",
+                Map.of("value", TextNode.valueOf("foo!"))));
+
+        entityStore.upsert(PartialEntity.create(
+                "/test/bar",
+                "/acme/kinds/entity",
+                Map.of("value", TextNode.valueOf("bar!"))));
+
         // prepare a bare Git repository with YAML files
 
         var repoBranch = "branch-" + UUID.randomUUID();
@@ -225,16 +248,14 @@ public class ConfigManagementIT extends EndToEnd {
             Files.createDirectory(nestedDir);
 
             Files.writeString(nestedDir.resolve("foo.yaml"), """
-                    kind: /mica/record/v1
-                    name: /foo
-                    data:
-                      value: "foo!"
+                    kind: /acme/kinds/entity
+                    name: /test/baz
+                    value: "baz!"
                     """);
             Files.writeString(nestedDir.resolve("bar.yaml"), """
-                    kind: /mica/record/v1
-                    name: /bar
-                    data:
-                      value: "bar!"
+                    kind: /acme/kinds/entity
+                    name: /test/qux
+                    value: "qux!"
                     """);
             git.add().addFilepattern(".").call();
             git.commit().setSign(false).setMessage("2 entities").call();
@@ -243,22 +264,23 @@ public class ConfigManagementIT extends EndToEnd {
 
             git.checkout().setCreateBranch(true).setName("other").call();
             Files.writeString(nestedDir.resolve("foo.yaml"), """
-                    kind: /mica/record/v1
-                    name: /baz
-                    data:
-                      value: "baz!"
+                    kind: /acme/kinds/entity
+                    name: /test/fred
+                    value: "fred!"
                     """);
             git.add().addFilepattern(".").call();
             git.commit().setSign(false).setMessage("1 extra entity").call();
         }
         var repoUrl = "file://" + repoDir.toAbsolutePath();
 
+        // create Concord org, project and repo
+
         var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
                 .getId("admin", null, UserType.LOCAL)
                 .orElseThrow();
 
         var securityContext = micaServer.getServer().getInjector().getInstance(ProcessSecurityContext.class);
-        var entities = securityContext.runAs(adminId, () -> {
+        var includeUri = securityContext.runAs(adminId, () -> {
             var orgName = "org-" + UUID.randomUUID();
             var orgManager = micaServer.getServer().getInjector().getInstance(OrganizationManager.class);
             orgManager.createOrUpdate(new OrganizationEntry(orgName));
@@ -270,17 +292,46 @@ public class ConfigManagementIT extends EndToEnd {
                     Map.of(repoName,
                             new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
 
-            var store = micaServer.getServer().getInjector().getInstance(ConcordGitEntityFetcher.class);
-            var uri = URI
-                    .create("concord+git://%s/%s/%s?ref=%s&path=%s".formatted(orgName, projectName, repoName,
-                            URLEncoder.encode(repoBranch, UTF_8), URLEncoder.encode(pathInRepo, UTF_8)));
-            return store.getAllByKind(uri, "/mica/record/v1", 10);
+            return URI.create("concord+git://%s/%s/%s?ref=%s&path=%s".formatted(orgName, projectName, repoName,
+                    URLEncoder.encode(repoBranch, UTF_8), URLEncoder.encode(pathInRepo, UTF_8)));
         });
 
-        assertEquals(2, entities.size());
-        entities = entities.stream().sorted(Comparator.comparing(EntityLike::name)).toList();
-        assertEquals("bar!", entities.get(0).data().get("data").get("value").asText());
-        assertEquals("foo!", entities.get(1).data().get("data").get("value").asText());
+        // add a view to render both the entities from the DB and the ones from the Git
+        // repo
+
+        entityStore.upsert(new MicaViewV1.Builder()
+                .name("/acme/views/imports-demo")
+                .selector(byEntityKind("/acme/kinds/entity")
+                        .withNamePatterns(List.of("/${parameters.env}/.*"))
+                        .withIncludes(List.of(
+                                INTERNAL_ENTITY_STORE_URI,
+                                includeUri.toString())))
+                .data(jsonPath("$.value"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // render the view
+
+        var ciProcess = startConcordProcess(Map.of(
+                "arguments.githubPr", "123",
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: renderView
+                                name: /acme/views/imports-demo
+                                parameters:
+                                  env: test
+                              out: result
+                            - log: ${result.data}
+                        """.strip().getBytes()));
+        // TODO sort results
+        assertFinished(ciProcess);
+        var log = getProcessLog(ciProcess.getInstanceId());
+        assertTrue(log.contains("[foo!, bar!, qux!, baz!]"));
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)
