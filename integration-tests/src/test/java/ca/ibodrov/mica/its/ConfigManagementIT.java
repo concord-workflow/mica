@@ -3,7 +3,7 @@ package ca.ibodrov.mica.its;
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.server.data.ConcordRepositoryPartialEntityStore;
+import ca.ibodrov.mica.server.data.ConcordRepositoryEntityFetcher;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +24,7 @@ import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -224,9 +225,10 @@ public class ConfigManagementIT extends EndToEnd {
                     Map.of(repoName,
                             new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), "ib/git-imports", null))));
 
-            var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryPartialEntityStore.class);
-            return store.getAllByKind(orgName, projectName, repoName, "/mica/record/v1",
-                    "integration-tests/src/test/resources/entities").toList();
+            var store = micaServer.getServer().getInjector().getInstance(ConcordRepositoryEntityFetcher.class);
+            var uri = URI.create("concord+git://%s/%s/%s?path=src/test/resources/entities".formatted(orgName,
+                    projectName, repoName));
+            return store.getAllByKind(uri, "/mica/record/v1").toList();
         });
         assertEquals(2, entities.size());
     }

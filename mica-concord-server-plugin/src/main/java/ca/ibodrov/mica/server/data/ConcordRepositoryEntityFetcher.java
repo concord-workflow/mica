@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +11,7 @@ import com.walmartlabs.concord.server.repository.RepositoryManager;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -18,7 +20,7 @@ import java.util.stream.Stream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
-public class ConcordRepositoryPartialEntityStore {
+public class ConcordRepositoryEntityFetcher implements EntityFetcher {
 
     private final OrganizationManager orgManager;
     private final ProjectRepositoryManager projectRepositoryManager;
@@ -26,10 +28,10 @@ public class ConcordRepositoryPartialEntityStore {
     private final ObjectMapper yamlMapper;
 
     @Inject
-    public ConcordRepositoryPartialEntityStore(OrganizationManager orgManager,
-                                               ProjectRepositoryManager projectRepositoryManager,
-                                               RepositoryManager repositoryManager,
-                                               ObjectMapper objectMapper) {
+    public ConcordRepositoryEntityFetcher(OrganizationManager orgManager,
+                                          ProjectRepositoryManager projectRepositoryManager,
+                                          RepositoryManager repositoryManager,
+                                          ObjectMapper objectMapper) {
 
         this.orgManager = requireNonNull(orgManager);
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);
@@ -37,11 +39,20 @@ public class ConcordRepositoryPartialEntityStore {
         this.yamlMapper = requireNonNull(objectMapper).copyWith(new YAMLFactory());
     }
 
-    public Stream<PartialEntity> getAllByKind(String orgName,
-                                              String projectName,
-                                              String repoName,
-                                              String kind,
-                                              String path) {
+    @Override
+    public Stream<EntityLike> getAllByKind(URI uri, String kind) {
+        var orgName = uri.getHost();
+        var projectName = uri.getPath().split("/")[0];
+        var repoName = uri.getPath().split("/")[1];
+        var path = uri.getQuery(); // TODO fix
+        return getAllByKind(orgName, projectName, repoName, kind, path);
+    }
+
+    private Stream<EntityLike> getAllByKind(String orgName,
+                                            String projectName,
+                                            String repoName,
+                                            String kind,
+                                            String path) {
 
         var org = orgManager.assertAccess(orgName, false);
         var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
@@ -59,7 +70,7 @@ public class ConcordRepositoryPartialEntityStore {
         }
     }
 
-    private PartialEntity parseFile(Path path) {
+    private EntityLike parseFile(Path path) {
         try (var reader = Files.newBufferedReader(path, UTF_8)) {
             return yamlMapper.readValue(reader, PartialEntity.class);
         } catch (IOException e) {

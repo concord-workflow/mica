@@ -2,11 +2,13 @@ package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
+import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.api.ViewResource.RenderRequest;
 import ca.ibodrov.mica.server.data.BuiltinSchemas;
+import ca.ibodrov.mica.server.data.EntityFetcher;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.node.IntNode;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
@@ -38,7 +41,8 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
-        viewResource = new ViewResource(dsl(), entityStore, entityKindStore, objectMapper);
+        var entityFetchers = Set.<EntityFetcher>of();
+        viewResource = new ViewResource(dsl(), entityStore, entityKindStore, entityFetchers, objectMapper);
     }
 
     @Test

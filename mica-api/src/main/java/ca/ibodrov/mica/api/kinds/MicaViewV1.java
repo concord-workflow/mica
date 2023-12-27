@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.validation.constraints.NotNull;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,14 +51,15 @@ public record MicaViewV1(@ValidName String name,
     public record Data(String jsonPath,
             Optional<JsonNode> jsonPatch,
             Optional<Boolean> flatten,
-            Optional<Boolean> merge) implements ViewLike.Data {
+            Optional<Boolean> merge,
+            Optional<List<URI>> includes) implements ViewLike.Data {
 
         public static Data jsonPath(String jsonPath) {
-            return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty());
+            return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         }
 
         public Data withMerge() {
-            return new Data(this.jsonPath, this.jsonPatch, this.flatten, Optional.of(true));
+            return new Data(this.jsonPath, this.jsonPatch, this.flatten, Optional.of(true), this.includes);
         }
     }
 

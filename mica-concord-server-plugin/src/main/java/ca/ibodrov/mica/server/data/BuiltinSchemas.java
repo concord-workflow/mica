@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import javax.inject.Inject;
+import java.net.URI;
 import java.util.*;
 import java.util.function.Function;
 
@@ -196,6 +197,9 @@ public final class BuiltinSchemas {
 
         var jsonPatch = select(entity, "data", "jsonPatch", Function.identity());
 
+        var includes = select(entity, "data", "includes", n -> n.findValuesAsText("uri"))
+                .map(l -> l.stream().map(URI::create).toList());
+
         return new ViewLike.Data() {
             @Override
             public String jsonPath() {
@@ -215,6 +219,11 @@ public final class BuiltinSchemas {
             @Override
             public Optional<JsonNode> jsonPatch() {
                 return jsonPatch;
+            }
+
+            @Override
+            public Optional<List<URI>> includes() {
+                return includes;
             }
         };
     }

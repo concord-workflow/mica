@@ -3,6 +3,7 @@ package ca.ibodrov.mica.api.model;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,8 @@ public interface ViewLike {
         Optional<Boolean> merge();
 
         Optional<JsonNode> jsonPatch();
+
+        Optional<List<URI>> includes();
     }
 
     interface Validation {

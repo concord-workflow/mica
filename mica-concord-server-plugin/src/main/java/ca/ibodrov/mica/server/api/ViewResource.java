@@ -1,6 +1,9 @@
 package ca.ibodrov.mica.server.api;
 
-import ca.ibodrov.mica.api.model.*;
+import ca.ibodrov.mica.api.model.EntityId;
+import ca.ibodrov.mica.api.model.EntityLike;
+import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.data.*;
@@ -18,6 +21,7 @@ import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -42,6 +46,7 @@ public class ViewResource implements Resource {
     private final DSLContext dsl;
     private final EntityStore entityStore;
     private final EntityKindStore entityKindStore;
+    private final Set<EntityFetcher> includeFetchers;
     private final ObjectMapper objectMapper;
     private final ViewRenderer viewRenderer;
     private final Validator validator;
@@ -49,12 +54,13 @@ public class ViewResource implements Resource {
     @Inject
     public ViewResource(@MicaDB DSLContext dsl,
                         EntityStore entityStore,
-                        EntityKindStore entityKindStore,
+                        EntityKindStore entityKindStore, Set<EntityFetcher> includeFetchers,
                         ObjectMapper objectMapper) {
 
         this.dsl = requireNonNull(dsl);
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
+        this.includeFetchers = requireNonNull(includeFetchers);
         this.objectMapper = requireNonNull(objectMapper);
         this.viewRenderer = new ViewRenderer(objectMapper);
         this.validator = new Validator(entityKindStore::getSchemaForKind);
@@ -117,13 +123,25 @@ public class ViewResource implements Resource {
         });
     }
 
-    private Stream<Entity> fetch(ViewLike view, Map<String, JsonNode> parameters, int limit) {
-        // grab all entities matching the selector's entity kind
-        var entities = entityStore.getAllByKind(view.selector().entityKind(), limit);
+    private Stream<? extends EntityLike> fetch(ViewLike view, Map<String, JsonNode> parameters, int limit) {
+        // TODO limit is not very useful right now
 
+        // grab all entities matching the selector's entity kind
+        var entities = new ArrayList<EntityLike>(limit);
+        entities.addAll(entityStore.getAllByKind(view.selector().entityKind(), limit));
+        // ...add the ones from the includes
+        view.data().includes().ifPresent(includes -> {
+            for (var include : includes) {
+                includeFetchers.stream()
+                        .flatMap(fetcher -> fetcher.getAllByKind(include, view.selector().entityKind()))
+                        .limit(limit)
+                        .forEach(entities::add);
+            }
+        });
+
+        var result = entities.stream();
         // if namePatterns are specified, filter the entities and return them in the
         // order of the patterns
-        var result = entities.stream();
         if (view.selector().namePatterns().isPresent()) {
             // interpolate patterns, ignore any unknown variables
             var patterns = view.selector().namePatterns().get().stream()
