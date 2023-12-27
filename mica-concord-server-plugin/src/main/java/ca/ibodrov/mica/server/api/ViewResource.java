@@ -151,6 +151,8 @@ public class ViewResource implements Resource {
                             .replace("$", "\\$")
                             .replace("{", "\\{"))
                     .toList();
+
+            result = Stream.empty();
             for (var pattern : patterns) {
                 result = Stream.concat(result, entities.stream().filter(e -> e.name().matches(pattern)));
             }
