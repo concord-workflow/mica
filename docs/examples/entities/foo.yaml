@@ -1,4 +1,4 @@
-name: foo
+name: /examples/foo
 kind: /mica/record/v1
 data: |
   some

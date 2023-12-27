@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.server.org.OrganizationManager;
 import com.walmartlabs.concord.server.org.project.ProjectRepositoryManager;
 import com.walmartlabs.concord.server.repository.RepositoryManager;
@@ -33,7 +34,7 @@ public class ConcordRepositoryPartialEntityStore {
         this.organizationManager = requireNonNull(organizationManager);
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);
         this.repositoryManager = requireNonNull(repositoryManager);
-        this.objectMapper = requireNonNull(objectMapper);
+        this.objectMapper = requireNonNull(objectMapper).copyWith(new YAMLFactory());
     }
 
     public Stream<PartialEntity> getAllByKind(String orgName,
@@ -75,7 +76,7 @@ public class ConcordRepositoryPartialEntityStore {
         try (var reader = Files.newBufferedReader(path, UTF_8)) {
             return reader.lines().anyMatch(l -> l.matches("kind:\\s+" + Pattern.quote(kind)));
         } catch (IOException e) {
-            throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
+            throw new StoreException("Error while reading %s: %s".formatted(path, e.getMessage()), e);
         }
     }
 }
