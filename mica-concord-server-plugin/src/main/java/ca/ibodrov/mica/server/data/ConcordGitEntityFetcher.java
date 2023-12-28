@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.repository.FetchRequest.Version;
 import com.walmartlabs.concord.repository.Repository;
+import com.walmartlabs.concord.repository.RepositoryException;
 import com.walmartlabs.concord.sdk.Secret;
 import com.walmartlabs.concord.server.org.OrganizationManager;
 import com.walmartlabs.concord.server.org.project.ProjectRepositoryManager;
@@ -54,13 +55,17 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
 
     @Override
     public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
-        if (!uri.getScheme().equals("concord+git")) {
+        if (!"concord+git".equals(uri.getScheme())) {
             return List.of();
+        }
+
+        if (uri.getPath() == null) {
+            throw new StoreException("Invalid URI: " + uri);
         }
 
         var pathElements = uri.getPath().split("/");
         if (pathElements.length != 3) {
-            throw new IllegalArgumentException("Invalid URI: " + uri);
+            throw new StoreException("Invalid URI: " + uri);
         }
 
         var orgName = uri.getHost();
@@ -85,28 +90,35 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                                           String pathInRepo,
                                           int limit) {
 
-        var org = orgManager.assertAccess(orgName, false);
-        var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
-        var secret = Optional.ofNullable(repoEntry.getSecretName())
-                .map(secretName -> getSecret(org.getId(), secretName));
-        return repositoryManager.withLock(repoEntry.getUrl(), () -> {
-            var result = fetch(repoEntry.getUrl(), ref, pathInRepo, secret.orElse(null));
-            try {
-                // noinspection Convert2MethodRef,resource
-                var data = Files.walk(result.path())
-                        .filter(p -> isMicaYamlFile(p))
-                        .filter(p -> isOfValidKind(p, kind))
-                        .map(this::parseFile);
+        try {
+            var org = orgManager.assertAccess(orgName, false);
+            var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
+            var secret = Optional.ofNullable(repoEntry.getSecretName())
+                    .map(secretName -> getSecret(org.getId(), secretName));
+            return repositoryManager.withLock(repoEntry.getUrl(), () -> {
+                var result = fetch(repoEntry.getUrl(), ref, pathInRepo, secret.orElse(null));
+                try {
+                    // noinspection Convert2MethodRef,resource
+                    var data = Files.walk(result.path())
+                            .filter(p -> isMicaYamlFile(p))
+                            .filter(p -> isOfValidKind(p, kind))
+                            .map(this::parseFile);
 
-                if (limit > 0) {
-                    data = data.limit(limit);
+                    if (limit > 0) {
+                        data = data.limit(limit);
+                    }
+
+                    return data.toList();
+                } catch (IOException e) {
+                    throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
                 }
-
-                return data.toList();
-            } catch (IOException e) {
-                throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
-            }
-        });
+            });
+        } catch (StoreException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            // TODO better way
+            throw new StoreException(e.getMessage());
+        }
     }
 
     private Secret getSecret(UUID orgId, String secretName) {
@@ -116,7 +128,11 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     private Repository fetch(String url, String ref, String pathInRepo, Secret secret) {
-        return repositoryManager.fetch(url, Version.from(ref), pathInRepo, secret, false);
+        try {
+            return repositoryManager.fetch(url, Version.from(ref), pathInRepo, secret, false);
+        } catch (RepositoryException e) {
+            throw new StoreException("Error while fetching entities. " + e.getMessage(), e);
+        }
     }
 
     private EntityLike parseFile(Path path) {

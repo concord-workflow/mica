@@ -10,39 +10,54 @@ import React from 'react';
 import JsonView from 'react18-json-view';
 import 'react18-json-view/src/style.css';
 
+export interface PreviewRequestOrError {
+    request?: PreviewRequest;
+    error?: Error;
+}
+
 interface Props {
-    request: PreviewRequest;
+    version: number;
+    requestFn: () => PreviewRequestOrError;
     onClose: () => void;
 }
 
-const PreviewView = ({ request, onClose }: Props) => {
+const PreviewView = ({ version, requestFn, onClose }: Props) => {
     const [lastGoodData, setLastGoodData] = React.useState<PartialEntity>();
 
-    const { mutateAsync, isLoading, error } = usePreview({
+    const {
+        mutateAsync,
+        isLoading,
+        error: apiError,
+    } = usePreview({
         retry: false,
         onSuccess: (data) => {
             setLastGoodData(data);
         },
     });
 
-    const debouncedRequest = useDebounce(request, 100);
+    const [requestError, setRequestError] = React.useState<Error>();
+
+    const debouncedVersion = useDebounce(version, 100);
     React.useEffect(() => {
-        if (!debouncedRequest.view) {
-            return;
+        const { request, error } = requestFn();
+        setRequestError(error);
+        if (request) {
+            mutateAsync(request);
         }
-
-        mutateAsync(debouncedRequest);
-    }, [mutateAsync, debouncedRequest]);
-
-    const showLoadingIndicator = useDebounce(isLoading, 250);
+    }, [mutateAsync, debouncedVersion, requestFn]);
 
     const [showDetails, setShowDetails] = React.useState(false);
 
     return (
         <>
-            {error && (
+            {apiError && (
                 <Alert color="error" sx={{ position: 'relative' }}>
-                    <ReadableApiError error={error} />
+                    <ReadableApiError error={apiError} />
+                </Alert>
+            )}
+            {requestError && (
+                <Alert color="error" sx={{ position: 'relative' }}>
+                    {requestError.message}
                 </Alert>
             )}
             <Box>
@@ -55,7 +70,7 @@ const PreviewView = ({ request, onClose }: Props) => {
                         <CloseIcon />
                     </IconButton>
                 </Box>
-                {showLoadingIndicator && (
+                {isLoading && (
                     <Box
                         display="flex"
                         alignItems="center"

@@ -1,13 +1,12 @@
 import { MICA_VIEW_KIND, getEntityAsYamlString, kindToTemplate } from '../api/entity.ts';
 import { usePutYamlString } from '../api/upload.ts';
-import { PreviewRequest } from '../api/view.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
-import PreviewView from '../features/PreviewView.tsx';
+import PreviewView, { PreviewRequestOrError } from '../features/PreviewView.tsx';
 import SaveIcon from '@mui/icons-material/Save';
 import {
     Alert,
@@ -112,66 +111,58 @@ const EditEntityPage = () => {
     const [selectedId, setSelectedId] = React.useState(entityId);
     const [selectedName, setSelectedName] = React.useState(searchParams.get('name') ?? undefined);
     const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind') ?? undefined);
-    const [yamlParseError, setYamlParseError] = React.useState<string | undefined>();
 
-    const createPreviewRequest: (yaml: string) => PreviewRequest | undefined = React.useCallback(
-        (yaml: string) => {
-            if (yaml.length < 1) {
-                return;
-            }
-            try {
-                const view = parseYaml(yaml);
+    // we use a counter to trigger a preview refresh when needed
+    const [previewVersion, setPreviewVersion] = React.useState<number>(0);
+    const previewRequestFn = React.useCallback((): PreviewRequestOrError => {
+        const editor = editorRef.current;
+        if (!editor) {
+            return {};
+        }
+        const value = editor.getValue();
+        if (!value || value.length < 1) {
+            return {};
+        }
+        try {
+            const view = parseYaml(value);
 
-                // we don't need view ID for preview and invalid IDs will cause errors that we don't care about here
-                delete view.id;
+            // we don't need view ID for preview and invalid IDs will cause errors that we don't care about here
+            delete view.id;
 
-                setYamlParseError(undefined);
-                return {
+            return {
+                request: {
                     view,
                     limit: 10,
-                };
-            } catch (e) {
-                console.log('Error parsing YAML:', e);
-                setYamlParseError((e as Error).message);
-            }
-        },
-        [],
-    );
+                },
+            };
+        } catch (e) {
+            return { error: new Error((e as Error).message) };
+        }
+    }, [editorRef]);
 
     // stuff for the live preview feature
     const [showPreview, setShowPreview] = React.useState<boolean>(false);
-    const [previewRequest, setPreviewRequest] = React.useState<PreviewRequest | undefined>(() =>
-        createPreviewRequest(editorRef.current?.getValue() ?? ''),
-    );
 
-    const handlePreviewSwitch = React.useCallback(
-        (enable: boolean) => {
-            setShowPreview(enable);
-            if (enable) {
-                setPreviewRequest(createPreviewRequest(editorRef.current?.getValue() ?? ''));
-            } else {
-                setPreviewRequest(undefined);
-            }
-        },
-        [createPreviewRequest],
-    );
+    const handlePreviewSwitch = React.useCallback((enable: boolean) => {
+        setShowPreview(enable);
+        if (enable) {
+            setPreviewVersion((prev) => prev + 1);
+        } else {
+            setPreviewVersion((prev) => prev + 1);
+        }
+    }, []);
 
-    const syncValueToState = React.useCallback(
-        (value: string | undefined) => {
-            if (!value) {
-                return;
-            }
+    const syncValueToState = React.useCallback((value: string | undefined) => {
+        if (!value) {
+            return;
+        }
 
-            setSelectedId(updateFromYamlField(value, 'id'));
-            setSelectedName(updateFromYamlField(value, 'name'));
-            setSelectedKind(updateFromYamlField(value, 'kind'));
+        setSelectedId(updateFromYamlField(value, 'id'));
+        setSelectedName(updateFromYamlField(value, 'name'));
+        setSelectedKind(updateFromYamlField(value, 'kind'));
 
-            if (showPreview) {
-                setPreviewRequest(createPreviewRequest(value));
-            }
-        },
-        [createPreviewRequest, showPreview],
-    );
+        setPreviewVersion((prev) => prev + 1);
+    }, []);
 
     const handleEditorOnChange = React.useCallback(
         (value: string | undefined) => {
@@ -270,7 +261,7 @@ const EditEntityPage = () => {
             <Snackbar
                 open={showUnsavedChangesRestored}
                 autoHideDuration={5000}
-                onClose={() => setShowSuccess(false)}
+                onClose={() => setShowUnsavedChangesRestored(false)}
                 message="Unsaved changes restored"
             />
             <Box display="flex" flexDirection="column" height="100%">
@@ -315,7 +306,6 @@ const EditEntityPage = () => {
                             <ReadableApiError error={saveError} />
                         </Alert>
                     )}
-                    {yamlParseError && <Alert severity="error">{yamlParseError}</Alert>}
                 </Box>
                 <Box flex="1">
                     <ErrorBoundary
@@ -345,12 +335,11 @@ const EditEntityPage = () => {
                                     maxHeight: '40%',
                                 },
                             }}>
-                            {previewRequest && (
-                                <PreviewView
-                                    request={previewRequest}
-                                    onClose={() => handlePreviewSwitch(false)}
-                                />
-                            )}
+                            <PreviewView
+                                version={previewVersion}
+                                requestFn={previewRequestFn}
+                                onClose={() => handlePreviewSwitch(false)}
+                            />
                         </Drawer>
                     )}
                 </Box>

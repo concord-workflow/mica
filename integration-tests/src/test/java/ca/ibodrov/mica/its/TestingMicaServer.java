@@ -4,16 +4,18 @@ import ca.ibodrov.concord.webapp.WebappPluginModule;
 import ca.ibodrov.mica.server.MicaModule;
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.multibindings.Multibinder;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.it.testingserver.TestingConcordServer;
 import com.walmartlabs.concord.server.plugins.oidc.OidcPluginModule;
 import org.sonatype.siesta.Component;
+import org.sonatype.siesta.server.internal.validation.ValidationErrorsExceptionMapper;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 /**
  * A helper class for running concord-server plus Mica. Used in tests. For a
@@ -43,7 +45,7 @@ public class TestingMicaServer extends TestingConcordServer {
 
         @Override
         public void configure(Binder binder) {
-            Multibinder.newSetBinder(binder, Component.class).addBinding().to(LocalExceptionMapper.class);
+            newSetBinder(binder, Component.class).addBinding().to(LocalExceptionMapper.class);
         }
     }
 }

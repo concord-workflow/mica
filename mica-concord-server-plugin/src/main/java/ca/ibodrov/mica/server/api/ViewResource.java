@@ -8,6 +8,7 @@ import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
@@ -76,7 +77,7 @@ public class ViewResource implements Resource {
     public PartialEntity render(@Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = fetch(view, parameters, request.limit());
+        var entities = fetch(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
         return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
@@ -98,7 +99,7 @@ public class ViewResource implements Resource {
     public PartialEntity preview(@Valid PreviewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(request.view(), parameters);
-        var entities = fetch(view, parameters, request.limit());
+        var entities = fetch(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
         return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
@@ -111,7 +112,7 @@ public class ViewResource implements Resource {
     public PartialEntity materialize(@Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = fetch(view, parameters, request.limit());
+        var entities = fetch(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         // TODO validation
         // TODO optimistic locking
@@ -131,17 +132,16 @@ public class ViewResource implements Resource {
         return interpolate(view, parameters);
     }
 
-    private Stream<? extends EntityLike> fetch(ViewLike view, JsonNode parameters, int limit) {
+    private Stream<? extends EntityLike> fetch(ViewLike view, int limit) {
         // TODO limit is not very useful right now
 
         var includes = view.selector().includes().orElse(List.of(INTERNAL_ENTITY_STORE_URI));
 
         // grab all entities matching the selector's entity kind
         var entities = includes.stream()
-                .map(URI::create)
-                .flatMap(include -> includeFetchers.stream()
-                        .flatMap(
-                                fetcher -> fetcher.getAllByKind(include, view.selector().entityKind(), limit).stream()))
+                .filter(include -> include != null && !include.isBlank())
+                .map(ViewResource::parseUri)
+                .flatMap(include -> fetchIncludeUri(include, view.selector().entityKind(), limit))
                 .toList();
 
         if (entities.isEmpty()) {
@@ -161,6 +161,16 @@ public class ViewResource implements Resource {
         }
 
         return result;
+    }
+
+    private Stream<EntityLike> fetchIncludeUri(URI include, String entityKind, int limit) {
+        return includeFetchers.stream().flatMap(fetcher -> {
+            try {
+                return fetcher.getAllByKind(include, entityKind, limit).stream();
+            } catch (StoreException e) {
+                throw ApiException.internalError(e.getMessage());
+            }
+        });
     }
 
     private Optional<JsonNode> validate(ViewLike view, RenderedView renderedView) {
@@ -212,5 +222,13 @@ public class ViewResource implements Resource {
     }
 
     public record PreviewRequest(@NotNull PartialEntity view, int limit, Optional<JsonNode> parameters) {
+    }
+
+    private static URI parseUri(String s) {
+        try {
+            return URI.create(s);
+        } catch (IllegalArgumentException e) {
+            throw ApiException.badRequest("Invalid URI: " + s);
+        }
     }
 }

@@ -26,7 +26,9 @@ public class InternalEntityFetcher implements EntityFetcher {
     // TODO move into a separate class?
     @Override
     public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
-        if (!uri.getScheme().equals("mica") && !uri.getPath().equals("internal")) {
+        assert uri != null;
+
+        if (!"mica".equals(uri.getScheme()) || !"internal".equals(uri.getHost())) {
             return List.of();
         }
 
