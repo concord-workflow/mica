@@ -12,7 +12,6 @@ import {
     Alert,
     Box,
     Button,
-    CircularProgress,
     Drawer,
     FormControl,
     FormControlLabel,
@@ -204,7 +203,7 @@ const EditEntityPage = () => {
     }, [entityId, mutateAsync, navigate, refetch, syncValueToState]);
 
     // provide the default value for the editor
-    let defaultValue: string | undefined;
+    let defaultValue: string;
     if (selectedId === '_new') {
         if (selectedKind) {
             defaultValue = kindToTemplate(selectedName ?? '/myEntity', selectedKind);
@@ -212,7 +211,11 @@ const EditEntityPage = () => {
             defaultValue = '# new entity';
         }
     } else {
-        defaultValue = editorRef?.current?.getValue() ?? serverValue;
+        const editorValue = editorRef?.current?.getValue();
+        defaultValue =
+            editorValue !== null && editorValue !== undefined && editorValue != ''
+                ? editorValue
+                : serverValue ?? '';
     }
 
     // on the first load, sync the default value to the state
@@ -310,20 +313,17 @@ const EditEntityPage = () => {
                 <Box flex="1">
                     <ErrorBoundary
                         fallback={<b>Something went wrong while trying to render the editor.</b>}>
-                        {isLoading && <CircularProgress />}
-                        {!isLoading && defaultValue && (
-                            <Editor
-                                loading={isFetching || isSaving}
-                                height="100%"
-                                defaultLanguage="yaml"
-                                options={{
-                                    minimap: { enabled: false },
-                                }}
-                                defaultValue={defaultValue}
-                                onMount={handleEditorOnMount}
-                                onChange={handleEditorOnChange}
-                            />
-                        )}
+                        <Editor
+                            loading={isLoading || isFetching || isSaving}
+                            height="100%"
+                            defaultLanguage="yaml"
+                            options={{
+                                minimap: { enabled: false },
+                            }}
+                            defaultValue={defaultValue}
+                            onMount={handleEditorOnMount}
+                            onChange={handleEditorOnChange}
+                        />
                     </ErrorBoundary>
                     {showPreview && (
                         <Drawer

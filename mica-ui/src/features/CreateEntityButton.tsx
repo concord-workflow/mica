@@ -47,7 +47,7 @@ const CreateEntityButton = ({ path }: Props) => {
                             onClick={() =>
                                 navigate(
                                     `/entity/_new/edit?kind=${row.name}&name=${encodeURIComponent(
-                                        path + '/myEntity',
+                                        path + 'myEntity',
                                     )}`,
                                 )
                             }>
