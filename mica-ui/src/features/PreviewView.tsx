@@ -37,7 +37,7 @@ const PreviewView = ({ version, requestFn, onClose }: Props) => {
 
     const [requestError, setRequestError] = React.useState<Error>();
 
-    const debouncedVersion = useDebounce(version, 100);
+    const debouncedVersion = useDebounce(version, 500);
     React.useEffect(() => {
         const { request, error } = requestFn();
         setRequestError(error);
@@ -45,6 +45,8 @@ const PreviewView = ({ version, requestFn, onClose }: Props) => {
             mutateAsync(request);
         }
     }, [mutateAsync, debouncedVersion, requestFn]);
+
+    const debouncedIsLoading = useDebounce(isLoading, 250);
 
     const [showDetails, setShowDetails] = React.useState(false);
 
@@ -70,7 +72,7 @@ const PreviewView = ({ version, requestFn, onClose }: Props) => {
                         <CloseIcon />
                     </IconButton>
                 </Box>
-                {isLoading && (
+                {debouncedIsLoading && (
                     <Box
                         display="flex"
                         alignItems="center"
