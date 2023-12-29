@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import ca.ibodrov.mica.server.exceptions.ViewProcessorException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

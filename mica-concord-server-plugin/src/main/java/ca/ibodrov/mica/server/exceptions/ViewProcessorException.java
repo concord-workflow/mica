@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.data;
+package ca.ibodrov.mica.server.exceptions;
 
 public class ViewProcessorException extends RuntimeException {
 
