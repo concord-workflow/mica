@@ -25,9 +25,21 @@ const CreateEntityButton = ({ path }: Props) => {
     );
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-    const handleClose = () => {
+    const handleClose = React.useCallback(() => {
         setAnchorEl(null);
-    };
+    }, []);
+
+    const handleClick = React.useCallback(
+        (kind: string, name: string) => {
+            localStorage.removeItem(`dirty-_new`);
+            navigate(
+                `/entity/_new/edit?kind=${encodeURIComponent(kind)}&name=${encodeURIComponent(
+                    name,
+                )}`,
+            );
+        },
+        [navigate],
+    );
 
     return (
         <>
@@ -44,13 +56,7 @@ const CreateEntityButton = ({ path }: Props) => {
                     data.map((row) => (
                         <MenuItem
                             key={row.id}
-                            onClick={() =>
-                                navigate(
-                                    `/entity/_new/edit?kind=${row.name}&name=${encodeURIComponent(
-                                        path + 'myEntity',
-                                    )}`,
-                                )
-                            }>
+                            onClick={() => handleClick(row.name, path + 'myEntity')}>
                             <ListItemIcon>{entityKindToIcon(row.name)}</ListItemIcon>
                             {row.name}
                         </MenuItem>

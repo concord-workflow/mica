@@ -27,7 +27,7 @@ import { useQuery } from 'react-query';
 import { useBeforeUnload, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 type RouteParams = {
-    entityId: string;
+    entityId: '_new' | string;
 };
 
 const HELP: React.ReactNode = (
@@ -58,13 +58,6 @@ const getYamlField = (yaml: string, key: string): string | undefined => {
     return result;
 };
 
-type Setter = (prev: string | undefined) => string | undefined;
-
-const updateFromYamlField =
-    (yaml: string, key: string): Setter =>
-    (prev) =>
-        getYamlField(yaml, key) ?? prev;
-
 const EditEntityPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -84,12 +77,10 @@ const EditEntityPage = () => {
         keepPreviousData: false,
         enabled: entityId !== undefined && entityId !== '_new' && !hasUnsavedChanges,
         onSuccess: (data) => {
-            syncValueToState(data);
+            setEditorValue(data);
             setDirty(false);
         },
     });
-
-    const [dirty, setDirty] = React.useState<boolean>(entityId === '_new');
 
     // save the entity
     const { mutateAsync, isLoading: isSaving, error: saveError } = usePutYamlString();
@@ -105,18 +96,18 @@ const EditEntityPage = () => {
     const [selectedName, setSelectedName] = React.useState(searchParams.get('name') ?? undefined);
     const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind') ?? undefined);
 
-    // provide the default value for the editor
-    let defaultValue: string;
-    if (selectedId === '_new') {
-        if (selectedKind) {
-            defaultValue = kindToTemplate(selectedName ?? '/myEntity', selectedKind);
+    const [editorValue, setEditorValue] = React.useState<string>(() => {
+        if (selectedId === '_new') {
+            if (selectedKind) {
+                return kindToTemplate(selectedName ?? '/myEntity', selectedKind);
+            } else {
+                return '# new entity';
+            }
         } else {
-            defaultValue = '# new entity';
+            return serverValue ?? '';
         }
-    } else {
-        defaultValue = serverValue ?? '';
-    }
-    const [editorValue, setEditorValue] = React.useState<string>(defaultValue);
+    });
+    const [dirty, setDirty] = React.useState<boolean>(entityId === '_new');
 
     // we use a counter to trigger a preview refresh when needed
     const [previewVersion, setPreviewVersion] = React.useState<number>(0);
@@ -153,27 +144,24 @@ const EditEntityPage = () => {
         }
     }, []);
 
-    const syncValueToState = React.useCallback((value: string | undefined) => {
+    const handleEditorOnChange = React.useCallback((value: string | undefined) => {
         setEditorValue(value ?? '');
-
-        if (!value) {
-            return;
-        }
-
-        setSelectedId(updateFromYamlField(value, 'id'));
-        setSelectedName(updateFromYamlField(value, 'name'));
-        setSelectedKind(updateFromYamlField(value, 'kind'));
-
-        setPreviewVersion((prev) => prev + 1);
+        setDirty(true);
     }, []);
 
-    const handleEditorOnChange = React.useCallback(
-        (value: string | undefined) => {
-            syncValueToState(value);
-            setDirty(true);
-        },
-        [syncValueToState],
-    );
+    // sync the editor value to the state
+    useEffect(() => {
+        setPreviewVersion((prev) => prev + 1);
+
+        const newId = getYamlField(editorValue, 'id');
+        setSelectedId((prev) => (prev === newId ? prev : newId));
+
+        const newName = getYamlField(editorValue, 'name');
+        setSelectedName((prev) => (prev === newName ? prev : newName));
+
+        const newKind = getYamlField(editorValue, 'kind');
+        setSelectedKind((prev) => (prev === newKind ? prev : newKind));
+    }, [editorValue]);
 
     const handleSave = React.useCallback(async () => {
         // save and get the new version
@@ -190,7 +178,6 @@ const EditEntityPage = () => {
             }
             if (data) {
                 setEditorValue(data);
-                syncValueToState(data);
             }
         }
 
@@ -199,12 +186,7 @@ const EditEntityPage = () => {
 
         // remove unsaved changes from local storage
         localStorage.removeItem(`dirty-${entityId}`);
-    }, [entityId, mutateAsync, navigate, refetch, syncValueToState, editorValue]);
-
-    // on the first load, sync the default value to the state
-    useEffect(() => {
-        syncValueToState(defaultValue);
-    }, [syncValueToState, defaultValue]);
+    }, [entityId, mutateAsync, navigate, refetch, editorValue]);
 
     // save any changes to local storage before navigating away
     useBeforeUnload(
@@ -226,11 +208,10 @@ const EditEntityPage = () => {
             return;
         }
 
-        syncValueToState(value);
-
+        setEditorValue(value);
         setDirty(true);
         setShowUnsavedChangesRestored(true);
-    }, [entityId, syncValueToState]);
+    }, [entityId]);
 
     return (
         <>
