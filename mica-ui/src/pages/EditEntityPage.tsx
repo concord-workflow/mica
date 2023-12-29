@@ -90,6 +90,7 @@ const EditEntityPage = () => {
     const [showSuccess, setShowSuccess] = React.useState<boolean>(
         success !== null && success !== undefined,
     );
+    const handleSuccessClose = React.useCallback(() => setShowSuccess(false), []);
 
     // the entity ID and kind can be changed by the user, we need to keep track of them
     const [selectedId, setSelectedId] = React.useState(entityId);
@@ -134,15 +135,11 @@ const EditEntityPage = () => {
 
     // stuff for the live preview feature
     const [showPreview, setShowPreview] = React.useState<boolean>(false);
-
     const handlePreviewSwitch = React.useCallback((enable: boolean) => {
         setShowPreview(enable);
-        if (enable) {
-            setPreviewVersion((prev) => prev + 1);
-        } else {
-            setPreviewVersion((prev) => prev + 1);
-        }
+        setPreviewVersion((prev) => prev + 1);
     }, []);
+    const handlePreviewClose = React.useCallback(() => setShowPreview(false), []);
 
     const handleEditorOnChange = React.useCallback((value: string | undefined) => {
         setEditorValue(value ?? '');
@@ -202,6 +199,10 @@ const EditEntityPage = () => {
     // load any unsaved changes from local storage (except for the new entities)
     const [showUnsavedChangesRestored, setShowUnsavedChangesRestored] =
         React.useState<boolean>(false);
+    const handleUnsavedChangesRestoredClose = React.useCallback(
+        () => setShowUnsavedChangesRestored(false),
+        [],
+    );
     useEffect(() => {
         const value = localStorage.getItem(`dirty-${entityId}`);
         if (!value) {
@@ -218,13 +219,13 @@ const EditEntityPage = () => {
             <Snackbar
                 open={showSuccess}
                 autoHideDuration={5000}
-                onClose={() => setShowSuccess(false)}
+                onClose={handleSuccessClose}
                 message="Data saved successfully"
             />
             <Snackbar
                 open={showUnsavedChangesRestored}
                 autoHideDuration={5000}
-                onClose={() => setShowUnsavedChangesRestored(false)}
+                onClose={handleUnsavedChangesRestoredClose}
                 message="Unsaved changes restored"
             />
             <Box display="flex" flexDirection="column" height="100%">
@@ -297,7 +298,7 @@ const EditEntityPage = () => {
                             <PreviewView
                                 version={previewVersion}
                                 requestFn={previewRequestFn}
-                                onClose={() => handlePreviewSwitch(false)}
+                                onClose={handlePreviewClose}
                             />
                         </Drawer>
                     )}
