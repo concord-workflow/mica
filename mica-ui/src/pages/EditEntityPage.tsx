@@ -18,10 +18,9 @@ import {
     Snackbar,
     Switch,
 } from '@mui/material';
-import { editor } from 'monaco-editor';
 import { parse as parseYaml } from 'yaml';
 
-import Editor, { OnMount } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'react-query';
@@ -73,6 +72,7 @@ const EditEntityPage = () => {
     // TODO handle load errors
     // load the entity
     const { entityId } = useParams<RouteParams>();
+    const hasUnsavedChanges = localStorage.getItem(`dirty-${entityId}`) !== null;
     const {
         data: serverValue,
         isLoading,
@@ -82,18 +82,12 @@ const EditEntityPage = () => {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         keepPreviousData: false,
-        enabled: entityId !== undefined && entityId !== '_new',
+        enabled: entityId !== undefined && entityId !== '_new' && !hasUnsavedChanges,
         onSuccess: (data) => {
             syncValueToState(data);
             setDirty(false);
         },
     });
-
-    // editor harness
-    const editorRef = React.useRef<editor.IStandaloneCodeEditor | null>(null);
-    const handleEditorOnMount: OnMount = (editor) => {
-        editorRef.current = editor;
-    };
 
     const [dirty, setDirty] = React.useState<boolean>(entityId === '_new');
 
@@ -111,19 +105,27 @@ const EditEntityPage = () => {
     const [selectedName, setSelectedName] = React.useState(searchParams.get('name') ?? undefined);
     const [selectedKind, setSelectedKind] = React.useState(searchParams.get('kind') ?? undefined);
 
+    // provide the default value for the editor
+    let defaultValue: string;
+    if (selectedId === '_new') {
+        if (selectedKind) {
+            defaultValue = kindToTemplate(selectedName ?? '/myEntity', selectedKind);
+        } else {
+            defaultValue = '# new entity';
+        }
+    } else {
+        defaultValue = serverValue ?? '';
+    }
+    const [editorValue, setEditorValue] = React.useState<string>(defaultValue);
+
     // we use a counter to trigger a preview refresh when needed
     const [previewVersion, setPreviewVersion] = React.useState<number>(0);
     const previewRequestFn = React.useCallback((): PreviewRequestOrError => {
-        const editor = editorRef.current;
-        if (!editor) {
-            return {};
-        }
-        const value = editor.getValue();
-        if (!value || value.length < 1) {
+        if (!editorValue || editorValue.length < 1) {
             return {};
         }
         try {
-            const view = parseYaml(value);
+            const view = parseYaml(editorValue);
 
             // we don't need view ID for preview and invalid IDs will cause errors that we don't care about here
             delete view.id;
@@ -137,7 +139,7 @@ const EditEntityPage = () => {
         } catch (e) {
             return { error: new Error((e as Error).message) };
         }
-    }, [editorRef]);
+    }, [editorValue]);
 
     // stuff for the live preview feature
     const [showPreview, setShowPreview] = React.useState<boolean>(false);
@@ -152,6 +154,8 @@ const EditEntityPage = () => {
     }, []);
 
     const syncValueToState = React.useCallback((value: string | undefined) => {
+        setEditorValue(value ?? '');
+
         if (!value) {
             return;
         }
@@ -172,13 +176,8 @@ const EditEntityPage = () => {
     );
 
     const handleSave = React.useCallback(async () => {
-        const editor = editorRef.current;
-        if (!editor) {
-            return;
-        }
-
         // save and get the new version
-        const version = await mutateAsync({ body: editor.getValue() });
+        const version = await mutateAsync({ body: editorValue });
 
         if (entityId === '_new') {
             // update the URL
@@ -190,7 +189,7 @@ const EditEntityPage = () => {
                 return;
             }
             if (data) {
-                editor.setValue(data);
+                setEditorValue(data);
                 syncValueToState(data);
             }
         }
@@ -200,23 +199,7 @@ const EditEntityPage = () => {
 
         // remove unsaved changes from local storage
         localStorage.removeItem(`dirty-${entityId}`);
-    }, [entityId, mutateAsync, navigate, refetch, syncValueToState]);
-
-    // provide the default value for the editor
-    let defaultValue: string;
-    if (selectedId === '_new') {
-        if (selectedKind) {
-            defaultValue = kindToTemplate(selectedName ?? '/myEntity', selectedKind);
-        } else {
-            defaultValue = '# new entity';
-        }
-    } else {
-        const editorValue = editorRef?.current?.getValue();
-        defaultValue =
-            editorValue !== null && editorValue !== undefined && editorValue != ''
-                ? editorValue
-                : serverValue ?? '';
-    }
+    }, [entityId, mutateAsync, navigate, refetch, syncValueToState, editorValue]);
 
     // on the first load, sync the default value to the state
     useEffect(() => {
@@ -226,32 +209,28 @@ const EditEntityPage = () => {
     // save any changes to local storage before navigating away
     useBeforeUnload(
         React.useCallback(() => {
-            const value = editorRef.current?.getValue();
-            if (!value) {
+            if (!dirty) {
                 return;
             }
-            localStorage.setItem(`dirty-${entityId}`, value);
-        }, [editorRef, entityId]),
+            console.log('localStorage.setItem', { editorValue });
+            localStorage.setItem(`dirty-${entityId}`, editorValue);
+        }, [editorValue, entityId, dirty]),
     );
 
     // load any unsaved changes from local storage (except for the new entities)
     const [showUnsavedChangesRestored, setShowUnsavedChangesRestored] =
         React.useState<boolean>(false);
     useEffect(() => {
-        if (entityId === '_new') {
-            return;
-        }
-
         const value = localStorage.getItem(`dirty-${entityId}`);
-        if (!value || value === editorRef.current?.getValue()) {
+        if (!value) {
             return;
         }
 
-        editorRef.current?.setValue(value);
         syncValueToState(value);
 
+        setDirty(true);
         setShowUnsavedChangesRestored(true);
-    }, [entityId, editorRef, syncValueToState]);
+    }, [entityId, syncValueToState]);
 
     return (
         <>
@@ -320,8 +299,7 @@ const EditEntityPage = () => {
                             options={{
                                 minimap: { enabled: false },
                             }}
-                            defaultValue={defaultValue}
-                            onMount={handleEditorOnMount}
+                            value={editorValue}
                             onChange={handleEditorOnChange}
                         />
                     </ErrorBoundary>
