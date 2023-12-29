@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.validation.constraints.NotNull;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +43,7 @@ public record MicaViewV1(@ValidName String name,
         }
 
         public Selector withNamePatterns(List<String> namePatterns) {
-            return new Selector(Optional.empty(), this.entityKind, Optional.of(namePatterns));
+            return new Selector(this.includes, this.entityKind, Optional.of(namePatterns));
         }
 
         public Selector withIncludes(List<String> includes) {

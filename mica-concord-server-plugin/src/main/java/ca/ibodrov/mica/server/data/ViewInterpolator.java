@@ -89,11 +89,11 @@ public class ViewInterpolator {
     }
 
     private static String interpolate(String s, JsonNode input) {
-        if (s == null || input == null || input.isNull() || input.isEmpty()) {
-            return s;
+        if (s == null) {
+            return null;
         }
 
-        if (input.isObject()) {
+        if (input != null && input.isObject()) {
             // TODO support nested parameters ${parameters.foo.bar[0]}
 
             for (var fields = input.fields(); fields.hasNext();) {
