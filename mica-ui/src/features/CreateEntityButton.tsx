@@ -56,7 +56,9 @@ const CreateEntityButton = ({ path }: Props) => {
                     data.map((row) => (
                         <MenuItem
                             key={row.id}
-                            onClick={() => handleClick(row.name, path + 'myEntity')}>
+                            onClick={() =>
+                                handleClick(row.name, (path !== '/' ? path : '') + '/myEntity')
+                            }>
                             <ListItemIcon>{entityKindToIcon(row.name)}</ListItemIcon>
                             {row.name}
                         </MenuItem>
