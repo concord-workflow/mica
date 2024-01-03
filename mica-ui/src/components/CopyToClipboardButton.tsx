@@ -1,11 +1,15 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { IconButton, Tooltip } from '@mui/material';
+import { IconButton, Tooltip, styled } from '@mui/material';
 
 import React from 'react';
 
 interface Props {
     text: string;
 }
+
+const InlineIconButton = styled(IconButton)(() => ({
+    fontSize: 'inherit',
+}));
 
 const CopyToClipboardButton = ({ text }: Props) => {
     const [tooltip, setTooltip] = React.useState<string>('Copy to clipboard');
@@ -28,9 +32,9 @@ const CopyToClipboardButton = ({ text }: Props) => {
     }, [text]);
     return (
         <Tooltip title={tooltip} open={open} onOpen={handleOpen} onClose={handleClose}>
-            <IconButton onClick={handleClick} sx={{ fontSize: 'inherit' }}>
+            <InlineIconButton onClick={handleClick}>
                 <ContentCopyIcon fontSize="inherit" />
-            </IconButton>
+            </InlineIconButton>
         </Tooltip>
     );
 };

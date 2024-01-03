@@ -8,6 +8,7 @@ import { UseMutationOptions } from 'react-query/types/react/types';
 export interface PreviewRequest {
     view: PartialEntity;
     limit: number;
+    parameters?: Record<string, string>;
 }
 
 const preview = (request: PreviewRequest): Promise<PartialEntity> =>

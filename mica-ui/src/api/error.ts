@@ -1,4 +1,4 @@
-import { JsonNode } from './entity.ts';
+import { JsonNode } from './schema.ts';
 
 export interface ApiError {
     type: string;

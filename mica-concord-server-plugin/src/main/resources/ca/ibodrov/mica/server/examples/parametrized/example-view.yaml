@@ -9,6 +9,6 @@ parameters:
 selector:
   entityKind: /examples/parametrized/example-kind
   namePatterns:
-    - ${recordName}
+    - ${parameters.recordName}
 data:
-  jsonPath: $.data.['$recordKey']
+  jsonPath: $.data.['${parameters.recordKey}']

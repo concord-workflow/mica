@@ -6,7 +6,7 @@ import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
-import PreviewView, { PreviewRequestOrError } from '../features/PreviewView.tsx';
+import PreviewView from '../features/views/PreviewView.tsx';
 import SaveIcon from '@mui/icons-material/Save';
 import {
     Alert,
@@ -17,8 +17,8 @@ import {
     FormControlLabel,
     Snackbar,
     Switch,
+    styled,
 } from '@mui/material';
-import { parse as parseYaml } from 'yaml';
 
 import Editor from '@monaco-editor/react';
 import React, { useEffect } from 'react';
@@ -57,6 +57,13 @@ const getYamlField = (yaml: string, key: string): string | undefined => {
     }
     return result;
 };
+
+const PreviewDrawer = styled(Drawer)(() => ({
+    '.MuiPaper-root': {
+        minHeight: '40%',
+        maxHeight: '40%',
+    },
+}));
 
 const EditEntityPage = () => {
     const navigate = useNavigate();
@@ -110,34 +117,10 @@ const EditEntityPage = () => {
     });
     const [dirty, setDirty] = React.useState<boolean>(entityId === '_new');
 
-    // we use a counter to trigger a preview refresh when needed
-    const [previewVersion, setPreviewVersion] = React.useState<number>(0);
-    const previewRequestFn = React.useCallback((): PreviewRequestOrError => {
-        if (!editorValue || editorValue.length < 1) {
-            return {};
-        }
-        try {
-            const view = parseYaml(editorValue);
-
-            // we don't need view ID for preview and invalid IDs will cause errors that we don't care about here
-            delete view.id;
-
-            return {
-                request: {
-                    view,
-                    limit: 10,
-                },
-            };
-        } catch (e) {
-            return { error: new Error((e as Error).message) };
-        }
-    }, [editorValue]);
-
     // stuff for the live preview feature
     const [showPreview, setShowPreview] = React.useState<boolean>(false);
     const handlePreviewSwitch = React.useCallback((enable: boolean) => {
         setShowPreview(enable);
-        setPreviewVersion((prev) => prev + 1);
     }, []);
     const handlePreviewClose = React.useCallback(() => setShowPreview(false), []);
 
@@ -148,8 +131,6 @@ const EditEntityPage = () => {
 
     // sync the editor value to the state
     useEffect(() => {
-        setPreviewVersion((prev) => prev + 1);
-
         const newId = getYamlField(editorValue, 'id');
         setSelectedId((prev) => (prev === newId ? prev : newId));
 
@@ -229,7 +210,7 @@ const EditEntityPage = () => {
                 message="Unsaved changes restored"
             />
             <Box display="flex" flexDirection="column" height="100%">
-                <Box sx={{ m: 2 }}>
+                <Box margin={2}>
                     <ActionBar>
                         <PageTitle help={HELP}>
                             {selectedName && (
@@ -286,21 +267,9 @@ const EditEntityPage = () => {
                         />
                     </ErrorBoundary>
                     {showPreview && (
-                        <Drawer
-                            anchor="bottom"
-                            variant="permanent"
-                            sx={{
-                                '.MuiPaper-root': {
-                                    minHeight: '40%',
-                                    maxHeight: '40%',
-                                },
-                            }}>
-                            <PreviewView
-                                version={previewVersion}
-                                requestFn={previewRequestFn}
-                                onClose={handlePreviewClose}
-                            />
-                        </Drawer>
+                        <PreviewDrawer anchor="bottom" variant="permanent">
+                            <PreviewView data={editorValue} onClose={handlePreviewClose} />
+                        </PreviewDrawer>
                     )}
                 </Box>
             </Box>

@@ -538,7 +538,7 @@ results are returned in a separate field:
 ```json
 {
   "name":"/examples/materialize/v1-to-v2",
-  "kind":"MicaMaterializedView/v1",
+  "kind":"/mica/materializedView/v1",
   "length":2,
   "data": [
     {...cut...,"validationUrl":"http://foo.example.org","foo":123,"status":"active"},

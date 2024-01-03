@@ -78,7 +78,8 @@ public class ViewRenderer {
             return new RenderedView(view, data);
         }
 
-        // flatten - convert an array of arrays into a single array
+        // flatten - convert an array of arrays into a single array by concatenating
+        // them
         var flatten = view.data().flatten().orElse(false);
         if (flatten && data.stream().allMatch(JsonNode::isArray)) {
             data = data.stream()

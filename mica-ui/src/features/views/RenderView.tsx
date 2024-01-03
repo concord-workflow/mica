@@ -1,15 +1,16 @@
-import { RenderRequest, useRender } from '../api/view.ts';
-import ReadableApiError from '../components/ReadableApiError.tsx';
-import ShowRenderedViewDetailsToggle from '../components/ShowRenderedViewDetailsToggle.tsx';
-import { Alert, Box, CircularProgress } from '@mui/material';
+import { RenderRequest, useRender } from '../../api/view.ts';
+import ReadableApiError from '../../components/ReadableApiError.tsx';
+import DataView from './DataView.tsx';
+import ShowRenderedViewDetailsToggle from './ShowRenderedViewDetailsToggle.tsx';
+import { Alert, Box, CircularProgress, styled } from '@mui/material';
 
 import React from 'react';
-import JsonView from 'react18-json-view';
-import 'react18-json-view/src/style.css';
 
 interface Props {
     request: RenderRequest;
 }
+
+const FloatingBox = styled(Box)(() => ({ float: 'right' }));
 
 const RenderView = ({ request }: Props) => {
     const { mutateAsync, data, isLoading, error } = useRender({
@@ -21,6 +22,9 @@ const RenderView = ({ request }: Props) => {
     }, [mutateAsync, request]);
 
     const [showDetails, setShowDetails] = React.useState(false);
+    const handleDetailsToggle = React.useCallback((value: boolean) => {
+        setShowDetails(value);
+    }, []);
 
     return (
         <>
@@ -31,12 +35,12 @@ const RenderView = ({ request }: Props) => {
             )}
             <Box>
                 {data && (
-                    <Box sx={{ float: 'right' }}>
+                    <FloatingBox>
                         <ShowRenderedViewDetailsToggle
                             checked={showDetails}
-                            onChange={(value) => setShowDetails(value)}
+                            onChange={handleDetailsToggle}
                         />
-                    </Box>
+                    </FloatingBox>
                 )}
                 {isLoading && (
                     <Box
@@ -50,11 +54,7 @@ const RenderView = ({ request }: Props) => {
                         <CircularProgress color="secondary" />
                     </Box>
                 )}
-                {data && (
-                    <Box margin={1}>
-                        <JsonView src={showDetails ? data : data.data} />
-                    </Box>
-                )}
+                {data && <DataView data={showDetails ? data : data.data} />}
             </Box>
         </>
     );

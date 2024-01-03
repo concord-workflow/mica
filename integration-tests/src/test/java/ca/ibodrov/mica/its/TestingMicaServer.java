@@ -8,7 +8,6 @@ import com.typesafe.config.Config;
 import com.walmartlabs.concord.it.testingserver.TestingConcordServer;
 import com.walmartlabs.concord.server.plugins.oidc.OidcPluginModule;
 import org.sonatype.siesta.Component;
-import org.sonatype.siesta.server.internal.validation.ValidationErrorsExceptionMapper;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;

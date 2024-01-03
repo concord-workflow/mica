@@ -1,5 +1,6 @@
 import { doFetch, handleJsonResponse, handleTextResponse } from './common.ts';
 import { ApiError } from './error.ts';
+import { JsonNode } from './schema.ts';
 
 import { useMutation } from 'react-query';
 import { UseMutationOptions } from 'react-query/types/react/types';
@@ -57,14 +58,6 @@ export const kindToTemplate = (name: string, kind: string): string => {
     const template = lookupTemplateByKind(kind);
     return template.replace('%%KIND%%', kind).replace('%%NAME%%', name);
 };
-
-export type JsonNode =
-    | { [key: string]: JsonNode }
-    | Array<JsonNode>
-    | string
-    | number
-    | boolean
-    | null;
 
 export interface EntityEntry {
     id: string;

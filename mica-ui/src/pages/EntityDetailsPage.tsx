@@ -8,7 +8,7 @@ import SectionTitle from '../components/SectionTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
-import RenderView from '../features/RenderView.tsx';
+import RenderView from '../features/views/RenderView.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import PreviewIcon from '@mui/icons-material/Preview';

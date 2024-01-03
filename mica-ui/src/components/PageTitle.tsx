@@ -8,22 +8,29 @@ interface Props {
 }
 
 const PageTitle = ({ children, help }: PropsWithChildren<Props>) => {
-    const [openDrawer, setOpenDrawer] = useState(false);
+    const [openHelp, setOpenHelp] = useState(false);
+
+    const handleHelpIconClick = React.useCallback(() => {
+        setOpenHelp(true);
+    }, []);
+
+    const handleCloseHelp = React.useCallback(() => {
+        setOpenHelp(false);
+    }, []);
+
     return (
         <>
             <Typography variant="h5" marginBottom={2}>
                 {children}
                 {help && (
                     <>
-                        <IconButton
-                            sx={{ alignSelf: 'flex-end' }}
-                            onClick={() => setOpenDrawer(true)}>
+                        <IconButton onClick={handleHelpIconClick}>
                             <HelpIcon />
                         </IconButton>
                     </>
                 )}
             </Typography>
-            <Drawer anchor="right" open={openDrawer} onClose={() => setOpenDrawer(false)}>
+            <Drawer anchor="right" open={openHelp} onClose={handleCloseHelp}>
                 <Box width="100%" maxWidth={500} paddingLeft={2} paddingRight={2} paddingTop={10}>
                     {help}
                 </Box>

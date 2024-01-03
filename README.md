@@ -18,11 +18,17 @@ can be added directly to the classpath of a concord-server.
 ## Running in IDE
 
 Start `ca.ibodrov.mica.its.LocalMicaServer` with the following environment variables:
+
 - `TEST_OIDC_AUTHSERVER` - the OIDC server URL, for example https://dev-12345678.okta.com;
 - `TEST_OIDC_CLIENTID` - the OIDC client ID;
 - `TEST_OIDC_SECRET` - the OIDC client secret.
 
 You should be able to access the UI by visiting http://localhost:8080/mica
+
+## Running in Production
+
+Mica is built to run as a part of [concord-server](https://github.com/walmartlabs/concord) 2.7.0+
+The easiest way to run it is to use [mica-sidecar](./docker) Docker image.
 
 ## UI Development
 
