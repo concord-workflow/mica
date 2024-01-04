@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.api.model;
 
+import ca.ibodrov.mica.api.validation.ValidName;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -13,4 +14,6 @@ public interface EntityLike {
 
     @JsonAnyGetter
     Map<String, JsonNode> data();
+
+    EntityLike withName(@ValidName String name);
 }

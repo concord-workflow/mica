@@ -78,8 +78,15 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         var path = Optional.ofNullable(queryParams.get("path"))
                 .flatMap(p -> Optional.ofNullable(p.get(0)))
                 .orElse("/");
+        var useFileNames = Optional.ofNullable(queryParams.get("useFileNames"))
+                .flatMap(p -> Optional.ofNullable(p.get(0)))
+                .map(Boolean::parseBoolean)
+                .orElse(false);
+        var namePrefix = Optional.ofNullable(queryParams.get("namePrefix"))
+                .flatMap(p -> Optional.ofNullable(p.get(0)))
+                .orElse("");
 
-        return getAllByKind(orgName, projectName, repoName, ref, kind, path, limit);
+        return getAllByKind(orgName, projectName, repoName, ref, kind, path, useFileNames, namePrefix, limit);
     }
 
     private List<EntityLike> getAllByKind(String orgName,
@@ -88,6 +95,8 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                                           String ref,
                                           String kind,
                                           String pathInRepo,
+                                          boolean useFileNames,
+                                          String namePrefix,
                                           int limit) {
 
         try {
@@ -102,7 +111,20 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                     var data = Files.walk(result.path())
                             .filter(p -> isMicaYamlFile(p))
                             .filter(p -> isOfValidKind(p, kind))
-                            .map(this::parseFile);
+                            .map(p -> {
+                                var e = parseFile(p);
+                                var name = e.name();
+                                if (useFileNames) {
+                                    name = p.getFileName().toString();
+                                    // strip the extension
+                                    // TODO should this be an option?
+                                    var idx = name.lastIndexOf('.');
+                                    if (idx > 0) {
+                                        name = name.substring(0, idx);
+                                    }
+                                }
+                                return e.withName(namePrefix + name);
+                            });
 
                     if (limit > 0) {
                         data = data.limit(limit);

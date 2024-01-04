@@ -144,6 +144,8 @@ public class ViewResource implements Resource {
                 .flatMap(include -> fetchIncludeUri(include, view.selector().entityKind(), limit))
                 .toList();
 
+        // TODO filter out invalid entities?
+
         if (entities.isEmpty()) {
             return Stream.empty();
         }
@@ -156,7 +158,9 @@ public class ViewResource implements Resource {
 
             result = Stream.empty();
             for (var pattern : patterns) {
-                result = Stream.concat(result, entities.stream().filter(e -> e.name().matches(pattern)));
+                result = Stream.concat(result, entities.stream()
+                        .filter(e -> e.name() != null) // TODO validate the whole entity instead?
+                        .filter(e -> e.name().matches(pattern)));
             }
         }
 

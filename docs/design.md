@@ -39,10 +39,10 @@ schema:
       type: string
     status:
       type: string
-      enum: [active, retired]
+      enum: [ active, retired ]
     validationUrl:
       type: string
-  required: ['id', 'validationUrl']
+  required: [ 'id', 'validationUrl' ]
 ```
 
 Mica is enforcing schemas every time an entity is created or updated. See
@@ -61,6 +61,7 @@ ObjectSchemaNode:
 ```
 
 There are several built-in entity kinds:
+
 - `/mica/record/v1` -- basic data record, no attached behaviors;
 - `/mica/kind/v1` -- a `kind` definition, aka entity "template";
 - `/mica/view/v1` -- entity view object;
@@ -117,10 +118,10 @@ schema:
             type: string
           status:
             type: string
-            enum: [active, retired]
+            enum: [ active, retired ]
           validationUrl:
             type: string
-        required: ['id', 'validationUrl']
+        required: [ 'id', 'validationUrl' ]
 ```
 
 Plus a view definition:
@@ -165,6 +166,7 @@ curl 'http://localhost:8080/api/mica/v1/view/render/ActiveClients'
 
 When a view is "rendered", first the `selector` is applied to find entities to
 return. Currently, the following selectors are supported:
+
 - `entityKind` -- selects entities of a given kind. Mandatory value, must be a
   path to a `/mica/kind/v1` entity, e.g. `/mica/record/v1`;
 - `namePatterns` -- optional list of regular expressions to match entity names
@@ -172,13 +174,14 @@ return. Currently, the following selectors are supported:
 
 When `namePatterns` is specified, the view returns entities in the order in
 which they match the patterns. The entities that match the first pattern will
-be grouped first, then the entities that match the second pattern, and so on. 
+be grouped first, then the entities that match the second pattern, and so on.
 
 The `data` object is a JSON array where each element corresponds to a selected
 entity.
 
 The resulting data is further processed by applying one or more of the optional
 steps (in the order in which they are applied):
+
 - `flatten` -- joins array of arrays of objects into a regular flat array of objects;
 - `merge` -- merges multiple objects into one by deep-merging fields;
 - `jsonPatch` -- applies a JSON Patch to each object.
@@ -240,7 +243,7 @@ Given an entity
 ```yaml
 kind: /schemas/Piece
 name: /puzzle/piece-a
-foos: ['a', 'b', 'c']
+foos: [ 'a', 'b', 'c' ]
 bars:
   baz:
     qux: 123
@@ -251,7 +254,7 @@ and
 ```yaml
 kind: /schemas/Piece
 name: /puzzle/piece-b
-foos: ['x', 'y', 'z']
+foos: [ 'x', 'y', 'z' ]
 bars:
   eek: true
 ```
@@ -262,7 +265,11 @@ the rendered view will contain the object with keys merged from both entities:
 {
     "data": [
         {
-            "foos": ["x", "y", "z"],
+            "foos": [
+                "x",
+                "y",
+                "z"
+            ],
             "bars": {
                 "eek": true,
                 "baz": {
@@ -346,6 +353,7 @@ only top-level fields are supported (i.e. nested parameters like
 `${parameters.foo.bar}` are not supported).
 
 Parameters can be used in:
+
 - `selector.includes`
 - `selector.entityKind`
 - `selector.namePatterns`
@@ -358,14 +366,17 @@ To pass the parameters, use the `parameters` field in the request body:
 curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
 
-## Data Includes
+## View Includes
+
+Mica can fetch data from both internal and external sources. The `includes`
+field in the view definition specifies the list of URLs to fetch data from:
 
 ```yaml
 kind: /mica/view/v1
 name: /views/effective-config
 selector:
   includes:
-    - concord+git://orgName/projectName/repoName?path=/stuff/configs&ref=main  
+    - concord+git://orgName/projectName/repoName?path=/stuff/configs&ref=main
   entityKind: /mica/record/v1
   namePatterns:
     - /stuff/configs
@@ -373,8 +384,7 @@ data:
   jsonPath: $
 ```
 
-The `includes` field is a list of URLs to fetch data from.  Only `mica` and
-`concord+git` URL schemes are supported at the moment.
+Only `mica` and `concord+git` URL schemes are supported at the moment.
 
 The `concord+git` URL must point at existing Concord project `projectName`
 with the repository `repoName`. When rendering the view, Mica will fetch
@@ -383,7 +393,17 @@ in the given `path`. YAML files with the `kind` field set to
 `selector.entityKind` will be considered for further processing, the rest will
 be ignored.
 
-The default value for `includes` contains the URL of the internal entity store:
+Supported parameters:
+
+- `path` -- optional, path inside the repository to look for YAML files. Default
+  is the repository root;
+- `ref` -- optional, commit ID or branch name to fetch the data from;
+- `useFileNames` -- optional, if `true`, use file names as entity names (even if
+  `name` present in the file). Default is `false`;
+- `namePrefix` -- optional, if specified, prepend the given string to each
+  entity name. Default is empty string.
+
+By default, `includes` contain the URL of the internal entity store:
 
 ```yaml
 selector:
@@ -429,7 +449,7 @@ schema:
       type: string
     validationUrl:
       type: string
-  required: ['name', 'validationUrl']
+  required: [ 'name', 'validationUrl' ]
 ```
 
 And a set of entities:
@@ -458,10 +478,10 @@ schema:
       type: string
     status:
       type: string
-      enum: [active, retired]
+      enum: [ active, retired ]
     validationUrl:
       type: string
-  required: ['name', 'status', 'validationUrl']
+  required: [ 'name', 'status', 'validationUrl' ]
 ```
 
 A view definition:
@@ -537,17 +557,47 @@ results are returned in a separate field:
 
 ```json
 {
-  "name":"/examples/materialize/v1-to-v2",
-  "kind":"/mica/materializedView/v1",
-  "length":2,
-  "data": [
-    {...cut...,"validationUrl":"http://foo.example.org","foo":123,"status":"active"},
-    {...cut...,"validationUrl":"http://bar.example.org","foo":123,"status":"active"}
-  ],
-  "validation": [
-    {"error":{"kind":"UNEXPECTED_VALUE","metadata":{"details":"Additional properties are not allowed: [foo]","propertyNames":["foo"]}}},
-    {"error":{"kind":"UNEXPECTED_VALUE","metadata":{"details":"Additional properties are not allowed: [foo]","propertyNames":["foo"]}}}
-  ]
+    "name": "/examples/materialize/v1-to-v2",
+    "kind": "/mica/materializedView/v1",
+    "length": 2,
+    "data": [
+        {
+            ...cut...,
+            "validationUrl": "http://foo.example.org",
+            "foo": 123,
+            "status": "active"
+        },
+        {
+            ...cut...,
+            "validationUrl": "http://bar.example.org",
+            "foo": 123,
+            "status": "active"
+        }
+    ],
+    "validation": [
+        {
+            "error": {
+                "kind": "UNEXPECTED_VALUE",
+                "metadata": {
+                    "details": "Additional properties are not allowed: [foo]",
+                    "propertyNames": [
+                        "foo"
+                    ]
+                }
+            }
+        },
+        {
+            "error": {
+                "kind": "UNEXPECTED_VALUE",
+                "metadata": {
+                    "details": "Additional properties are not allowed: [foo]",
+                    "propertyNames": [
+                        "foo"
+                    ]
+                }
+            }
+        }
+    ]
 }
 ```
 

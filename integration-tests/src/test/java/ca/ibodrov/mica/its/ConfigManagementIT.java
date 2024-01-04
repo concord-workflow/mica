@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
@@ -40,6 +41,7 @@ import static ca.ibodrov.mica.schema.ObjectSchemaNode.any;
 import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
 import static ca.ibodrov.mica.server.api.ViewResource.INTERNAL_ENTITY_STORE_URI;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
+import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -247,14 +249,12 @@ public class ConfigManagementIT extends EndToEnd {
             var nestedDir = repoDir.resolve(pathInRepo);
             Files.createDirectory(nestedDir);
 
-            Files.writeString(nestedDir.resolve("foo.yaml"), """
+            Files.writeString(nestedDir.resolve("baz.yaml"), """
                     kind: /acme/kinds/entity
-                    name: /test/baz
                     value: "baz!"
                     """);
-            Files.writeString(nestedDir.resolve("bar.yaml"), """
+            Files.writeString(nestedDir.resolve("qux.yaml"), """
                     kind: /acme/kinds/entity
-                    name: /test/qux
                     value: "qux!"
                     """);
             git.add().addFilepattern(".").call();
@@ -263,9 +263,8 @@ public class ConfigManagementIT extends EndToEnd {
             // create one extra entity in a different branch
 
             git.checkout().setCreateBranch(true).setName("other").call();
-            Files.writeString(nestedDir.resolve("foo.yaml"), """
+            Files.writeString(nestedDir.resolve("fred.yaml"), """
                     kind: /acme/kinds/entity
-                    name: /test/fred
                     value: "fred!"
                     """);
             git.add().addFilepattern(".").call();
@@ -292,8 +291,9 @@ public class ConfigManagementIT extends EndToEnd {
                     Map.of(repoName,
                             new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
 
-            return URI.create("concord+git://%s/%s/%s?ref=%s&path=%s".formatted(orgName, projectName, repoName,
-                    URLEncoder.encode(repoBranch, UTF_8), URLEncoder.encode(pathInRepo, UTF_8)));
+            return URI.create("concord+git://%s/%s/%s?ref=%s&path=%s&useFileNames=true&namePrefix=%s"
+                    .formatted(orgName, projectName, repoName, encode(repoBranch, UTF_8), encode(pathInRepo, UTF_8),
+                            encode("/test/", UTF_8)));
         });
 
         // add a view to render both the entities from the DB and the ones from the Git
@@ -331,7 +331,7 @@ public class ConfigManagementIT extends EndToEnd {
         // TODO sort results
         assertFinished(ciProcess);
         var log = getProcessLog(ciProcess.getInstanceId());
-        assertTrue(log.contains("[foo!, bar!, qux!, baz!]"));
+        assertTrue(log.contains("[foo!, bar!, baz!, qux!]"));
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)

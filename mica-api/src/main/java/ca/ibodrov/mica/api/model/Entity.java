@@ -42,4 +42,9 @@ public record Entity(@NotNull EntityId id,
     public EntityLike asEntityLike() {
         return this;
     }
+
+    @Override
+    public EntityLike withName(String name) {
+        return new Entity(id, name, kind, createdAt, updatedAt, data);
+    }
 }
