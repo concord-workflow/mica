@@ -89,9 +89,11 @@ const PreviewView = ({ data, onClose }: Props) => {
         parameters,
     } = React.useMemo(() => parseData(debouncedData), [debouncedData]);
 
-    const [requestParameters, setRequestParameters] = React.useState<Record<string, string>>({});
+    const [requestParameters, setRequestParameters] = React.useState<Record<string, string | null>>(
+        {},
+    );
     const handleParameterChange = React.useCallback((key: string, value: string) => {
-        setRequestParameters((prev) => ({ ...prev, [key]: value }));
+        setRequestParameters((prev) => ({ ...prev, [key]: value === '' ? null : value }));
     }, []);
 
     const debouncedRequestParameters = useDebounce(requestParameters, 500);
@@ -106,7 +108,7 @@ const PreviewView = ({ data, onClose }: Props) => {
         const validKeys = Object.keys(parameters?.properties ?? {});
         const validParameters = Object.entries(debouncedRequestParameters).reduce(
             (acc, [key, value]) => {
-                if (validKeys.includes(key)) {
+                if (value !== null && validKeys.includes(key)) {
                     acc[key] = value;
                 }
                 return acc;

@@ -23,7 +23,7 @@ const ReadableApiError = ({ error }: Props) => {
                     // TODO other error kinds
                     return (
                         <div>
-                            ${key} property is invalid: ${prop.kind}
+                            <i>{key}</i> property is invalid: {prop.kind}
                         </div>
                     );
                 })}
