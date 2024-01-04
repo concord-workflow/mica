@@ -16,8 +16,8 @@ public class ViewInterpolator {
         var selectorEntityKind = interpolate(view.selector().entityKind(), input);
         var selectorNamePatterns = view.selector().namePatterns().map(namePatterns -> interpolate(namePatterns, input));
         var dataJsonPath = interpolate(view.data().jsonPath(), input);
-        var validationAsEntityKind = interpolate(view.validation().map(ViewLike.Validation::asEntityKind).orElse(null),
-                input);
+        var validationAsEntityKind = view.validation()
+                .flatMap(v -> Optional.ofNullable(interpolate(v.asEntityKind(), input)));
 
         return new ViewLike() {
             @Override
@@ -72,7 +72,7 @@ public class ViewInterpolator {
 
             @Override
             public Optional<? extends Validation> validation() {
-                return view.validation().map(validation -> (Validation) () -> validationAsEntityKind);
+                return validationAsEntityKind.map(entityKind -> () -> entityKind);
             }
 
             @Override
