@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ca.ibodrov.mica.server.data.ViewInterpolator.interpolate;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -51,6 +50,7 @@ public class ViewResource implements Resource {
     private final EntityKindStore entityKindStore;
     private final Set<EntityFetcher> includeFetchers;
     private final ObjectMapper objectMapper;
+    private final ViewInterpolator viewInterpolator;
     private final ViewRenderer viewRenderer;
     private final Validator validator;
 
@@ -66,6 +66,7 @@ public class ViewResource implements Resource {
         this.entityKindStore = requireNonNull(entityKindStore);
         this.includeFetchers = requireNonNull(includeFetchers);
         this.objectMapper = requireNonNull(objectMapper);
+        this.viewInterpolator = new ViewInterpolator(entityKindStore::getSchemaForKind);
         this.viewRenderer = new ViewRenderer(objectMapper);
         this.validator = new Validator(entityKindStore::getSchemaForKind);
     }
@@ -129,7 +130,7 @@ public class ViewResource implements Resource {
 
     private ViewLike interpolateView(EntityLike viewEntity, JsonNode parameters) {
         var view = BuiltinSchemas.asViewLike(objectMapper, viewEntity);
-        return interpolate(view, parameters);
+        return viewInterpolator.interpolate(view, parameters);
     }
 
     private Stream<? extends EntityLike> fetch(ViewLike view, int limit) {

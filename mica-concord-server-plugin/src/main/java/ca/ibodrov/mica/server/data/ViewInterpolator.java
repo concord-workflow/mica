@@ -2,14 +2,40 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.schema.Validator;
+import ca.ibodrov.mica.server.exceptions.EntityValidationException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+
+import static java.util.Objects.requireNonNull;
 
 public class ViewInterpolator {
 
-    public static ViewLike interpolate(ViewLike view, JsonNode input) {
+    private final Validator validator;
+
+    public ViewInterpolator(Function<String, Optional<ObjectSchemaNode>> schemaResolver) {
+        this.validator = new Validator(requireNonNull(schemaResolver));
+    }
+
+    public ViewLike interpolate(ViewLike view, JsonNode input) {
+        // validate input
+        if (input != null && !input.isNull()) {
+            var maybeSchema = view.parameters();
+            if (maybeSchema.isEmpty()) {
+                // nothing to interpolate
+                return view;
+            }
+
+            var schema = maybeSchema.get();
+            var validatedInput = validator.validateObject(schema, input);
+            if (!validatedInput.isValid()) {
+                throw EntityValidationException.from("Invalid input", validatedInput);
+            }
+        }
+
         // TODO check for unresolved parameters
 
         var selectorIncludes = view.selector().includes().map(includes -> interpolate(includes, input));

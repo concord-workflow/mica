@@ -40,7 +40,7 @@ public class EntityController {
         var input = objectMapper.convertValue(entity, JsonNode.class);
         var validatedInput = validator.validateObject(schema, input);
         if (!validatedInput.isValid()) {
-            throw EntityValidationException.from(validatedInput);
+            throw EntityValidationException.from("Invalid entity", validatedInput);
         }
 
         var existingId = entityStore.getIdByName(entity.name());

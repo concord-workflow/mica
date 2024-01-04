@@ -5,7 +5,7 @@ import ca.ibodrov.mica.api.model.ViewLike;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.intellij.lang.annotations.Language;
@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
@@ -25,6 +26,7 @@ public class ViewRendererTest {
             .copyWith(new YAMLFactory());
 
     private static final ViewRenderer renderer = new ViewRenderer(yamlMapper);
+    private static final ViewInterpolator interpolator = new ViewInterpolator((ref) -> Optional.empty());
 
     @Test
     public void simpleExample() {
@@ -180,7 +182,7 @@ public class ViewRendererTest {
                   flatten: true
                 """);
 
-        var interpolatedView = ViewInterpolator.interpolate(view, parameters("clientId", IntNode.valueOf(2)));
+        var interpolatedView = interpolator.interpolate(view, parameters("clientId", TextNode.valueOf("2")));
         var result = renderer.render(interpolatedView, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());

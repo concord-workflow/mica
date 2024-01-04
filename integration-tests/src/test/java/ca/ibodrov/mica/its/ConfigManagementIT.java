@@ -26,8 +26,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
@@ -37,8 +35,7 @@ import java.util.UUID;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.any;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
+import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
 import static ca.ibodrov.mica.server.api.ViewResource.INTERNAL_ENTITY_STORE_URI;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
@@ -76,6 +73,10 @@ public class ConfigManagementIT extends EndToEnd {
         // add a view to render the effective config
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/acme/effective-configs/components/foobar/instance-config")
+                .parameters(object(Map.of(
+                        "githubPr", string(),
+                        "env", string(),
+                        "namespace", string()), Set.of()))
                 .selector(byEntityKind("/acme/kinds/config-layer")
                         .withNamePatterns(List.of(
                                 "/acme/configs/branches/main/instance-level-config.yaml",
@@ -301,6 +302,8 @@ public class ConfigManagementIT extends EndToEnd {
 
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/acme/views/imports-demo")
+                .parameters(object(Map.of(
+                        "env", string()), Set.of()))
                 .selector(byEntityKind("/acme/kinds/entity")
                         .withNamePatterns(List.of("/${parameters.env}/.*"))
                         .withIncludes(List.of(

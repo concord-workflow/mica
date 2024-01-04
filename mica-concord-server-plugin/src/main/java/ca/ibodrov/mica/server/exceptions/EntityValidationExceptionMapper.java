@@ -30,7 +30,7 @@ public class EntityValidationExceptionMapper implements ExceptionMapper<EntityVa
         var payload = objectMapper.convertValue(new ErrorPayload(exception.getErrors()), JsonNode.class);
         return Response.status(BAD_REQUEST)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(ApiError.detailedValidationError("Validation error", payload))
+                .entity(ApiError.detailedValidationError(exception.getMessage(), payload))
                 .build();
     }
 

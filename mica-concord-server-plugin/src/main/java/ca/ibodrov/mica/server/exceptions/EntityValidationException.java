@@ -8,15 +8,16 @@ import java.util.Map;
 
 public class EntityValidationException extends RuntimeException {
 
-    public static EntityValidationException from(ValidatedProperty validatedProperty) {
+    public static EntityValidationException from(String message, ValidatedProperty validatedProperty) {
         var result = ImmutableMap.<String, ValidationError>builder();
         addErrors(result, "", validatedProperty);
-        return new EntityValidationException(result.build());
+        return new EntityValidationException(message, result.build());
     }
 
     private final Map<String, ValidationError> errors;
 
-    public EntityValidationException(Map<String, ValidationError> errors) {
+    public EntityValidationException(String message, Map<String, ValidationError> errors) {
+        super(message);
         this.errors = errors;
     }
 
