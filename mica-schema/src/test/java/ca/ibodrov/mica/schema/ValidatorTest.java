@@ -521,8 +521,7 @@ public class ValidatorTest {
 
     private <T> T parseYaml(Class<T> klass, @Language("yaml") String s) {
         try {
-            return objectMapper.copyWith(new YAMLFactory())
-                    .readValue(s, klass);
+            return objectMapper.copyWith(new YAMLFactory()).readValue(s, klass);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

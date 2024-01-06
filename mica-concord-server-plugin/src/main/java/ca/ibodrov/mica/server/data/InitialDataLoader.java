@@ -3,9 +3,9 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.ObjectSchemaNode;
+import ca.ibodrov.mica.server.YamlMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class InitialDataLoader {
 
         // load example files
         var cl = getClass().getClassLoader();
-        var yamlMapper = objectMapper.copyWith(new YAMLFactory());
+        var yamlMapper = new YamlMapper(objectMapper);
         var reflections = new Reflections("ca.ibodrov.mica.server.examples", new ResourcesScanner());
         reflections.getResources(s -> s.endsWith(".yaml")).forEach(resourceName -> {
             try (var in = cl.getResourceAsStream(resourceName)) {

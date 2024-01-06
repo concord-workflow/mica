@@ -2,11 +2,11 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.schema.Validator;
+import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,14 +24,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class BuiltinSchemasTest {
 
-    private static ObjectMapper yamlMapper;
+    private static ObjectMapper objectMapper;
+    private static YamlMapper yamlMapper;
     private static BuiltinSchemas builtinSchemas;
     private static Validator validator;
 
     @BeforeAll
     public static void setUp() {
-        yamlMapper = new ObjectMapperProvider().get().copyWith(new YAMLFactory());
-        builtinSchemas = new BuiltinSchemas(yamlMapper);
+        objectMapper = new ObjectMapperProvider().get();
+        yamlMapper = new YamlMapper(objectMapper);
+        builtinSchemas = new BuiltinSchemas(objectMapper);
         validator = new Validator(ref -> builtinSchemas.get(ref));
     }
 
@@ -80,7 +82,7 @@ public class BuiltinSchemasTest {
                   jsonPath: $
                 """);
 
-        assertThrows(ApiException.class, () -> asViewLike(yamlMapper, entity));
+        assertThrows(ApiException.class, () -> asViewLike(objectMapper, entity));
     }
 
     @Test

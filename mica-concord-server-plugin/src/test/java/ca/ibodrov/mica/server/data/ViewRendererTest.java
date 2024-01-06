@@ -2,11 +2,10 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.ViewLike;
+import ca.ibodrov.mica.server.YamlMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
@@ -22,10 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ViewRendererTest {
 
-    private static final ObjectMapper yamlMapper = new ObjectMapperProvider().get()
-            .copyWith(new YAMLFactory());
-
-    private static final ViewRenderer renderer = new ViewRenderer(yamlMapper);
+    private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
+    private static final YamlMapper yamlMapper = new YamlMapper(objectMapper);
+    private static final ViewRenderer renderer = new ViewRenderer(objectMapper);
     private static final ViewInterpolator interpolator = new ViewInterpolator((ref) -> Optional.empty());
 
     @Test
@@ -95,7 +93,6 @@ public class ViewRendererTest {
         assertEquals(2, result.data().size());
 
         var expected = """
-                ---
                 - - name: "John"
                     id: 3
                     validationUrl: null
@@ -128,7 +125,6 @@ public class ViewRendererTest {
         assertEquals(4, result.data().size());
 
         expected = """
-                ---
                 - name: "John"
                   id: 3
                   validationUrl: null
@@ -188,7 +184,6 @@ public class ViewRendererTest {
         assertEquals(1, result.data().size());
 
         var expected = """
-                ---
                 - "Alice"
                 """;
         assertEquals(expected, toYaml(result.data()));
@@ -231,7 +226,6 @@ public class ViewRendererTest {
         assertEquals(1, result.data().size());
 
         var expected = """
-                ---
                 - qux:
                     ack: "hello!"
                     eek: "bye!"
@@ -311,7 +305,7 @@ public class ViewRendererTest {
     }
 
     private static ViewLike parseView(@Language("yaml") String yaml) {
-        return asViewLike(yamlMapper, parseYaml(yaml));
+        return asViewLike(objectMapper, parseYaml(yaml));
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {
@@ -324,7 +318,7 @@ public class ViewRendererTest {
 
     private static String toYaml(Object o) {
         try {
-            return yamlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+            return yamlMapper.prettyPrint(o);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }

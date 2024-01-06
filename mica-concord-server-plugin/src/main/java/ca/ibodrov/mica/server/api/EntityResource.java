@@ -4,11 +4,11 @@ import ca.ibodrov.mica.api.model.Entity;
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.EntityList;
 import ca.ibodrov.mica.api.model.EntityVersion;
+import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.EntityStore.ListEntitiesRequest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
@@ -22,7 +22,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.UUID;
 
-import static com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature.*;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -34,17 +33,12 @@ public class EntityResource implements Resource {
     private static final Logger log = LoggerFactory.getLogger(EntityResource.class);
 
     private final EntityStore entityStore;
-    private final ObjectMapper yamlMapper;
+    private final YamlMapper yamlMapper;
 
     @Inject
     public EntityResource(EntityStore entityStore, ObjectMapper objectMapper) {
         this.entityStore = requireNonNull(entityStore);
-        this.yamlMapper = objectMapper.copyWith(YAMLFactory.builder()
-                .enable(MINIMIZE_QUOTES)
-                .disable(SPLIT_LINES)
-                .disable(WRITE_DOC_START_MARKER)
-                .enable(LITERAL_BLOCK_STYLE)
-                .build());
+        this.yamlMapper = new YamlMapper(objectMapper);
     }
 
     @GET
@@ -80,8 +74,7 @@ public class EntityResource implements Resource {
     public Response getEntityAsYamlString(@PathParam("id") EntityId entityId) {
         var entity = getEntityById(entityId);
         try {
-            var string = yamlMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(entity);
+            var string = yamlMapper.prettyPrint(entity);
             return Response.ok(string, "text/yaml").build();
         } catch (IOException e) {
             log.warn("YAML serialization error: {}", e.getMessage(), e);

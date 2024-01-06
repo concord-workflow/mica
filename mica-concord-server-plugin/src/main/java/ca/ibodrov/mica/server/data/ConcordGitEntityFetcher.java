@@ -2,9 +2,9 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.repository.FetchRequest.Version;
 import com.walmartlabs.concord.repository.Repository;
 import com.walmartlabs.concord.repository.RepositoryException;
@@ -37,7 +37,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     private final ProjectRepositoryManager projectRepositoryManager;
     private final RepositoryManager repositoryManager;
     private final SecretManager secretManager;
-    private final ObjectMapper yamlMapper;
+    private final YamlMapper yamlMapper;
 
     @Inject
     public ConcordGitEntityFetcher(OrganizationManager orgManager,
@@ -50,7 +50,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);
         this.repositoryManager = requireNonNull(repositoryManager);
         this.secretManager = requireNonNull(secretManager);
-        this.yamlMapper = requireNonNull(objectMapper).copyWith(new YAMLFactory());
+        this.yamlMapper = new YamlMapper(objectMapper);
     }
 
     @Override

@@ -131,11 +131,11 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         assertEquals(200, response.getStatus());
 
         var expectedYaml = """
-                id: %s
-                name: /yamlRecord
-                kind: /mica/record/v1
-                createdAt: %s
-                updatedAt: %s
+                id: "%s"
+                name: "/yamlRecord"
+                kind: "/mica/record/v1"
+                createdAt: "%s"
+                updatedAt: "%s"
                 data:
                   x: |
                     multi

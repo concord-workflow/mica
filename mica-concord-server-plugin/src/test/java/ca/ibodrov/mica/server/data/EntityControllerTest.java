@@ -2,10 +2,9 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
+import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.EntityValidationException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -19,12 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class EntityControllerTest extends AbstractDatabaseTest {
 
-    private static ObjectMapper yamlMapper;
+    private static YamlMapper yamlMapper;
     private static EntityController controller;
 
     @BeforeAll
     public static void setUp() {
-        yamlMapper = objectMapper.copyWith(new YAMLFactory());
+        yamlMapper = new YamlMapper(objectMapper);
         var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
