@@ -38,7 +38,7 @@ const ParameterField = ({
 }: {
     name: string;
     property: ObjectSchemaNode | undefined;
-    values: Record<string, string>;
+    values: Record<string, string | null>;
     onChange: (name: string, value: string) => void;
 }) => {
     if (!property) {
@@ -59,7 +59,7 @@ const ViewParameters = ({
     onChange,
 }: {
     parameters?: ObjectSchemaNode;
-    values: Record<string, string>;
+    values: Record<string, string | null>;
     onChange: (name: string, value: string) => void;
 }) => {
     const fields = parameters ? Object.keys(parameters.properties ?? {}) : [];
