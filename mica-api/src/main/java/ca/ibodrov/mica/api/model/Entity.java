@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.validation.constraints.NotNull;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,8 +20,8 @@ import java.util.Map;
 public record Entity(@NotNull EntityId id,
         @ValidName String name,
         @ValidName String kind,
-        @NotNull OffsetDateTime createdAt,
-        @NotNull OffsetDateTime updatedAt,
+        @NotNull Instant createdAt,
+        @NotNull Instant updatedAt,
         @JsonProperty("__data") @JsonAnySetter @JsonAnyGetter @NotNull Map<String, JsonNode> data)
         implements EntityLike {
 

@@ -15,7 +15,8 @@ import org.junit.jupiter.api.Test;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import java.io.ByteArrayInputStream;
-import java.time.OffsetDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static javax.ws.rs.core.Response.Status.CONFLICT;
@@ -29,7 +30,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
-        var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
+        var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, Clock.systemUTC());
         var builtInSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtInSchemas, objectMapper);
         var controller = new EntityController(entityStore, entityKindStore, objectMapper);
@@ -119,7 +120,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         var entityVersion = entityUploadResource.putYaml(new ByteArrayInputStream("""
                 kind: /mica/record/v1
                 name: /yamlRecord
-                # comments are ignored
+                # comments are ignored unless the doc is saved with the entity
                 data:
                   x: |
                     multi
@@ -209,7 +210,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                         """.getBytes())));
     }
 
-    private String format(OffsetDateTime v) {
+    private String format(Instant v) {
         return objectMapper.convertValue(v, String.class);
     }
 

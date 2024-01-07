@@ -105,6 +105,9 @@ export const getEntity = (id: string): Promise<Entity> =>
 export const getEntityAsYamlString = (id: string): Promise<string> =>
     doFetch(`/api/mica/v1/entity/${id}/yaml`).then(handleTextResponse);
 
+export const getEntityDoc = (id: string): Promise<string> =>
+    doFetch(`/api/mica/v1/entity/${id}/doc`).then(handleTextResponse);
+
 const qp = (key: string, value: string | number | undefined): string =>
     value ? `${key}=${encodeURIComponent(value)}` : '';
 

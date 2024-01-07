@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.validation.constraints.NotNull;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -21,8 +21,8 @@ import java.util.Optional;
 public record PartialEntity(@NotNull Optional<EntityId> id,
         @ValidName String name,
         @ValidName String kind,
-        @NotNull Optional<OffsetDateTime> createdAt,
-        @NotNull Optional<OffsetDateTime> updatedAt,
+        @NotNull Optional<Instant> createdAt,
+        @NotNull Optional<Instant> updatedAt,
         @JsonProperty("__data") @JsonAnySetter @JsonAnyGetter @NotNull Map<String, JsonNode> data)
         implements EntityLike {
 

@@ -49,6 +49,10 @@ public class YamlMapper {
         return prettyPrinter.writeValueAsString(value);
     }
 
+    public byte[] prettyPrintAsBytes(Object value) throws IOException {
+        return prettyPrinter.writeValueAsBytes(value);
+    }
+
     public JsonNode readTree(String in) throws JsonProcessingException {
         return delegate.readTree(in);
     }

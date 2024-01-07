@@ -1,4 +1,4 @@
-import { MICA_VIEW_KIND, getEntityAsYamlString, kindToTemplate } from '../api/entity.ts';
+import { MICA_VIEW_KIND, getEntityDoc, kindToTemplate } from '../api/entity.ts';
 import { usePutYamlString } from '../api/upload.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
@@ -78,7 +78,7 @@ const EditEntityPage = () => {
         isLoading,
         isFetching,
         refetch,
-    } = useQuery(['entity', 'yaml', entityId], () => getEntityAsYamlString(entityId!), {
+    } = useQuery(['entity', 'yaml', entityId], () => getEntityDoc(entityId!), {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         keepPreviousData: false,

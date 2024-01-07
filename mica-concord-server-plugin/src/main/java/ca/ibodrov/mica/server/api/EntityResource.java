@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 
 @Tag(name = "Entity")
 @Path("/api/mica/v1/entity")
@@ -80,6 +81,24 @@ public class EntityResource implements Resource {
             log.warn("YAML serialization error: {}", e.getMessage(), e);
             throw ApiException.internalError(e.getMessage());
         }
+    }
+
+    @GET
+    @Path("{id}/doc")
+    @Operation(summary = "Return the original unparsed YAML (or JSON) document for the entity", operationId = "getEntityDoc")
+    @Produces(APPLICATION_OCTET_STREAM)
+    public Response getEntityDoc(@PathParam("id") EntityId entityId) {
+        var doc = entityStore.getEntityDocById(entityId)
+                .orElseGet(() -> {
+                    var entity = getEntityById(entityId);
+                    try {
+                        return yamlMapper.prettyPrintAsBytes(entity);
+                    } catch (IOException e) {
+                        log.warn("YAML serialization error: {}", e.getMessage(), e);
+                        throw ApiException.internalError(e.getMessage());
+                    }
+                });
+        return Response.ok(doc).build();
     }
 
     @DELETE

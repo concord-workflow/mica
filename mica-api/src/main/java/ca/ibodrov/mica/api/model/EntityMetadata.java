@@ -1,12 +1,12 @@
 package ca.ibodrov.mica.api.model;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 public record EntityMetadata(EntityId id,
         String name,
         String kind,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt) {
+        Instant createdAt,
+        Instant updatedAt) {
 
     public EntityVersion toVersion() {
         return new EntityVersion(id, updatedAt);
