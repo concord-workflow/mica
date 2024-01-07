@@ -12,6 +12,7 @@ import ca.ibodrov.mica.server.ui.SwaggerServlet;
 import ca.ibodrov.mica.server.ui.WhoamiResource;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.server.boot.FilterChainConfigurator;
 import com.walmartlabs.ollie.config.ConfigurationProcessor;
@@ -22,6 +23,7 @@ import org.sonatype.siesta.Component;
 
 import javax.inject.Named;
 import javax.servlet.http.HttpServlet;
+import java.time.Clock;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -100,6 +102,11 @@ public class MicaModule implements Module {
 
         newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
+    }
+
+    @Provides
+    public Clock clock() {
+        return Clock.systemUTC();
     }
 
     private static Config loadDefaultConfig() {

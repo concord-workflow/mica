@@ -175,6 +175,12 @@
                             <name>org.jooq.meta.postgres.PostgresDatabase</name>
                             <inputSchema>public</inputSchema>
                             <includes>.*</includes>
+                            <forcedTypes>
+                                <forcedType>
+                                    <name>INSTANT</name>
+                                    <types>(?i:TIMESTAMP\ WITH\ TIME\ ZONE)</types>
+                                </forcedType>
+                            </forcedTypes>
                         </database>
                         <target>
                             <packageName>ca.ibodrov.mica.db.jooq</packageName>

@@ -16,6 +16,7 @@ import javax.inject.Inject;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 import javax.ws.rs.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -58,10 +59,17 @@ public class EntityUploadResource implements Resource {
                                         @Nullable @QueryParam("entityKind") String entityKind,
                                         @QueryParam("replace") @DefaultValue("false") boolean replace,
                                         InputStream in) {
+        byte[] doc;
+        try {
+            doc = in.readAllBytes();
+        } catch (IOException e) {
+            throw ApiException.badRequest("Error reading the input: " + e.getMessage());
+        }
+
         // TODO validate entityName
         PartialEntity entity;
         try {
-            var object = yamlMapper.readValue(in, ObjectNode.class);
+            var object = yamlMapper.readValue(new ByteArrayInputStream(doc), ObjectNode.class);
             if (entityName != null && !entityName.isBlank()) {
                 object = object.put("name", entityName);
             }
@@ -77,7 +85,7 @@ public class EntityUploadResource implements Resource {
         if (replace) {
             controller.deleteIfExists(entity.name());
         }
-        return controller.createOrUpdate(entity);
+        return controller.createOrUpdate(entity, doc);
     }
 
     private void assertValid(PartialEntity entity) {

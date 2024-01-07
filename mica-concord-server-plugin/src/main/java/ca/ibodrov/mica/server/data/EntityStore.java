@@ -7,25 +7,25 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.Record5;
-import org.jooq.Record6;
+import com.google.common.annotations.VisibleForTesting;
+import org.jooq.*;
 import org.jooq.impl.DSL;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.IOException;
-import java.time.OffsetDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.temporal.ChronoUnit.MICROS;
 import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
-import static org.jooq.impl.DSL.currentOffsetDateTime;
 import static org.jooq.impl.DSL.noCondition;
 
 /**
@@ -39,15 +39,18 @@ public class EntityStore {
     private final DSLContext dsl;
     private final ObjectMapper objectMapper;
     private final UuidGenerator uuidGenerator;
+    private final Clock clock;
 
     @Inject
     public EntityStore(@MicaDB DSLContext dsl,
                        ObjectMapper objectMapper,
-                       UuidGenerator uuidGenerator) {
+                       UuidGenerator uuidGenerator,
+                       Clock clock) {
 
         this.dsl = requireNonNull(dsl);
         this.objectMapper = requireNonNull(objectMapper);
         this.uuidGenerator = requireNonNull(uuidGenerator);
+        this.clock = requireNonNull(clock);
     }
 
     public record ListEntitiesRequest(@Nullable String search,
@@ -127,6 +130,13 @@ public class EntityStore {
                 .fetchOptional(r -> new EntityId(r.value1()));
     }
 
+    public Optional<byte[]> getEntityDocById(EntityId entityId) {
+        return dsl.select(MICA_ENTITIES.DOC)
+                .from(MICA_ENTITIES)
+                .where(MICA_ENTITIES.ID.eq(entityId.id()))
+                .fetchOptional(Record1::value1);
+    }
+
     public Optional<EntityVersion> deleteById(EntityId entityId) {
         return dsl.transactionResult(tx -> tx.dsl()
                 .deleteFrom(MICA_ENTITIES)
@@ -141,12 +151,33 @@ public class EntityStore {
     }
 
     public Optional<EntityVersion> upsert(PartialEntity entity) {
-        return dsl.transactionResult(tx -> upsert(tx.dsl(), entity));
+        return upsert(entity, null);
+    }
+
+    public Optional<EntityVersion> upsert(PartialEntity entity, @Nullable byte[] doc) {
+        return dsl.transactionResult(tx -> upsert(tx.dsl(), entity, doc));
     }
 
     public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity) {
+        return upsert(tx, entity, null);
+    }
+
+    public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, @Nullable byte[] doc) {
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
+
+        var updatedAt = this.nowRoundedToMicros();
+        var createdAt = entity.createdAt().orElse(updatedAt);
+
+        // find and replace "id", "createdAt" and "updatedAt" properties in the doc
+        // array
+        // using substring replacement to preserve the original formatting and comments
+        if (doc != null) {
+            doc = inplaceUpdate(doc,
+                    "id", objectMapper.convertValue(id, String.class),
+                    "createdAt", objectMapper.convertValue(createdAt, String.class),
+                    "updatedAt", objectMapper.convertValue(updatedAt, String.class));
+        }
 
         var data = serializeData(entity.data());
 
@@ -155,24 +186,41 @@ public class EntityStore {
                 .set(MICA_ENTITIES.NAME, entity.name())
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
+                .set(MICA_ENTITIES.DOC, doc)
+                .set(MICA_ENTITIES.CREATED_AT, createdAt)
+                .set(MICA_ENTITIES.UPDATED_AT, updatedAt)
                 .onConflict(MICA_ENTITIES.ID)
                 .doUpdate()
                 .set(MICA_ENTITIES.NAME, entity.name())
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
-                .set(MICA_ENTITIES.UPDATED_AT, currentOffsetDateTime())
+                .set(MICA_ENTITIES.DOC, doc)
+                .set(MICA_ENTITIES.UPDATED_AT, updatedAt)
                 .where(entity.updatedAt().map(MICA_ENTITIES.UPDATED_AT::eq).orElseGet(DSL::noCondition))
                 .returning(MICA_ENTITIES.UPDATED_AT)
                 .fetchOptional()
                 .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt()));
     }
 
-    private Entity toEntity(Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
+    private Entity toEntity(Record6<UUID, String, String, Instant, Instant, JSONB> record) {
         return toEntity(objectMapper, record);
     }
 
+    private JSONB serializeData(Map<String, JsonNode> data) {
+        try {
+            return jsonb(objectMapper.writeValueAsString(data));
+        } catch (IOException e) {
+            throw new StoreException("JSON serialization error, most likely a bug: " + e.getMessage(), e);
+        }
+    }
+
+    private Instant nowRoundedToMicros() {
+        var now = clock.instant();
+        return now.plusNanos(500).truncatedTo(MICROS);
+    }
+
     public static Entity toEntity(ObjectMapper objectMapper,
-                                  Record6<UUID, String, String, OffsetDateTime, OffsetDateTime, JSONB> record) {
+                                  Record6<UUID, String, String, Instant, Instant, JSONB> record) {
         var id = new EntityId(record.value1());
         try {
             var data = objectMapper.readValue(record.value6().data(), PROPERTIES_TYPE);
@@ -182,17 +230,29 @@ public class EntityStore {
         }
     }
 
-    private static EntityMetadata toEntityMetadata(Record5<UUID, String, String, OffsetDateTime, OffsetDateTime> record) {
-        var id = new EntityId(record.value1());
-        return new EntityMetadata(id, record.value2(), record.value3(), record.value4(), record.value5());
+    @VisibleForTesting
+    public static byte[] inplaceUpdate(byte[] doc, String... kvs) {
+        assert kvs != null && kvs.length % 2 == 0;
+        var s = new String(doc, UTF_8);
+        // update properties in the reverse order so that pre-pending a new key adds the
+        // first key to the top
+        for (int i = kvs.length - 2; i >= 0; i -= 2) {
+            var k = kvs[i];
+            var v = kvs[i + 1];
+            if (s.contains(k + ":")) {
+                // update the existing key
+                s = s.replaceFirst("(?m)^" + k + ":.*$", "%s: \"%s\"".formatted(k, v));
+            } else {
+                // or pre-pend a new key
+                s = "%s: \"%s\"\n%s".formatted(k, v, s);
+            }
+        }
+        return s.getBytes(UTF_8);
     }
 
-    private JSONB serializeData(Map<String, JsonNode> data) {
-        try {
-            return jsonb(objectMapper.writeValueAsString(data));
-        } catch (IOException e) {
-            throw new StoreException("JSON serialization error, most likely a bug: " + e.getMessage(), e);
-        }
+    private static EntityMetadata toEntityMetadata(Record5<UUID, String, String, Instant, Instant> record) {
+        var id = new EntityId(record.value1());
+        return new EntityMetadata(id, record.value2(), record.value3(), record.value4(), record.value5());
     }
 
     public enum OrderBy {

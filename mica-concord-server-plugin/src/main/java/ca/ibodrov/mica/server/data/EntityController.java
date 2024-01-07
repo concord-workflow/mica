@@ -9,6 +9,7 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static java.util.Objects.requireNonNull;
@@ -32,6 +33,10 @@ public class EntityController {
     }
 
     public EntityVersion createOrUpdate(PartialEntity entity) {
+        return createOrUpdate(entity, null);
+    }
+
+    public EntityVersion createOrUpdate(PartialEntity entity, @Nullable byte[] doc) {
         var kind = validateKind(entity.kind());
 
         var schema = entityKindStore.getSchemaForKind(kind)
@@ -53,7 +58,7 @@ public class EntityController {
 
         // TODO check if there are any changes, return the same version if not
 
-        return entityStore.upsert(entity)
+        return entityStore.upsert(entity, doc)
                 .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
     }
 

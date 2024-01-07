@@ -9,6 +9,8 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+import java.time.Clock;
+
 public class AbstractDatabaseTest {
 
     private static TestDatabase testDatabase;
@@ -25,7 +27,7 @@ public class AbstractDatabaseTest {
         uuidGenerator = new UuidGenerator();
 
         var dsl = testDatabase.getJooqConfiguration().dsl();
-        var entityStore = new EntityStore(dsl, objectMapper, uuidGenerator);
+        var entityStore = new EntityStore(dsl, objectMapper, uuidGenerator, Clock.systemUTC());
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         new InitialDataLoader(builtinSchemas, entityStore, objectMapper).load();
     }

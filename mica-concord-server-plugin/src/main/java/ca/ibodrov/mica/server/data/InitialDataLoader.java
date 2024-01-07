@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Map;
 
@@ -46,9 +47,9 @@ public class InitialDataLoader {
 
     public void load() {
         // built-in entity kinds
-        createOrReplace(schema(MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()));
-        createOrReplace(schema(MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()));
-        createOrReplace(schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()));
+        createOrReplace(schema(MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()), null);
+        createOrReplace(schema(MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()), null);
+        createOrReplace(schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()), null);
 
         // load example files
         var cl = getClass().getClassLoader();
@@ -56,20 +57,22 @@ public class InitialDataLoader {
         var reflections = new Reflections("ca.ibodrov.mica.server.examples", new ResourcesScanner());
         reflections.getResources(s -> s.endsWith(".yaml")).forEach(resourceName -> {
             try (var in = cl.getResourceAsStream(resourceName)) {
-                var entity = yamlMapper.readValue(in, PartialEntity.class);
-                createOrReplace(entity);
+                assert in != null;
+                var doc = in.readAllBytes();
+                var entity = yamlMapper.readValue(new ByteArrayInputStream(doc), PartialEntity.class);
+                createOrReplace(entity, doc);
             } catch (IOException e) {
                 throw new RuntimeException("Error loading " + resourceName, e);
             }
         });
     }
 
-    private void createOrReplace(PartialEntity entity) {
+    private void createOrReplace(PartialEntity entity, byte[] doc) {
         entityStore.getByName(entity.name())
                 .flatMap(existingEntity -> entityStore.deleteById(existingEntity.id()))
                 .ifPresent(deleted -> log.info("Removed old version of {}: {}", entity.name(), deleted));
 
-        entityStore.upsert(entity);
+        entityStore.upsert(entity, doc);
 
         log.info("Created or replaced an entity: {}", entity.name());
     }
