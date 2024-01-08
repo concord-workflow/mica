@@ -1,8 +1,8 @@
 package ca.ibodrov.mica.server.exceptions;
 
 import ca.ibodrov.mica.api.model.ApiError;
+import com.walmartlabs.concord.server.sdk.rest.Component;
 import org.jooq.exception.DataAccessException;
-import org.sonatype.siesta.Component;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;

@@ -1,6 +1,6 @@
 package ca.ibodrov.mica.its;
 
-import org.sonatype.siesta.Component;
+import com.walmartlabs.concord.server.sdk.rest.Component;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;

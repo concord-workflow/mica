@@ -1,9 +1,9 @@
 package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.SystemInfo;
+import com.walmartlabs.concord.server.sdk.rest.Resource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.sonatype.siesta.Resource;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

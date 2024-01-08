@@ -1,7 +1,7 @@
 package ca.ibodrov.mica.server.exceptions;
 
 import ca.ibodrov.mica.api.model.ApiError;
-import org.sonatype.siesta.Component;
+import com.walmartlabs.concord.server.sdk.rest.Component;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;

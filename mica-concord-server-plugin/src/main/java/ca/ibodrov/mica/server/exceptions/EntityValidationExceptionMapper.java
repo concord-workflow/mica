@@ -5,7 +5,7 @@ import ca.ibodrov.mica.schema.ValidationError;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.sonatype.siesta.Component;
+import com.walmartlabs.concord.server.sdk.rest.Component;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;

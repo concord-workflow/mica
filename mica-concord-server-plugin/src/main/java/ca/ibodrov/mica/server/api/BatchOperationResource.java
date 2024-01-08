@@ -4,9 +4,9 @@ import ca.ibodrov.mica.api.model.BatchOperationRequest;
 import ca.ibodrov.mica.api.model.BatchOperationResult;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.walmartlabs.concord.server.sdk.rest.Resource;
+import com.walmartlabs.concord.server.sdk.validation.Validate;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.sonatype.siesta.Resource;
-import org.sonatype.siesta.Validate;
 
 import javax.inject.Inject;
 import javax.validation.Valid;

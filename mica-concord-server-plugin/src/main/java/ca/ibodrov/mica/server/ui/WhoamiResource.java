@@ -1,11 +1,11 @@
 package ca.ibodrov.mica.server.ui;
 
 import ca.ibodrov.mica.server.MicaPrincipal;
+import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.security.PrincipalUtils;
 import org.pac4j.core.context.JEEContext;
 import org.pac4j.core.profile.ProfileManager;
 import org.pac4j.oidc.profile.OidcProfile;
-import org.sonatype.siesta.Resource;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

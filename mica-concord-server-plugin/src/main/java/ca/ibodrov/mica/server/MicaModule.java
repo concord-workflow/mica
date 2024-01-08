@@ -12,11 +12,11 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.server.boot.FilterChainConfigurator;
+import com.walmartlabs.concord.server.sdk.rest.Component;
 import com.walmartlabs.ollie.config.ConfigurationProcessor;
 import com.walmartlabs.ollie.config.Environment;
 import com.walmartlabs.ollie.config.EnvironmentSelector;
 import com.walmartlabs.ollie.config.OllieConfigurationModule;
-import org.sonatype.siesta.Component;
 
 import javax.inject.Named;
 import javax.servlet.http.HttpServlet;

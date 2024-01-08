@@ -9,11 +9,11 @@ import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.EntityStore.ListEntitiesRequest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walmartlabs.concord.server.sdk.rest.Resource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonatype.siesta.Resource;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;

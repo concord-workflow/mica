@@ -7,7 +7,7 @@ import com.google.inject.Module;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.it.testingserver.TestingConcordServer;
 import com.walmartlabs.concord.server.plugins.oidc.OidcPluginModule;
-import org.sonatype.siesta.Component;
+import com.walmartlabs.concord.server.sdk.rest.Component;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;

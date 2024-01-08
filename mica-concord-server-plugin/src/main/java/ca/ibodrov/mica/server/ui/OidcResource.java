@@ -1,8 +1,8 @@
 package ca.ibodrov.mica.server.ui;
 
+import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.ollie.config.Config;
 import org.apache.shiro.SecurityUtils;
-import org.sonatype.siesta.Resource;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;

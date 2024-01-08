@@ -97,7 +97,7 @@ public class ViewRenderer {
         }
 
         // apply JSON patch
-        var patch = view.data().jsonPatch();
+        var patch = view.data().jsonPatch().filter(p -> !p.isNull());
         if (patch.isPresent()) {
             var patchData = patch.get();
             try {

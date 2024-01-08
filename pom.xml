@@ -48,7 +48,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.url>https://github.com/concord-workflow/mica.git</project.url>
 
-        <concord.version>2.6.0</concord.version>
+        <concord.version>2.7.0</concord.version>
         <jooq.version>3.14.0</jooq.version>
         <node.version>v20.8.0</node.version>
         <npm.version>10.2.0</npm.version>
