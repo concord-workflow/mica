@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jooq.DSLContext;
 import org.sonatype.siesta.Resource;
+import org.sonatype.siesta.Validate;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -75,6 +76,7 @@ public class ViewResource implements Resource {
     @Path("render")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Render a view", operationId = "render")
+    @Validate
     public PartialEntity render(@Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
@@ -87,6 +89,7 @@ public class ViewResource implements Resource {
     @GET
     @Path("render/{viewId}")
     @Operation(summary = "Render a simple view (without parameters)", operationId = "renderSimple")
+    @Validate
     public PartialEntity renderSimple(@PathParam("viewId") EntityId viewId,
                                       @QueryParam("limit") @DefaultValue("-1") int limit) {
 
@@ -97,6 +100,7 @@ public class ViewResource implements Resource {
     @Path("/preview")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Preview a view", operationId = "preview")
+    @Validate
     public PartialEntity preview(@Valid PreviewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(request.view(), parameters);
@@ -110,6 +114,7 @@ public class ViewResource implements Resource {
     @Path("/materialize")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Materialize a view", description = "Render a view and save the result as entities", operationId = "materialize")
+    @Validate
     public PartialEntity materialize(@Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);

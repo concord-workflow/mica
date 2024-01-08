@@ -28,10 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
@@ -40,14 +37,16 @@ import static ca.ibodrov.mica.server.api.ViewResource.INTERNAL_ENTITY_STORE_URI;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * An integration test to simulate a real-world scenario: Mica as a
- * configuration management tool.
+ * End-to-end tests that leverage mica-concord-task expect to find the
+ * up-to-date version of the task JAR in the local Maven repository.
+ * <p/>
+ * Rebuild mica-concord-task with {@code mvn clean install} before running these
+ * tests.
  */
-public class ConfigManagementIT extends EndToEnd {
+public class ITs extends EndToEnd {
 
     private static EntityStore entityStore;
     private static ObjectMapper objectMapper;
@@ -59,6 +58,10 @@ public class ConfigManagementIT extends EndToEnd {
         objectMapper = injector.getInstance(ObjectMapper.class);
     }
 
+    /**
+     * An integration test to simulate a real-world scenario: Mica as a
+     * configuration management tool.
+     */
     @Test
     public void simulateGitflowPattern() throws Exception {
         // one-time setup
@@ -335,6 +338,75 @@ public class ConfigManagementIT extends EndToEnd {
         assertFinished(ciProcess);
         var log = getProcessLog(ciProcess.getInstanceId());
         assertTrue(log.contains("[foo!, bar!, baz!, qux!]"));
+    }
+
+    @Test
+    public void batchDeleteUsingMicaTask() throws Exception {
+        // add some entities to the DB
+
+        var namePrefix = "/test" + System.currentTimeMillis();
+
+        entityStore.upsert(PartialEntity.create(
+                namePrefix + "/aaa/foo",
+                "/mica/record/v1",
+                Map.of("value", TextNode.valueOf("foo!"))));
+
+        entityStore.upsert(PartialEntity.create(
+                namePrefix + "/aaa/bar",
+                "/mica/record/v1",
+                Map.of("value", TextNode.valueOf("bar!"))));
+
+        entityStore.upsert(PartialEntity.create(
+                namePrefix + "/bbb/baz",
+                "/mica/record/v1",
+                Map.of("value", TextNode.valueOf("baz!"))));
+
+        // fetch entities using Mica task to verify they exist
+        // delete entities in ${namePrefix}/aaa
+        // verify that only ${namePrefix}/bbb/baz is left
+
+        var ciProcess = startConcordProcess(Map.of(
+                "arguments.namePrefix", namePrefix,
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            # grab all entities in ${namePrefix}
+                            - task: mica
+                              in:
+                                action: listEntities
+                                search: ${namePrefix}
+                              out: result
+                            - log: first=${result.data}
+
+                            # delete entities in ${namePrefix}/aaa
+                            - task: mica
+                              in:
+                                action: batch
+                                operation: delete
+                                namePatterns:
+                                - ${namePrefix}/aaa/.*
+
+                            # grab all entities in ${namePrefix} again
+                            - task: mica
+                              in:
+                                action: listEntities
+                                search: ${namePrefix}
+                              out: result
+                            - log: second=${result.data}
+                        """.strip().getBytes()));
+        assertFinished(ciProcess);
+        var logLines = Arrays.stream(getProcessLog(ciProcess.getInstanceId()).split("\n")).toList();
+        var firstLine = logLines.stream().filter(s -> s.contains("first=")).findFirst().orElseThrow();
+        assertTrue(firstLine.contains("name=" + namePrefix + "/aaa/foo"));
+        assertTrue(firstLine.contains("name=" + namePrefix + "/aaa/bar"));
+        assertTrue(firstLine.contains("name=" + namePrefix + "/bbb/baz"));
+
+        var secondLine = logLines.stream().filter(s -> s.contains("second=")).findFirst().orElseThrow();
+        assertFalse(secondLine.contains("name=" + namePrefix + "/aaa/foo"));
+        assertFalse(secondLine.contains("name=" + namePrefix + "/aaa/bar"));
+        assertTrue(secondLine.contains("name=" + namePrefix + "/bbb/baz"));
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)

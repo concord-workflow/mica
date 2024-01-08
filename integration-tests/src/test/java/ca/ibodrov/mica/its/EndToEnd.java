@@ -1,8 +1,5 @@
 package ca.ibodrov.mica.its;
 
-import ca.ibodrov.mica.api.client.MicaApiClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.walmartlabs.concord.client2.ApiClient;
 import com.walmartlabs.concord.client2.ApiClientConfiguration;
 import com.walmartlabs.concord.client2.DefaultApiClientFactory;
@@ -22,17 +19,11 @@ import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * A simple integration test to validate the following:
- * mica-concord-server-plugin is loaded and available - concord-server can still
- * run processes - mica can be accessed by concord-agents
- */
-public class EndToEnd {
+public abstract class EndToEnd {
 
     protected static PostgreSQLContainer<?> db;
     protected static TestingMicaServer micaServer;
     protected static TestingConcordAgent concordAgent;
-    protected static MicaApiClient micaClient;
     protected static ApiClient concordClient;
 
     @BeforeAll
@@ -49,8 +40,6 @@ public class EndToEnd {
                 "runnerV2.path", findRunnerV2Jar()), List.of());
         concordAgent.start();
 
-        var objectMapper = new ObjectMapper().registerModule(new Jdk8Module());
-        micaClient = new MicaApiClient(objectMapper, micaServer.getApiBaseUrl(), micaServer.getAdminApiKey());
         concordClient = new DefaultApiClientFactory(micaServer.getApiBaseUrl())
                 .create(ApiClientConfiguration.builder()
                         .apiKey(micaServer.getAdminApiKey())

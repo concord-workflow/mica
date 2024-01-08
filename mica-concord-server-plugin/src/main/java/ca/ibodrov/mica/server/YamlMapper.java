@@ -29,7 +29,7 @@ public class YamlMapper {
         this.prettyPrinter = this.delegate.writerWithDefaultPrettyPrinter();
     }
 
-    public <T> T readValue(String src, Class<T> valueType) throws IOException {
+    public <T> T readValue(String src, Class<T> valueType) throws JsonProcessingException {
         return delegate.readValue(src, valueType);
     }
 

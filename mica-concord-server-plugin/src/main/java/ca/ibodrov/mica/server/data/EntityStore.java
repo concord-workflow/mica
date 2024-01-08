@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -144,6 +145,39 @@ public class EntityStore {
                 .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT)
                 .fetchOptional()
                 .map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)), r.get(MICA_ENTITIES.UPDATED_AT))));
+    }
+
+    public List<EntityVersionAndName> deleteByNamePatterns(List<String> namePatterns) {
+        assert namePatterns != null && !namePatterns.isEmpty();
+        return dsl.transactionResult(tx -> {
+            var query = tx.dsl()
+                    .select(MICA_ENTITIES.ID, MICA_ENTITIES.NAME, MICA_ENTITIES.UPDATED_AT)
+                    .from(MICA_ENTITIES)
+                    .where(MICA_ENTITIES.NAME.likeRegex(namePatterns.get(0)));
+
+            for (int i = 1; i < namePatterns.size(); i++) {
+                query = query.or(MICA_ENTITIES.NAME.likeRegex(namePatterns.get(i)));
+            }
+
+            return query
+                    .forUpdate()
+                    .skipLocked()
+                    .fetch()
+                    .stream().flatMap(r -> {
+                        var id = r.value1();
+                        var name = r.value2();
+                        var updatedAt = r.value3();
+                        var rows = tx.dsl().deleteFrom(MICA_ENTITIES)
+                                .where(MICA_ENTITIES.ID.eq(id)
+                                        .and(MICA_ENTITIES.UPDATED_AT.eq(updatedAt)))
+                                .execute();
+                        if (rows == 0) {
+                            return Stream.empty();
+                        }
+                        return Stream.of(new EntityVersionAndName(new EntityId(id), updatedAt, name));
+                    })
+                    .toList();
+        });
     }
 
     public boolean isNameAndKindExists(String entityName, String entityKind) {

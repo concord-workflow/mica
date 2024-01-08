@@ -1,10 +1,7 @@
 package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.db.MicaDatabaseModule;
-import ca.ibodrov.mica.server.api.EntityResource;
-import ca.ibodrov.mica.server.api.EntityUploadResource;
-import ca.ibodrov.mica.server.api.SystemResource;
-import ca.ibodrov.mica.server.api.ViewResource;
+import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.*;
 import ca.ibodrov.mica.server.ui.OidcResource;
@@ -84,12 +81,13 @@ public class MicaModule implements Module {
 
         // jax-rs resources
 
+        bindJaxRsResource(binder, BatchOperationResource.class);
         bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, EntityUploadResource.class);
         bindJaxRsResource(binder, OidcResource.class);
         bindJaxRsResource(binder, SystemResource.class);
-        bindJaxRsResource(binder, WhoamiResource.class);
         bindJaxRsResource(binder, ViewResource.class);
+        bindJaxRsResource(binder, WhoamiResource.class);
 
         // other beans
 

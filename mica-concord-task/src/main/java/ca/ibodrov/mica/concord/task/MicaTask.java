@@ -1,5 +1,7 @@
 package ca.ibodrov.mica.concord.task;
 
+import ca.ibodrov.mica.api.model.BatchOperation;
+import ca.ibodrov.mica.api.model.BatchOperationRequest;
 import ca.ibodrov.mica.api.model.EntityList;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,11 +19,13 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpRequest.BodyPublishers.ofFile;
@@ -59,14 +63,27 @@ public class MicaTask implements Task {
     @Override
     public TaskResult execute(Variables input) throws Exception {
         var action = input.assertString("action");
-        if (action.equalsIgnoreCase("listEntities")) {
-            return listEntities(input);
-        } else if (action.equalsIgnoreCase("upload")) {
-            return upload(input);
-        } else if (action.equalsIgnoreCase("renderView")) {
-            return renderView(input);
-        }
-        throw new RuntimeException("Unknown 'action': " + action);
+        return switch (action) {
+            case "batch" -> batchAction(input);
+            case "listEntities" -> listEntities(input);
+            case "renderView" -> renderView(input);
+            case "upload" -> upload(input);
+            default -> throw new RuntimeException("Unknown 'action': " + action);
+        };
+    }
+
+    private TaskResult batchAction(Variables input) throws Exception {
+        var operation = input.assertString("operation");
+        var namePatterns = input.<String>assertList("namePatterns");
+        var body = new BatchOperationRequest(BatchOperation.valueOf(operation.toUpperCase()),
+                Optional.of(namePatterns));
+        var request = newRequest(baseUri(input), auth(input), "/api/mica/v1/batch")
+                .header("Content-Type", "application/json")
+                .POST(BodyPublishers.ofByteArray(objectMapper.writeValueAsBytes(body)))
+                .build();
+        var response = httpClient.send(request, ofInputStream());
+        return TaskResult.success()
+                .values(parseResponseAsJson(objectMapper, response, Map.class));
     }
 
     private TaskResult listEntities(Variables input) throws Exception {
@@ -78,21 +95,6 @@ public class MicaTask implements Task {
         // TODO figure out when date-time becomes a timestamp
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(entityList.data(), List.class));
-    }
-
-    private TaskResult upload(Variables input) throws Exception {
-        var kind = input.assertString("kind");
-        var src = input.assertString("src");
-        var name = input.assertString("name");
-        var uri = "/api/mica/v1/upload/partialYaml?entityKind=" + encodeUriComponent(kind) + "&entityName="
-                + encodeUriComponent(name) + "&replace=true";
-        var request = newRequest(baseUri(input), auth(input), uri)
-                .header("Content-Type", "text/yaml") // TODO allow .json
-                .PUT(ofFile(Path.of(src)))
-                .build();
-        var response = httpClient.send(request, ofInputStream());
-        return TaskResult.success()
-                .value("version", parseResponseAsJson(objectMapper, response, Map.class));
     }
 
     private TaskResult renderView(Variables input) throws Exception {
@@ -110,6 +112,21 @@ public class MicaTask implements Task {
         var rendered = parseResponseAsJson(objectMapper, response, PartialEntity.class);
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(rendered.data().get("data"), List.class));
+    }
+
+    private TaskResult upload(Variables input) throws Exception {
+        var kind = input.assertString("kind");
+        var src = input.assertString("src");
+        var name = input.assertString("name");
+        var uri = "/api/mica/v1/upload/partialYaml?entityKind=" + encodeUriComponent(kind) + "&entityName="
+                + encodeUriComponent(name) + "&replace=true";
+        var request = newRequest(baseUri(input), auth(input), uri)
+                .header("Content-Type", "text/yaml") // TODO allow .json
+                .PUT(ofFile(Path.of(src)))
+                .build();
+        var response = httpClient.send(request, ofInputStream());
+        return TaskResult.success()
+                .value("version", parseResponseAsJson(objectMapper, response, Map.class));
     }
 
     private URI baseUri(Variables input) {
