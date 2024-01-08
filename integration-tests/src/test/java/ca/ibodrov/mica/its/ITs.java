@@ -387,6 +387,8 @@ public class ITs extends EndToEnd {
                                 operation: delete
                                 namePatterns:
                                 - ${namePrefix}/aaa/.*
+                              out: result
+                            - log: second=${result}
 
                             # grab all entities in ${namePrefix} again
                             - task: mica
@@ -394,7 +396,7 @@ public class ITs extends EndToEnd {
                                 action: listEntities
                                 search: ${namePrefix}
                               out: result
-                            - log: second=${result.data}
+                            - log: third=${result.data}
                         """.strip().getBytes()));
         assertFinished(ciProcess);
         var logLines = Arrays.stream(getProcessLog(ciProcess.getInstanceId()).split("\n")).toList();
@@ -404,9 +406,14 @@ public class ITs extends EndToEnd {
         assertTrue(firstLine.contains("name=" + namePrefix + "/bbb/baz"));
 
         var secondLine = logLines.stream().filter(s -> s.contains("second=")).findFirst().orElseThrow();
-        assertFalse(secondLine.contains("name=" + namePrefix + "/aaa/foo"));
-        assertFalse(secondLine.contains("name=" + namePrefix + "/aaa/bar"));
-        assertTrue(secondLine.contains("name=" + namePrefix + "/bbb/baz"));
+        assertTrue(secondLine.contains("name=" + namePrefix + "/aaa/foo"));
+        assertTrue(secondLine.contains("name=" + namePrefix + "/aaa/bar"));
+        assertFalse(secondLine.contains("name=" + namePrefix + "/bbb/baz"));
+
+        var thirdLine = logLines.stream().filter(s -> s.contains("third=")).findFirst().orElseThrow();
+        assertFalse(thirdLine.contains("name=" + namePrefix + "/aaa/foo"));
+        assertFalse(thirdLine.contains("name=" + namePrefix + "/aaa/bar"));
+        assertTrue(thirdLine.contains("name=" + namePrefix + "/bbb/baz"));
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)
