@@ -170,6 +170,7 @@ public class ViewResource implements Resource {
     }
 
     private Stream<EntityLike> fetchIncludeUri(URI include, String entityKind, int limit) {
+        // TODO parallel?
         return includeFetchers.stream().flatMap(fetcher -> {
             try {
                 return fetcher.getAllByKind(include, entityKind, limit).stream();
