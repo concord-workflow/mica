@@ -1,6 +1,5 @@
 import ApiIcon from '@mui/icons-material/Api';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import PublishIcon from '@mui/icons-material/Publish';
 import { Collapse, List } from '@mui/material';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -14,14 +13,6 @@ const Sidebar = ({ open }: { open: boolean }) => {
 
     return (
         <List component="nav">
-            {/*Dashboard*/}
-            <ListItemButton component={Link} to="/" selected={location.pathname === '/'}>
-                <ListItemIcon>
-                    <DashboardIcon />
-                </ListItemIcon>
-                <ListItemText primary="Dashboard" />
-            </ListItemButton>
-
             {/*API*/}
             <ListItemButton component={Link} to="/api" selected={location.pathname === '/api'}>
                 <ListItemIcon>

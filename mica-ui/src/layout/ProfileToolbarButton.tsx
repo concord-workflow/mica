@@ -27,7 +27,7 @@ const ProfileToolbarButton = () => {
             <Button
                 color="inherit"
                 startIcon={<AccountCircleIcon />}
-                variant="outlined"
+                variant="text"
                 sx={{ textTransform: 'none' }}
                 onClick={handleClick}>
                 {currentUser.username}
