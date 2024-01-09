@@ -11,6 +11,7 @@ import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @implNote the changes in fields and annotations here must be synchronized
@@ -46,5 +47,10 @@ public record Entity(@NotNull EntityId id,
     @Override
     public EntityLike withName(String name) {
         return new Entity(id, name, kind, createdAt, updatedAt, data);
+    }
+
+    @Override
+    public Optional<EntityVersionAndName> versionAndName() {
+        return Optional.of(new EntityVersionAndName(id, updatedAt, name));
     }
 }

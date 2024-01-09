@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
+import java.util.Optional;
 
 public interface EntityLike {
 
@@ -16,4 +17,6 @@ public interface EntityLike {
     Map<String, JsonNode> data();
 
     EntityLike withName(@ValidName String name);
+
+    Optional<EntityVersionAndName> versionAndName();
 }

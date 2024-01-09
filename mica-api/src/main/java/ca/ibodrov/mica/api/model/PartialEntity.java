@@ -53,4 +53,9 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
     public EntityLike withName(String name) {
         return new PartialEntity(id, name, kind, createdAt, updatedAt, data);
     }
+
+    @Override
+    public Optional<EntityVersionAndName> versionAndName() {
+        return id.flatMap(id -> updatedAt.map(u -> new EntityVersionAndName(id, u, name)));
+    }
 }

@@ -75,7 +75,7 @@ public class ViewRenderer {
                 .toList();
 
         if (data.isEmpty()) {
-            return new RenderedView(view, data);
+            return RenderedView.empty(view);
         }
 
         // flatten - convert an array of arrays into a single array by concatenating
