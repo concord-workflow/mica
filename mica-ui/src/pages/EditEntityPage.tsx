@@ -39,6 +39,16 @@ const HELP: React.ReactNode = (
     </>
 );
 
+const stripQuotes = (path: string) => {
+    if (path.startsWith('"') || path.startsWith("'")) {
+        path = path.slice(1);
+    }
+    if (path.endsWith('"') || path.endsWith("'")) {
+        path = path.slice(0, -1);
+    }
+    return path;
+};
+
 const getYamlField = (yaml: string, key: string): string | undefined => {
     let start = yaml.lastIndexOf('\n' + key);
     if (start < 0 && yaml.substring(0, key.length) === key) {
@@ -55,7 +65,7 @@ const getYamlField = (yaml: string, key: string): string | undefined => {
     if (result.length == 0) {
         return;
     }
-    return result;
+    return stripQuotes(result);
 };
 
 const PreviewDrawer = styled(Drawer)(() => ({
