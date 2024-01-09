@@ -19,7 +19,7 @@ import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 
-public abstract class EndToEnd {
+abstract class TestResources {
 
     protected static PostgreSQLContainer<?> db;
     protected static TestingMicaServer micaServer;
@@ -71,6 +71,11 @@ public abstract class EndToEnd {
         } catch (Exception e) {
             return "Can't show the details, got an error while retrieving the process log: " + e.getMessage();
         }
+    }
+
+    protected static List<String> getProcessLogLines(UUID instanceId) {
+        var log = getProcessLog(instanceId);
+        return List.of(log.split("\\n"));
     }
 
     private static int getFreePort() {

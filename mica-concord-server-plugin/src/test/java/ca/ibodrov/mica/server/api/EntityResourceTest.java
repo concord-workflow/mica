@@ -8,6 +8,7 @@ import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.walmartlabs.concord.common.DateTimeUtils;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -15,10 +16,10 @@ import org.junit.jupiter.api.Test;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import java.io.ByteArrayInputStream;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static java.time.ZoneOffset.UTC;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,7 +31,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
-        var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, Clock.systemUTC());
+        var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtInSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtInSchemas, objectMapper);
         var controller = new EntityController(entityStore, entityKindStore, objectMapper);
@@ -128,7 +129,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                     text
                 """.getBytes()));
 
-        var response = entityResource.getEntityAsYamlString(entityVersion.id());
+        var response = entityResource.getEntityAsYamlString(entityVersion.id(), null);
         assertEquals(200, response.getStatus());
 
         var expectedYaml = """
@@ -208,6 +209,45 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                             line
                             text
                         """.getBytes())));
+    }
+
+    @Test
+    public void testGetByIdAndUpdatedAt() {
+        var version1 = entityUploadResource.putYaml(new ByteArrayInputStream("""
+                kind: /mica/record/v1
+                name: /testGetByIdAndUpdatedAt/a
+                data: aaa
+                """.getBytes()));
+
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        var version2 = entityUploadResource.putYaml(new ByteArrayInputStream("""
+                id: "%s"
+                updatedAt: "%s"
+                kind: /mica/record/v1
+                name: /testGetByIdAndUpdatedAt/a
+                data: bbb
+                """
+                .formatted(version1.id().toExternalForm(),
+                        objectMapper.convertValue(version1.updatedAt(), String.class))
+                .getBytes()));
+
+        assertEquals(version1.id(), version2.id());
+        assertNotEquals(version1.updatedAt(), version2.updatedAt());
+
+        var error = assertThrows(ApiException.class, () -> entityResource.getEntityById(version1.id(),
+                DateTimeUtils.toIsoString(version1.updatedAt().atOffset(UTC))));
+        assertEquals(404, error.getStatus().getStatusCode());
+
+        var entity = entityResource.getEntityById(version1.id(),
+                DateTimeUtils.toIsoString(version2.updatedAt().atOffset(UTC)));
+        assertEquals(version2.id(), entity.id());
+        assertEquals(version2.updatedAt(), entity.updatedAt());
+        assertEquals("/testGetByIdAndUpdatedAt/a", entity.name());
     }
 
     private String format(Instant v) {

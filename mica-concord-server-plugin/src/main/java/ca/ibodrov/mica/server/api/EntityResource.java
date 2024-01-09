@@ -1,14 +1,12 @@
 package ca.ibodrov.mica.server.api;
 
-import ca.ibodrov.mica.api.model.Entity;
-import ca.ibodrov.mica.api.model.EntityId;
-import ca.ibodrov.mica.api.model.EntityList;
-import ca.ibodrov.mica.api.model.EntityVersion;
+import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.EntityStore.ListEntitiesRequest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walmartlabs.concord.common.DateTimeUtils;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +18,9 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
@@ -48,8 +49,9 @@ public class EntityResource implements Resource {
                                    @Nullable @QueryParam("entityNameStartsWith") String entityNameStartsWith,
                                    @Nullable @QueryParam("entityName") String entityName,
                                    @Nullable @QueryParam("entityKind") String entityKind,
-                                   @Nullable @QueryParam("orderBy") EntityStore.OrderBy orderBy,
+                                   @Nullable @QueryParam("orderBy") OrderBy orderBy,
                                    @QueryParam("limit") @DefaultValue("100") int limit) {
+
         // TODO validate entityName and entityKind, use @ValidName
         var request = new ListEntitiesRequest(nonBlank(search),
                 nonBlank(entityNameStartsWith),
@@ -64,16 +66,21 @@ public class EntityResource implements Resource {
     @GET
     @Path("{id}")
     @Operation(summary = "Get entity by ID", operationId = "getEntityById")
-    public Entity getEntityById(@PathParam("id") EntityId entityId) {
-        return entityStore.getById(entityId)
+    public Entity getEntityById(@PathParam("id") EntityId entityId,
+                                @Nullable @QueryParam("updatedAt") String updatedAtString) {
+
+        var updatedAt = parseIsoAsInstant(updatedAtString).orElse(null);
+        return entityStore.getById(entityId, updatedAt)
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
     }
 
     @GET
     @Path("{id}/yaml")
     @Operation(summary = "Get entity by ID in YAML format", operationId = "getEntityAsYamlString")
-    public Response getEntityAsYamlString(@PathParam("id") EntityId entityId) {
-        var entity = getEntityById(entityId);
+    public Response getEntityAsYamlString(@PathParam("id") EntityId entityId,
+                                          @Nullable @QueryParam("updatedAt") String updatedAt) {
+
+        var entity = getEntityById(entityId, updatedAt);
         try {
             var string = yamlMapper.prettyPrint(entity);
             return Response.ok(string, "text/yaml").build();
@@ -87,10 +94,15 @@ public class EntityResource implements Resource {
     @Path("{id}/doc")
     @Operation(summary = "Return the original unparsed YAML (or JSON) document for the entity", operationId = "getEntityDoc")
     @Produces(APPLICATION_OCTET_STREAM)
-    public Response getEntityDoc(@PathParam("id") EntityId entityId) {
-        var doc = entityStore.getEntityDocById(entityId)
+    public Response getEntityDoc(@PathParam("id") EntityId entityId,
+                                 @Nullable @QueryParam("updatedAt") String updatedAtString) {
+
+        var updatedAt = parseIsoAsInstant(updatedAtString).orElse(null);
+        var doc = entityStore.getEntityDocById(entityId, updatedAt)
                 .orElseGet(() -> {
-                    var entity = getEntityById(entityId);
+                    var entity = entityStore.getById(entityId, updatedAt)
+                            .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
+
                     try {
                         return yamlMapper.prettyPrintAsBytes(entity);
                     } catch (IOException e) {
@@ -114,5 +126,11 @@ public class EntityResource implements Resource {
             return null;
         }
         return s;
+    }
+
+    private static Optional<Instant> parseIsoAsInstant(String s) {
+        return Optional.ofNullable(nonBlank(s))
+                .map(DateTimeUtils::fromIsoString)
+                .map(OffsetDateTime::toInstant);
     }
 }

@@ -3,9 +3,9 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.RenderRequest;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.api.ViewResource.RenderRequest;
 import ca.ibodrov.mica.server.data.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
@@ -15,7 +15,6 @@ import com.google.common.collect.Streams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +35,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, Clock.systemUTC());
+        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
         var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));

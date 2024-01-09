@@ -14,7 +14,6 @@ import org.jooq.impl.DSL;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.IOException;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,6 @@ import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.temporal.ChronoUnit.MICROS;
 import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.noCondition;
@@ -40,18 +38,15 @@ public class EntityStore {
     private final DSLContext dsl;
     private final ObjectMapper objectMapper;
     private final UuidGenerator uuidGenerator;
-    private final Clock clock;
 
     @Inject
     public EntityStore(@MicaDB DSLContext dsl,
                        ObjectMapper objectMapper,
-                       UuidGenerator uuidGenerator,
-                       Clock clock) {
+                       UuidGenerator uuidGenerator) {
 
         this.dsl = requireNonNull(dsl);
         this.objectMapper = requireNonNull(objectMapper);
         this.uuidGenerator = requireNonNull(uuidGenerator);
-        this.clock = requireNonNull(clock);
     }
 
     public record ListEntitiesRequest(@Nullable String search,
@@ -95,21 +90,34 @@ public class EntityStore {
             }
         }
 
+        var limit = request.limit();
+        if (limit > 0) {
+            query.limit(limit);
+        }
+
         return query
-                .limit(request.limit())
                 .fetch(EntityStore::toEntityMetadata);
     }
 
     public Optional<Entity> getById(EntityId entityId) {
-        return dsl.select(MICA_ENTITIES.ID,
+        return getById(entityId, null);
+    }
+
+    public Optional<Entity> getById(EntityId entityId, @Nullable Instant updatedAt) {
+        var query = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(entityId.id()))
-                .fetchOptional(this::toEntity);
+                .where(MICA_ENTITIES.ID.eq(entityId.id()));
+
+        if (updatedAt != null) {
+            query = query.and(MICA_ENTITIES.UPDATED_AT.eq(updatedAt));
+        }
+
+        return query.fetchOptional(this::toEntity);
     }
 
     public Optional<Entity> getByName(String entityName) {
@@ -131,11 +139,16 @@ public class EntityStore {
                 .fetchOptional(r -> new EntityId(r.value1()));
     }
 
-    public Optional<byte[]> getEntityDocById(EntityId entityId) {
-        return dsl.select(MICA_ENTITIES.DOC)
+    public Optional<byte[]> getEntityDocById(EntityId entityId, @Nullable Instant updatedAt) {
+        var query = dsl.select(MICA_ENTITIES.DOC)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(entityId.id()))
-                .fetchOptional(Record1::value1);
+                .where(MICA_ENTITIES.ID.eq(entityId.id()));
+
+        if (updatedAt != null) {
+            query = query.and(MICA_ENTITIES.UPDATED_AT.eq(updatedAt));
+        }
+
+        return query.fetchOptional(Record1::value1);
     }
 
     public Optional<EntityVersion> deleteById(EntityId entityId) {
@@ -200,7 +213,7 @@ public class EntityStore {
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
 
-        var updatedAt = this.nowRoundedToMicros();
+        var updatedAt = getDatabaseInstant();
         var createdAt = entity.createdAt().orElse(updatedAt);
 
         // find and replace "id", "createdAt" and "updatedAt" properties in the doc
@@ -248,9 +261,8 @@ public class EntityStore {
         }
     }
 
-    private Instant nowRoundedToMicros() {
-        var now = clock.instant();
-        return now.plusNanos(500).truncatedTo(MICROS);
+    private Instant getDatabaseInstant() {
+        return dsl.select(DSL.currentTimestamp()).fetchOne(r -> r.value1().toInstant());
     }
 
     public static Entity toEntity(ObjectMapper objectMapper,
@@ -287,9 +299,5 @@ public class EntityStore {
     private static EntityMetadata toEntityMetadata(Record5<UUID, String, String, Instant, Instant> record) {
         var id = new EntityId(record.value1());
         return new EntityMetadata(id, record.value2(), record.value3(), record.value4(), record.value5());
-    }
-
-    public enum OrderBy {
-        NAME
     }
 }

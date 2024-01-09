@@ -2,7 +2,6 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
-import ca.ibodrov.mica.server.TestClock;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.EntityValidationException;
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -22,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class EntityControllerTest extends AbstractDatabaseTest {
 
-    private static TestClock clock;
     private static YamlMapper yamlMapper;
     private static EntityController controller;
     private static EntityStore entityStore;
@@ -30,10 +27,9 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         var instant = Instant.parse("2021-02-03T01:02:03.123456Z");
-        clock = TestClock.fixed(instant, ZoneId.of("UTC"));
 
         yamlMapper = new YamlMapper(objectMapper);
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, clock);
+        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
         controller = new EntityController(entityStore, entityKindStore, objectMapper);
@@ -117,39 +113,38 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
         var entity = parseYaml(doc);
         var initialVersion = controller.createOrUpdate(entity, doc.getBytes(UTF_8));
-        var updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id()).orElseThrow(), UTF_8);
+        var createdAt = initialVersion.updatedAt();
+        var updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
 
         var expected = """
                 id: "%s"
-                createdAt: "2021-02-03T01:02:03.123456Z"
+                createdAt: "%s"
                 updatedAt: "%s"
                 kind: /mica/record/v1
                 name: %s
                 data: foo! # inline comment
                 # some other comment
                 """.formatted(initialVersion.id().toExternalForm(),
+                objectMapper.convertValue(createdAt, String.class),
                 objectMapper.convertValue(initialVersion.updatedAt(), String.class),
                 entity.name());
 
         assertEquals(expected, updatedDoc);
 
-        var nextInstant = Instant.parse("2022-02-03T01:02:03.123456Z");
-        clock.setInstant(nextInstant);
-
         entity = parseYaml(updatedDoc);
         var updatedVersion = controller.createOrUpdate(entity, updatedDoc.getBytes(UTF_8));
-        assertEquals(nextInstant, updatedVersion.updatedAt());
-        updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id()).orElseThrow(), UTF_8);
+        updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
 
         expected = """
                 id: "%s"
-                createdAt: "2021-02-03T01:02:03.123456Z"
+                createdAt: "%s"
                 updatedAt: "%s"
                 kind: /mica/record/v1
                 name: %s
                 data: foo! # inline comment
                 # some other comment
                 """.formatted(updatedVersion.id().toExternalForm(),
+                objectMapper.convertValue(createdAt, String.class),
                 objectMapper.convertValue(updatedVersion.updatedAt(), String.class),
                 entity.name());
 

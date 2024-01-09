@@ -1,9 +1,6 @@
 package ca.ibodrov.mica.server.api;
 
-import ca.ibodrov.mica.api.model.EntityId;
-import ca.ibodrov.mica.api.model.EntityLike;
-import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.api.model.ViewLike;
+import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.data.*;
@@ -21,7 +18,6 @@ import org.jooq.DSLContext;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import java.net.URI;
 import java.util.List;
@@ -215,23 +211,6 @@ public class ViewResource implements Resource {
                         "length", IntNode.valueOf(data.size()),
                         "validation", validation.orElseGet(NullNode::getInstance)));
 
-    }
-
-    public record RenderRequest(Optional<EntityId> viewId,
-            Optional<String> viewName,
-            int limit, // TODO limit is not very useful right now
-            Optional<JsonNode> parameters) {
-
-        public static RenderRequest of(String viewName, int limit) {
-            return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.empty());
-        }
-
-        public static RenderRequest parameterized(String viewName, JsonNode parameters, int limit) {
-            return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.of(parameters));
-        }
-    }
-
-    public record PreviewRequest(@NotNull PartialEntity view, int limit, Optional<JsonNode> parameters) {
     }
 
     private static URI parseUri(String s) {

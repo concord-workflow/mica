@@ -9,7 +9,6 @@ import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
 import java.util.List;
 
 import static ca.ibodrov.mica.api.model.BatchOperationRequest.deleteByNamePatterns;
@@ -25,7 +24,7 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         yamlMapper = new YamlMapper(objectMapper);
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, Clock.systemUTC());
+        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         batchOperationResource = new BatchOperationResource(entityStore);
     }
 

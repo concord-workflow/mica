@@ -2,6 +2,7 @@ package ca.ibodrov.mica.its;
 
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
+import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,7 +29,10 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
@@ -46,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Rebuild mica-concord-task with {@code mvn clean install} before running these
  * tests.
  */
-public class ITs extends EndToEnd {
+public class ITs extends TestResources {
 
     private static EntityStore entityStore;
     private static ObjectMapper objectMapper;
@@ -399,7 +403,7 @@ public class ITs extends EndToEnd {
                             - log: third=${result.data}
                         """.strip().getBytes()));
         assertFinished(ciProcess);
-        var logLines = Arrays.stream(getProcessLog(ciProcess.getInstanceId()).split("\n")).toList();
+        var logLines = getProcessLogLines(ciProcess.getInstanceId());
         var firstLine = logLines.stream().filter(s -> s.contains("first=")).findFirst().orElseThrow();
         assertTrue(firstLine.contains("name=" + namePrefix + "/aaa/foo"));
         assertTrue(firstLine.contains("name=" + namePrefix + "/aaa/bar"));
@@ -414,6 +418,75 @@ public class ITs extends EndToEnd {
         assertFalse(thirdLine.contains("name=" + namePrefix + "/aaa/foo"));
         assertFalse(thirdLine.contains("name=" + namePrefix + "/aaa/bar"));
         assertTrue(thirdLine.contains("name=" + namePrefix + "/bbb/baz"));
+    }
+
+    @Test
+    public void upsertWithMergeUsingMicaTask() throws Exception {
+        // add some entities to the DB
+
+        var namePrefix = "/test" + System.currentTimeMillis();
+
+        // insert the entity using Mica task, with {data={y=456}}
+        var ciProcess = startConcordProcess(Map.of(
+                "arguments.namePrefix", namePrefix,
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upsert
+                                name: ${namePrefix}/aaa/foo
+                                merge: false
+                                entity:
+                                  kind: /mica/record/v1
+                                  data:
+                                    y: 456
+                              out: result
+                            - log: initialVersion=${result.version.id}
+                        """.strip().getBytes()));
+        assertFinished(ciProcess);
+
+        var logLines = getProcessLogLines(ciProcess.getInstanceId());
+        var initialVersionLine = logLines.stream().filter(s -> s.contains("initialVersion=")).findFirst().orElseThrow();
+        var initialVersionId = initialVersionLine.split("=")[1];
+
+        // fetch the entity and verify that it's {data{y=456}}
+        var entity = entityStore.getById(EntityId.fromString(initialVersionId)).orElseThrow();
+        assertEquals(456, entity.data().get("data").get("y").asInt());
+
+        // update the entity using Mica task, deep merge with {data={z=789}}
+        ciProcess = startConcordProcess(Map.of(
+                "arguments.namePrefix", namePrefix,
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upsert
+                                name: ${namePrefix}/aaa/foo
+                                merge: true
+                                # we don't have to specify the kind here, it's already in the existing entity
+                                entity:
+                                  data:
+                                    z: 789
+                              out: result
+                            - log: updatedVersion=${result.version.id}
+                        """.strip().getBytes()));
+        assertFinished(ciProcess);
+
+        logLines = getProcessLogLines(ciProcess.getInstanceId());
+        var updatedVersionLine = logLines.stream().filter(s -> s.contains("updatedVersion=")).findFirst().orElseThrow();
+        var updatedVersionId = initialVersionLine.split("=")[1];
+        assertEquals(initialVersionId, updatedVersionId);
+
+        // fetch the entity and verify that it's {data{y=456, z=789}}
+        entity = entityStore.getById(EntityId.fromString(updatedVersionId)).orElseThrow();
+        assertEquals(456, entity.data().get("data").get("y").asInt());
+        assertEquals(789, entity.data().get("data").get("z").asInt());
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)
