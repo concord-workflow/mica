@@ -71,7 +71,6 @@ public class MicaModule implements Module {
 
         // exception mappers
 
-        newSetBinder(binder, Component.class).addBinding().to(ConstraintViolationExceptionMapper.class);
         newSetBinder(binder, Component.class).addBinding().to(DataAccessExceptionMapper.class);
         newSetBinder(binder, Component.class).addBinding().to(EntityValidationExceptionMapper.class);
         newSetBinder(binder, Component.class).addBinding().to(StoreExceptionExceptionMapper.class);
