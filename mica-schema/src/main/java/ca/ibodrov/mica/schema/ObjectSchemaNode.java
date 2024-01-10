@@ -23,6 +23,19 @@ public record ObjectSchemaNode(Optional<String> type,
         Optional<JsonNode> additionalProperties,
         @JsonProperty("$ref") Optional<String> ref) {
 
+    /**
+     * Replaces {@code Optional<NullNode>} with {@code Optional.empty()}.
+     */
+    public ObjectSchemaNode normalized() {
+        var builder = new Builder().copyOf(this);
+
+        if (builder.additionalProperties.filter(JsonNode::isNull).isPresent()) {
+            builder.additionalProperties = Optional.empty();
+        }
+
+        return builder.build();
+    }
+
     public static ObjectSchemaNode ref(String ref) {
         return new Builder()
                 .ref(ref)
@@ -151,6 +164,17 @@ public record ObjectSchemaNode(Optional<String> type,
         private Optional<ObjectSchemaNode> items = Optional.empty();
         private Optional<JsonNode> additionalProperties = Optional.empty();
         private Optional<String> ref = Optional.empty();
+
+        public Builder copyOf(ObjectSchemaNode other) {
+            this.type = other.type();
+            this.properties = other.properties();
+            this.required = other.required();
+            this.enumeratedValues = other.enumeratedValues();
+            this.items = other.items();
+            this.additionalProperties = other.additionalProperties();
+            this.ref = other.ref();
+            return this;
+        }
 
         public Builder type(ValueType type) {
             return this.type(type.key());

@@ -2,6 +2,7 @@ package ca.ibodrov.mica.server.api.model;
 
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -34,6 +35,16 @@ public class SerializationTest {
                 {}
                 """);
         assertEquals(Optional.of(NullNode.getInstance()), result.node());
+    }
+
+    @Test
+    public void testOptionalNullNodes() {
+        var schema = ObjectSchemaNode.object("foo", ObjectSchemaNode.string());
+        var json = toJson(schema);
+        var expected = """
+                {"type":"object","properties":{"foo":{"type":"string"}}}
+                """.trim();
+        assertEquals(expected, json);
     }
 
     @Test
