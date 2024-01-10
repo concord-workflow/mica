@@ -11,6 +11,7 @@ export default defineConfig({
             output: {
                 manualChunks: {
                     'monaco-editor': ['monaco-editor'],
+                    'monaco-yaml': ['monaco-yaml'],
                     yaml: ['yaml'],
                 },
             },

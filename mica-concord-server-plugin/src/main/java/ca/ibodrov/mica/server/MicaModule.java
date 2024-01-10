@@ -4,6 +4,7 @@ import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.*;
+import ca.ibodrov.mica.server.ui.EditorSchemaResource;
 import ca.ibodrov.mica.server.ui.OidcResource;
 import ca.ibodrov.mica.server.ui.SwaggerServlet;
 import ca.ibodrov.mica.server.ui.WhoamiResource;
@@ -79,6 +80,7 @@ public class MicaModule implements Module {
         // jax-rs resources
 
         bindJaxRsResource(binder, BatchOperationResource.class);
+        bindJaxRsResource(binder, EditorSchemaResource.class);
         bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, EntityUploadResource.class);
         bindJaxRsResource(binder, OidcResource.class);

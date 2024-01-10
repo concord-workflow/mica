@@ -6,6 +6,7 @@ import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
+import YamlEditor from '../features/editor/YamlEditor.tsx';
 import PreviewView from '../features/views/PreviewView.tsx';
 import SaveIcon from '@mui/icons-material/Save';
 import {
@@ -20,9 +21,7 @@ import {
     styled,
 } from '@mui/material';
 
-import Editor from '@monaco-editor/react';
 import React, { useEffect } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'react-query';
 import { useBeforeUnload, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
@@ -182,7 +181,6 @@ const EditEntityPage = () => {
             if (!dirty) {
                 return;
             }
-            console.log('localStorage.setItem', { editorValue });
             localStorage.setItem(`dirty-${entityId}`, editorValue);
         }, [editorValue, entityId, dirty]),
     );
@@ -263,19 +261,14 @@ const EditEntityPage = () => {
                     )}
                 </Box>
                 <Box flex="1">
-                    <ErrorBoundary
-                        fallback={<b>Something went wrong while trying to render the editor.</b>}>
-                        <Editor
-                            loading={isLoading || isFetching || isSaving}
-                            height="100%"
-                            defaultLanguage="yaml"
-                            options={{
-                                minimap: { enabled: false },
-                            }}
-                            value={editorValue}
-                            onChange={handleEditorOnChange}
-                        />
-                    </ErrorBoundary>
+                    <YamlEditor
+                        entityKind={selectedKind}
+                        value={editorValue}
+                        onChange={handleEditorOnChange}
+                        isLoading={isLoading}
+                        isFetching={isFetching}
+                        isSaving={isSaving}
+                    />
                     {showPreview && (
                         <PreviewDrawer anchor="bottom" variant="permanent">
                             <PreviewView data={editorValue} onClose={handlePreviewClose} />
