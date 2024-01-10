@@ -1,4 +1,4 @@
-import { parseApiError } from './error.ts';
+import { parseError } from './error.ts';
 
 export const doFetch = async (input: RequestInfo | URL, init?: RequestInit) =>
     fetch(input, addUiHeader(init));
@@ -18,7 +18,7 @@ export const handleErrors = async (resp: Response) => {
             window.location.pathname = '/api/mica/oidc/login';
         }
 
-        throw await parseApiError(resp);
+        throw await parseError(resp);
     }
 };
 
