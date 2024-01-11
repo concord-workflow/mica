@@ -20,21 +20,28 @@ const PageTitle = ({ children, help }: PropsWithChildren<Props>) => {
 
     return (
         <>
-            <Typography variant="h5" marginBottom={2}>
+            <Typography variant="h5" fontSize={20} marginBottom={2}>
                 {children}
                 {help && (
                     <>
-                        <IconButton onClick={handleHelpIconClick}>
-                            <HelpIcon />
+                        <IconButton size="small" onClick={handleHelpIconClick}>
+                            <HelpIcon fontSize="inherit" />
                         </IconButton>
                     </>
                 )}
             </Typography>
-            <Drawer anchor="right" open={openHelp} onClose={handleCloseHelp}>
-                <Box width="100%" maxWidth={500} paddingLeft={2} paddingRight={2} paddingTop={10}>
-                    {help}
-                </Box>
-            </Drawer>
+            {help && (
+                <Drawer anchor="right" open={openHelp} onClose={handleCloseHelp}>
+                    <Box
+                        width="100%"
+                        maxWidth={500}
+                        paddingLeft={2}
+                        paddingRight={2}
+                        paddingTop={10}>
+                        {help}
+                    </Box>
+                </Drawer>
+            )}
         </>
     );
 };
