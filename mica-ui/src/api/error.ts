@@ -1,3 +1,5 @@
+import { JsonNode } from './schema.ts';
+
 export interface Violation {
     id: string;
     message: string;
@@ -8,25 +10,27 @@ export interface ApiError {
     status: number;
     statusText: string;
     message: string;
-    payload?: Array<Violation>;
+    violations?: Array<Violation>;
+    payload?: JsonNode;
 }
 
 const parseValidationError = async (resp: Response): Promise<ApiError> => {
-    const payload: Array<Violation> = await resp.json();
+    const violations: Array<Violation> = await resp.json();
     return {
-        type: 'detailed-validation-error',
+        type: 'concord-validation-error',
         message: 'Validation error',
         status: resp.status,
         statusText: resp.statusText,
-        payload,
+        violations,
     };
 };
 
 const parseApiError = async (resp: Response): Promise<ApiError> => {
-    const payload: ApiError = await resp.json();
+    const { type, message, payload } = await resp.json();
     return {
-        type: payload.type,
-        message: payload.message,
+        type,
+        message,
+        payload,
         status: resp.status,
         statusText: resp.statusText,
     };

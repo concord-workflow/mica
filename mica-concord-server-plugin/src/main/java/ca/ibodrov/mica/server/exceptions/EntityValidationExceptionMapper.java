@@ -11,11 +11,13 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
+@Provider
 public class EntityValidationExceptionMapper implements ExceptionMapper<EntityValidationException>, Component {
 
     private final ObjectMapper objectMapper;

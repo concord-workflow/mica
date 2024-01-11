@@ -12,8 +12,7 @@ export const MICA_VIEW_KIND = '/mica/view/v1';
 const GENERIC_TEMPLATE = `# new entity
 name: %%NAME%%
 kind: %%KIND%%
-data:
-  myProperty: true
+myProperty: true
 `;
 
 const MICA_RECORD_TEMPLATE = `# new entity

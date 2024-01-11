@@ -3,7 +3,10 @@ package ca.ibodrov.mica.server;
 import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
-import ca.ibodrov.mica.server.exceptions.*;
+import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
+import ca.ibodrov.mica.server.exceptions.EntityValidationExceptionMapper;
+import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
+import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;
 import ca.ibodrov.mica.server.ui.EditorSchemaResource;
 import ca.ibodrov.mica.server.ui.OidcResource;
 import ca.ibodrov.mica.server.ui.SwaggerServlet;
@@ -20,6 +23,7 @@ import com.walmartlabs.ollie.config.OllieConfigurationModule;
 
 import javax.inject.Named;
 import javax.servlet.http.HttpServlet;
+import javax.ws.rs.ext.ExceptionMapper;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -72,10 +76,10 @@ public class MicaModule implements Module {
 
         // exception mappers
 
-        newSetBinder(binder, Component.class).addBinding().to(DataAccessExceptionMapper.class);
-        newSetBinder(binder, Component.class).addBinding().to(EntityValidationExceptionMapper.class);
-        newSetBinder(binder, Component.class).addBinding().to(StoreExceptionExceptionMapper.class);
-        newSetBinder(binder, Component.class).addBinding().to(ViewProcessorExceptionMapper.class);
+        bindExceptionMapper(binder, DataAccessExceptionMapper.class);
+        bindExceptionMapper(binder, EntityValidationExceptionMapper.class);
+        bindExceptionMapper(binder, StoreExceptionExceptionMapper.class);
+        bindExceptionMapper(binder, ViewProcessorExceptionMapper.class);
 
         // jax-rs resources
 
@@ -105,5 +109,11 @@ public class MicaModule implements Module {
         // TODO avoid re-reading the config
         Environment env = new EnvironmentSelector().select();
         return new ConfigurationProcessor("concord-server", env, null, null).process();
+    }
+
+    public static <K extends ExceptionMapper<?> & Component> void bindExceptionMapper(Binder binder, Class<K> klass) {
+        binder.bind(klass).in(SINGLETON);
+        newSetBinder(binder, Component.class).addBinding().to(klass);
+        newSetBinder(binder, ExceptionMapper.class).addBinding().to(klass);
     }
 }

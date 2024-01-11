@@ -1,3 +1,4 @@
+import { useDebounce } from '@uidotdev/usehooks';
 import { SchemasSettings, configureMonacoYaml } from 'monaco-yaml';
 
 import Editor, { useMonaco } from '@monaco-editor/react';
@@ -33,19 +34,20 @@ interface Props {
 }
 
 const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChange }: Props) => {
+    const debouncedEntityKind = useDebounce(entityKind, 1000);
     const monacoSchemas: SchemasSettings[] = React.useMemo(() => {
-        if (!entityKind || entityKind === '') {
+        if (!debouncedEntityKind || debouncedEntityKind === '') {
             return [];
         }
         return [
             {
                 uri: `${window.location.protocol}//${
                     window.location.host
-                }/api/mica/ui/editorSchema?kind=${encodeURIComponent(entityKind)}`,
+                }/api/mica/ui/editorSchema?kind=${encodeURIComponent(debouncedEntityKind)}`,
                 fileMatch: ['*'],
             },
         ];
-    }, [entityKind]);
+    }, [debouncedEntityKind]);
 
     const monaco = useMonaco();
     React.useEffect(() => {

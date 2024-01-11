@@ -1,6 +1,7 @@
 name: /examples/parametrized/example-kind
 kind: /mica/kind/v1
 schema:
+  additionalProperties: false
   properties:
     x:
       type: string

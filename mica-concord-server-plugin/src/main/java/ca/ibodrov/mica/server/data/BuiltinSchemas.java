@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import javax.inject.Inject;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,12 +30,10 @@ public final class BuiltinSchemas {
     private static final TypeReference<List<String>> LIST_OF_STRINGS = new TypeReference<>() {
     };
 
-    private static final TypeReference<List<URI>> LIST_OF_URIS = new TypeReference<>() {
-    };
-
     public static final String MICA_OBJECT_SCHEMA_NODE_V1 = "/mica/objectSchemaNode/v1";
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
 
+    private final ObjectSchemaNode standardProperties;
     private final ObjectSchemaNode objectSchemaNodeSchema;
     private final ObjectSchemaNode micaRecordV1Schema;
     private final ObjectSchemaNode micaKindV1Schema;
@@ -45,6 +42,13 @@ public final class BuiltinSchemas {
     @Inject
     public BuiltinSchemas(ObjectMapper objectMapper) {
         var mapper = objectMapper.setDefaultPropertyInclusion(NON_ABSENT);
+
+        this.standardProperties = object(Map.of(
+                "id", string(),
+                "name", string(),
+                "createdAt", string(),
+                "updatedAt", string()),
+                Set.of("kind", "name"));
 
         this.objectSchemaNodeSchema = object(Map.of(
                 "type", enums(ValueType.valuesAsJson()),
@@ -57,19 +61,15 @@ public final class BuiltinSchemas {
                 "items", any()),
                 Set.of());
 
-        this.micaRecordV1Schema = object(Map.of(
-                "id", string(),
+        this.micaRecordV1Schema = standardProperties.withMoreProperties(Map.of(
                 "kind", enums(TextNode.valueOf(MICA_RECORD_V1)),
-                "name", string(),
                 "data", any()),
-                Set.of("kind", "name", "data"));
+                Set.of("kind", "data"));
 
-        this.micaKindV1Schema = object(Map.of(
-                "id", string(),
+        this.micaKindV1Schema = standardProperties.withMoreProperties(Map.of(
                 "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
-                "name", string(),
                 SCHEMA_PROPERTY, objectSchemaNodeSchema),
-                Set.of("kind", "name", SCHEMA_PROPERTY));
+                Set.of("kind", SCHEMA_PROPERTY));
 
         var viewSelector = object(Map.of("entityKind", string()), Set.of("entityKind"));
         var viewData = object(Map.of(
@@ -80,16 +80,21 @@ public final class BuiltinSchemas {
                 Set.of("jsonPath"));
         var viewValidation = object(Map.of("asEntityKind", string()), Set.of("asEntityKind"));
 
-        this.micaViewV1Schema = object(Map.of(
-                "id", string(),
+        this.micaViewV1Schema = standardProperties.withMoreProperties(Map.of(
                 "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
-                "name", string(),
                 "parameters", objectSchemaNodeSchema,
                 "selector", viewSelector,
                 "data", viewData,
                 "validation", viewValidation),
-                Set.of("kind", "name", "selector", "data"));
+                Set.of("kind", "selector", "data"));
         // TODO disallow other properties
+    }
+
+    /**
+     * Standard properties of all entities (like "id" or "name").
+     */
+    public ObjectSchemaNode getStandardProperties() {
+        return standardProperties;
     }
 
     /**

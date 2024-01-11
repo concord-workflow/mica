@@ -1,5 +1,4 @@
 name: /examples/parametrized/example-record
 kind: /examples/parametrized/example-kind
-data:
-  x: "hello!"
-  y: "bye!"
+x: "hello!"
+y: "bye!"

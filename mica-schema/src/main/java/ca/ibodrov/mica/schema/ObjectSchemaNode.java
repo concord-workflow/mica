@@ -36,6 +36,29 @@ public record ObjectSchemaNode(Optional<String> type,
         return builder.build();
     }
 
+    public ObjectSchemaNode withMoreProperties(Map<String, ObjectSchemaNode> properties, Set<String> required) {
+        var builder = new Builder().copyOf(this);
+
+        // TODO looks ugly
+        if (builder.properties.isPresent()) {
+            var m = new HashMap<>(builder.properties.get());
+            m.putAll(properties);
+            builder.properties = Optional.of(m);
+        } else {
+            builder.properties = Optional.of(properties);
+        }
+
+        if (builder.required.isPresent()) {
+            var s = new HashSet<>(builder.required.get());
+            s.addAll(required);
+            builder.required = Optional.of(s);
+        } else {
+            builder.required = Optional.of(required);
+        }
+
+        return builder.build();
+    }
+
     public static ObjectSchemaNode ref(String ref) {
         return new Builder()
                 .ref(ref)

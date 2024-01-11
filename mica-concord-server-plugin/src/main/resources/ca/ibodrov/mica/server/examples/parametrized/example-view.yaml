@@ -11,4 +11,4 @@ selector:
   namePatterns:
     - ${parameters.recordName}
 data:
-  jsonPath: $.data.['${parameters.recordKey}']
+  jsonPath: $.['${parameters.recordKey}']
