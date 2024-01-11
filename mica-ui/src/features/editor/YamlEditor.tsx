@@ -1,8 +1,8 @@
 import { useDebounce } from '@uidotdev/usehooks';
-import { SchemasSettings, configureMonacoYaml } from 'monaco-yaml';
+import { MonacoYaml, SchemasSettings, configureMonacoYaml } from 'monaco-yaml';
 
 import Editor, { useMonaco } from '@monaco-editor/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 window.MonacoEnvironment = {
@@ -34,8 +34,8 @@ interface Props {
 }
 
 const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChange }: Props) => {
-    const debouncedEntityKind = useDebounce(entityKind, 1000);
-    const monacoSchemas: SchemasSettings[] = React.useMemo(() => {
+    const debouncedEntityKind = useDebounce(entityKind, 500);
+    const schemas: SchemasSettings[] = React.useMemo(() => {
         if (!debouncedEntityKind || debouncedEntityKind === '') {
             return [];
         }
@@ -49,16 +49,27 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
         ];
     }, [debouncedEntityKind]);
 
+    const monacoYaml = React.useRef<MonacoYaml>();
+
+    // initialize monaco-yaml
     const monaco = useMonaco();
     React.useEffect(() => {
         if (!monaco) {
             return;
         }
-        configureMonacoYaml(monaco, {
+        monacoYaml.current = configureMonacoYaml(monaco);
+    }, [monaco]);
+
+    // update monaco-yaml config every time schemas change
+    useEffect(() => {
+        if (!monacoYaml.current) {
+            return;
+        }
+        monacoYaml.current.update({
             enableSchemaRequest: true,
-            schemas: monacoSchemas,
+            schemas,
         });
-    }, [monaco, monacoSchemas]);
+    }, [monacoYaml, schemas]);
 
     return (
         <ErrorBoundary fallback={<b>Something went wrong while trying to render the editor.</b>}>
