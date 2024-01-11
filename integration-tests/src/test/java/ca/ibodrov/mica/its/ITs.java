@@ -336,12 +336,11 @@ public class ITs extends TestResources {
                                 parameters:
                                   env: test
                               out: result
-                            - log: ${result.data}
+                            - log: ${result.data.stream().sorted().toList()}
                         """.strip().getBytes()));
-        // TODO sort results
         assertFinished(ciProcess);
         var log = getProcessLog(ciProcess.getInstanceId());
-        assertTrue(log.contains("[foo!, bar!, baz!, qux!]"));
+        assertTrue(log.contains("[bar!, baz!, foo!, qux!]"));
     }
 
     @Test
