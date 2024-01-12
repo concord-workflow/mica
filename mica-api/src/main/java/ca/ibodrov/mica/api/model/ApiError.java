@@ -24,14 +24,6 @@ public record ApiError(@NotEmpty String type, @NotEmpty String message, Optional
         return new ApiError("conflict", message, Optional.empty());
     }
 
-    public static ApiError simpleValidationError(String message) {
-        return new ApiError("simple-validation-error", message, Optional.empty());
-    }
-
-    public static ApiError detailedValidationError(String message, JsonNode payload) {
-        return new ApiError("detailed-validation-error", message, Optional.of(payload));
-    }
-
     public static ApiError internalError(String message) {
         return new ApiError("internal-error", message, Optional.empty());
     }

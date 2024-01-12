@@ -2,7 +2,6 @@ package ca.ibodrov.mica.api.kinds;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.validation.ValidName;
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -12,7 +11,7 @@ import java.util.HashMap;
 import static java.util.Objects.requireNonNull;
 
 public record MicaKindV1(@ValidName String name,
-        @NotNull ObjectSchemaNode schema) {
+        @NotNull JsonNode schema) {
 
     public static final String MICA_KIND_V1 = "/mica/kind/v1";
     public static final String SCHEMA_PROPERTY = "schema";
@@ -31,14 +30,14 @@ public record MicaKindV1(@ValidName String name,
     public static class Builder {
 
         private String name;
-        private ObjectSchemaNode schema;
+        private JsonNode schema;
 
         public Builder name(String name) {
             this.name = name;
             return this;
         }
 
-        public Builder schema(ObjectSchemaNode schema) {
+        public Builder schema(JsonNode schema) {
             this.schema = schema;
             return this;
         }

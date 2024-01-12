@@ -2,135 +2,154 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.ViewLike;
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
-import ca.ibodrov.mica.schema.ValueType;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.intellij.lang.annotations.Language;
 
 import javax.inject.Inject;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 
 import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
-import static ca.ibodrov.mica.api.kinds.MicaKindV1.SCHEMA_PROPERTY;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
-import static ca.ibodrov.mica.schema.ValueType.OBJECT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 
 public final class BuiltinSchemas {
 
+    public static final String STANDARD_PROPERTIES_V1 = "/mica/standard-properties/v1";
+    public static final String INTERNAL_ENTITY_STORE_URI = "mica://internal";
+    public static final String STANDARD_PROPERTIES_REF = INTERNAL_ENTITY_STORE_URI + STANDARD_PROPERTIES_V1;
+    public static final String EXTERNAL_JSON_SCHEMA_REF = "https://json-schema.org/draft/2020-12/schema";
+    public static final String JSON_SCHEMA_REF = "classpath:///draft/2020-12/schema";
+
     private static final TypeReference<List<String>> LIST_OF_STRINGS = new TypeReference<>() {
     };
 
-    public static final String MICA_OBJECT_SCHEMA_NODE_V1 = "/mica/objectSchemaNode/v1";
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
 
-    private final ObjectSchemaNode standardProperties;
-    private final ObjectSchemaNode objectSchemaNodeSchema;
-    private final ObjectSchemaNode micaRecordV1Schema;
-    private final ObjectSchemaNode micaKindV1Schema;
-    private final ObjectSchemaNode micaViewV1Schema;
+    private final ObjectNode standardProperties;
+    private final ObjectNode micaRecordV1Schema;
+    private final ObjectNode micaKindV1Schema;
+    private final ObjectNode micaViewV1Schema;
 
     @Inject
     public BuiltinSchemas(ObjectMapper objectMapper) {
-        var mapper = objectMapper.setDefaultPropertyInclusion(NON_ABSENT);
+        var mapper = objectMapper.setDefaultPropertyInclusion(NON_ABSENT)
+                .copyWith(new YAMLFactory());
 
-        this.standardProperties = object(Map.of(
-                "id", string(),
-                "name", string(),
-                "createdAt", string(),
-                "updatedAt", string()),
-                Set.of("kind", "name"));
+        this.standardProperties = makeJsonSchema(mapper, """
+                properties:
+                  id:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required: ["kind", "name"]
+                """);
 
-        this.objectSchemaNodeSchema = object(Map.of(
-                "type", enums(ValueType.valuesAsJson()),
-                "properties", new Builder()
-                        .type(OBJECT)
-                        .additionalProperties(mapper.convertValue(ref(MICA_OBJECT_SCHEMA_NODE_V1), JsonNode.class))
-                        .build(),
-                "required", array(string()),
-                "enum", array(any()),
-                "items", any()),
-                Set.of());
+        this.micaRecordV1Schema = makeJsonSchema(mapper, """
+                $ref: %%STANDARD_PROPERTIES_REF%%
+                properties:
+                  kind:
+                    type: string
+                    enum: ["/mica/record/v1"]
+                  data:
+                    type: [object, array, string, number, boolean, null]
+                required: ["kind", "data"]
+                """);
 
-        this.micaRecordV1Schema = standardProperties.withMoreProperties(Map.of(
-                "kind", enums(TextNode.valueOf(MICA_RECORD_V1)),
-                "data", any()),
-                Set.of("kind", "data"));
+        this.micaKindV1Schema = makeJsonSchema(mapper, """
+                $ref: %%STANDARD_PROPERTIES_REF%%
+                properties:
+                  kind:
+                    type: string
+                    enum: ["/mica/kind/v1"]
+                  schema:
+                    $ref: "%%JSON_SCHEMA_REF%%"
+                required: ["kind", "schema"]
+                """);
 
-        this.micaKindV1Schema = standardProperties.withMoreProperties(Map.of(
-                "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
-                SCHEMA_PROPERTY, objectSchemaNodeSchema),
-                Set.of("kind", SCHEMA_PROPERTY));
+        this.micaViewV1Schema = makeJsonSchema(mapper, """
+                $ref: %%STANDARD_PROPERTIES_REF%%
+                properties:
+                  kind:
+                    type: string
+                    enum: [ "/mica/view/v1" ]
+                  parameters:
+                    $ref: "%%JSON_SCHEMA_REF%%"
+                  selector:
+                    properties:
+                      entityKind:
+                        type: string
+                    required: [ "entityKind" ]
+                  data:
+                    properties:
+                      jsonPath:
+                        type: string
+                      jsonPatch:
+                        type: array
+                      flatten:
+                        type: boolean
+                      merge:
+                        type: boolean
+                    required: [ "jsonPath" ]
+                  validation:
+                    properties:
+                      asEntityKind:
+                        type: string
+                    required: [ "asEntityKind" ]
+                required: [ "kind", "selector", "data" ]
+                """);
 
-        var viewSelector = object(Map.of("entityKind", string()), Set.of("entityKind"));
-        var viewData = object(Map.of(
-                "jsonPath", string(),
-                "jsonPatch", array(object()),
-                "flatten", bool(),
-                "merge", bool()),
-                Set.of("jsonPath"));
-        var viewValidation = object(Map.of("asEntityKind", string()), Set.of("asEntityKind"));
-
-        this.micaViewV1Schema = standardProperties.withMoreProperties(Map.of(
-                "kind", enums(TextNode.valueOf(MICA_VIEW_V1)),
-                "parameters", objectSchemaNodeSchema,
-                "selector", viewSelector,
-                "data", viewData,
-                "validation", viewValidation),
-                Set.of("kind", "selector", "data"));
         // TODO disallow other properties
+        // TODO fix jsonPatch type
     }
 
     /**
      * Standard properties of all entities (like "id" or "name").
      */
-    public ObjectSchemaNode getStandardProperties() {
-        return standardProperties;
-    }
-
-    /**
-     * Schema of {@link ObjectSchemaNode} itself.
-     */
-    public ObjectSchemaNode getObjectSchemaNodeSchema() {
-        return objectSchemaNodeSchema;
+    public ObjectNode getStandardProperties() {
+        return standardProperties.deepCopy();
     }
 
     /**
      * /mica/record/v1 - use to declare entities of any kind.
      */
-    public ObjectSchemaNode getMicaRecordV1Schema() {
-        return micaRecordV1Schema;
+    public ObjectNode getMicaRecordV1Schema() {
+        return micaRecordV1Schema.deepCopy();
     }
 
     /**
      * /mica/kind/v1 - use to declare new entity kinds.
      */
-    public ObjectSchemaNode getMicaKindV1Schema() {
-        return micaKindV1Schema;
+    public ObjectNode getMicaKindV1Schema() {
+        return micaKindV1Schema.deepCopy();
     }
 
     /**
      * /mica/view/v1 - use to declare entity views.
      */
-    public ObjectSchemaNode getMicaViewV1Schema() {
-        return micaViewV1Schema;
+    public ObjectNode getMicaViewV1Schema() {
+        return micaViewV1Schema.deepCopy();
     }
 
-    public Optional<ObjectSchemaNode> get(String kind) {
+    public Optional<JsonNode> get(String kind) {
         return switch (kind) {
-            case MICA_OBJECT_SCHEMA_NODE_V1 -> Optional.of(objectSchemaNodeSchema);
-            case MICA_RECORD_V1 -> Optional.of(micaRecordV1Schema);
-            case MICA_KIND_V1 -> Optional.of(micaKindV1Schema);
-            case MICA_VIEW_V1 -> Optional.of(micaViewV1Schema);
+            case STANDARD_PROPERTIES_V1 -> Optional.of(getStandardProperties());
+            case MICA_RECORD_V1 -> Optional.of(getMicaRecordV1Schema());
+            case MICA_KIND_V1 -> Optional.of(getMicaKindV1Schema());
+            case MICA_VIEW_V1 -> Optional.of(getMicaViewV1Schema());
             default -> Optional.empty();
         };
     }
@@ -141,15 +160,9 @@ public final class BuiltinSchemas {
         }
 
         var name = entity.name();
-
-        var parameters = Optional.ofNullable(entity.data().get("parameters"))
-                .filter(n -> !n.isNull())
-                .map(object -> parseParameters(objectMapper, object));
-
+        var parameters = Optional.ofNullable(entity.data().get("parameters")).filter(n -> !n.isNull());
         var selector = asViewLikeSelector(objectMapper, entity);
-
-        var data = asViewLikeData(objectMapper, entity);
-
+        var data = asViewLikeData(entity);
         var validation = asViewLikeValidation(entity);
 
         return new ViewLike() {
@@ -159,7 +172,7 @@ public final class BuiltinSchemas {
             }
 
             @Override
-            public Optional<ObjectSchemaNode> parameters() {
+            public Optional<JsonNode> parameters() {
                 return parameters;
             }
 
@@ -209,7 +222,7 @@ public final class BuiltinSchemas {
         };
     }
 
-    private static ViewLike.Data asViewLikeData(ObjectMapper objectMapper, EntityLike entity) {
+    private static ViewLike.Data asViewLikeData(EntityLike entity) {
         var jsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
                 .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
@@ -247,15 +260,6 @@ public final class BuiltinSchemas {
         return entityKind.map(v -> () -> v);
     }
 
-    private static ObjectSchemaNode parseParameters(ObjectMapper objectMapper, JsonNode parameters) {
-        var strictMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-        try {
-            return strictMapper.convertValue(parameters, ObjectSchemaNode.class);
-        } catch (IllegalArgumentException e) {
-            throw ApiException.badRequest("Error while parsing 'parameters': " + e.getMessage());
-        }
-    }
-
     private static <T> Optional<T> select(EntityLike entityLike,
                                           String pathElement1,
                                           String pathElement2,
@@ -264,5 +268,15 @@ public final class BuiltinSchemas {
         return Optional.ofNullable(entityLike.data().get(pathElement1))
                 .map(n -> n.get(pathElement2))
                 .map(converter);
+    }
+
+    private static ObjectNode makeJsonSchema(ObjectMapper mapper, @Language("yaml") String yaml) {
+        try {
+            yaml = yaml.replace("%%JSON_SCHEMA_REF%%", JSON_SCHEMA_REF)
+                    .replace("%%STANDARD_PROPERTIES_REF%%", STANDARD_PROPERTIES_REF);
+            return mapper.readValue(yaml, ObjectNode.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

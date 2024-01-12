@@ -4,7 +4,6 @@ import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
-import ca.ibodrov.mica.server.exceptions.EntityValidationExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;
 import ca.ibodrov.mica.server.ui.EditorSchemaResource;
@@ -77,7 +76,6 @@ public class MicaModule implements Module {
         // exception mappers
 
         bindExceptionMapper(binder, DataAccessExceptionMapper.class);
-        bindExceptionMapper(binder, EntityValidationExceptionMapper.class);
         bindExceptionMapper(binder, StoreExceptionExceptionMapper.class);
         bindExceptionMapper(binder, ViewProcessorExceptionMapper.class);
 

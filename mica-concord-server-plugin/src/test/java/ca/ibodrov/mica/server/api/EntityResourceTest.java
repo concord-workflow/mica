@@ -33,7 +33,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         var uuidGenerator = new UuidGenerator();
         var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtInSchemas = new BuiltinSchemas(objectMapper);
-        var entityKindStore = new EntityKindStore(entityStore, builtInSchemas, objectMapper);
+        var entityKindStore = new EntityKindStore(entityStore, builtInSchemas);
         var controller = new EntityController(entityStore, entityKindStore, objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
@@ -209,6 +209,25 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                             line
                             text
                         """.getBytes())));
+    }
+
+    @Test
+    public void validateUsingCustomKind() {
+        var kind = randomEntityName(32);
+        entityUploadResource.putYaml(new ByteArrayInputStream("""
+                kind: /mica/kind/v1
+                name: %s
+                schema:
+                  properties:
+                    foo:
+                      type: string
+                """.formatted(kind).getBytes()));
+
+        entityUploadResource.putYaml(new ByteArrayInputStream("""
+                kind: %s
+                name: %s
+                foo: "bar"
+                """.formatted(kind, randomEntityName(32)).getBytes()));
     }
 
     @Test

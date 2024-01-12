@@ -1,6 +1,5 @@
 package ca.ibodrov.mica.api.model;
 
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
@@ -16,7 +15,7 @@ public interface ViewLike {
 
     Optional<? extends Validation> validation();
 
-    Optional<ObjectSchemaNode> parameters();
+    Optional<JsonNode> parameters();
 
     interface Selector {
 

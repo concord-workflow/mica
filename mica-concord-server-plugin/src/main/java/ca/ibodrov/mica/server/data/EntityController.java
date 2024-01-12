@@ -2,9 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.exceptions.ApiException;
-import ca.ibodrov.mica.server.exceptions.EntityValidationException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +27,8 @@ public class EntityController {
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
         this.objectMapper = requireNonNull(objectMapper);
-        this.validator = new Validator(entityKindStore::getSchemaForKind);
+        this.validator = Validator.getDefault(objectMapper,
+                new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper));
     }
 
     public EntityVersion createOrUpdate(PartialEntity entity) {
@@ -45,7 +44,7 @@ public class EntityController {
         var input = objectMapper.convertValue(entity, JsonNode.class);
         var validatedInput = validator.validateObject(schema, input);
         if (!validatedInput.isValid()) {
-            throw EntityValidationException.from("Invalid entity", validatedInput);
+            throw validatedInput.toException();
         }
 
         var existingId = entityStore.getIdByName(entity.name());

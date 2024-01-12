@@ -3,7 +3,6 @@ package ca.ibodrov.mica.api.kinds;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.api.validation.ValidName;
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,7 +21,7 @@ public record MicaViewV1(@ValidName String name,
         @NotNull Selector selector,
         @NotNull Data data,
         @NotNull Optional<Validation> validation,
-        @NotNull Optional<ObjectSchemaNode> parameters) implements ViewLike {
+        @NotNull Optional<JsonNode> parameters) implements ViewLike {
 
     public static final String MICA_VIEW_V1 = "/mica/view/v1";
 
@@ -88,7 +87,7 @@ public record MicaViewV1(@ValidName String name,
         private Selector selector;
         private Data data;
         private Optional<Validation> validation = Optional.empty();
-        private Optional<ObjectSchemaNode> parameters = Optional.empty();
+        private Optional<JsonNode> parameters = Optional.empty();
 
         public Builder name(String name) {
             this.name = name;
@@ -110,7 +109,7 @@ public record MicaViewV1(@ValidName String name,
             return this;
         }
 
-        public Builder parameters(ObjectSchemaNode parameters) {
+        public Builder parameters(JsonNode parameters) {
             this.parameters = Optional.of(parameters);
             return this;
         }

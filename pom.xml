@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>ca.ibodrov.mica</groupId>
@@ -13,9 +14,9 @@
 
     <licenses>
         <license>
-            <name />
-            <url />
-            <distribution />
+            <name/>
+            <url/>
+            <distribution/>
             <comments>Intentionally left blank.</comments>
         </license>
     </licenses>
@@ -37,7 +38,6 @@
         <module>mica-concord-server-plugin</module>
         <module>mica-concord-task</module>
         <module>mica-db</module>
-        <module>mica-schema</module>
         <module>mica-ui</module>
         <module>docker</module>
     </modules>
@@ -94,6 +94,11 @@
                 <groupId>com.flipkart.zjsonpatch</groupId>
                 <artifactId>zjsonpatch</artifactId>
                 <version>0.4.16</version>
+            </dependency>
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>1.1.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

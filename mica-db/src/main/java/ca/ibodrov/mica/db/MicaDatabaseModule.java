@@ -1,6 +1,5 @@
 package ca.ibodrov.mica.db;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -35,8 +34,7 @@ public class MicaDatabaseModule implements Module {
         return cfg.dsl();
     }
 
-    @VisibleForTesting
-    public static class MicaDBChangeLogProvider implements DatabaseChangeLogProvider {
+    static class MicaDBChangeLogProvider implements DatabaseChangeLogProvider {
 
         @Override
         public String getChangeLogPath() {

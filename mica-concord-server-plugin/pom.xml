@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -32,17 +33,16 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>ca.ibodrov.mica</groupId>
-            <artifactId>mica-schema</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.uuid</groupId>
             <artifactId>java-uuid-generator</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
         </dependency>
         <dependency>
             <groupId>com.flipkart.zjsonpatch</groupId>
@@ -134,7 +134,9 @@
                 <configuration>
                     <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.build.outputDirectory}/ca/ibodrov/mica/server/git.properties</generateGitPropertiesFilename>
+                    <generateGitPropertiesFilename>
+                        ${project.build.outputDirectory}/ca/ibodrov/mica/server/git.properties
+                    </generateGitPropertiesFilename>
                 </configuration>
             </plugin>
             <plugin>
@@ -165,7 +167,8 @@
                     <resourcePackages>
                         <package>ca.ibodrov.mica.server</package>
                     </resourcePackages>
-                    <configurationFilePath>${project.build.directory}/classes/openapi-server-config.yaml</configurationFilePath>
+                    <configurationFilePath>${project.build.directory}/classes/openapi-server-config.yaml
+                    </configurationFilePath>
                 </configuration>
                 <executions>
                     <execution>

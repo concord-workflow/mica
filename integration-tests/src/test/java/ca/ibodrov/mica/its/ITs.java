@@ -5,9 +5,12 @@ import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.data.EntityStore;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.ImmutableMap;
 import com.walmartlabs.concord.client2.ApiException;
 import com.walmartlabs.concord.client2.ProcessApi;
@@ -31,13 +34,11 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
-import static ca.ibodrov.mica.server.api.ViewResource.INTERNAL_ENTITY_STORE_URI;
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -73,17 +74,27 @@ public class ITs extends TestResources {
         // add an entity kind to represent a config layer
         entityStore.upsert(new MicaKindV1.Builder()
                 .name("/acme/kinds/config-layer")
-                .schema(object(Map.of("app", any()), Set.of("app")))
+                .schema(parseObject("""
+                        properties:
+                          app:
+                            type: object
+                        required: ["app"]
+                        """))
                 .build()
                 .toPartialEntity(objectMapper));
 
         // add a view to render the effective config
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/acme/effective-configs/components/foobar/instance-config")
-                .parameters(object(Map.of(
-                        "githubPr", string(),
-                        "env", string(),
-                        "namespace", string()), Set.of()))
+                .parameters(parseObject("""
+                        properties:
+                          githubPr:
+                            type: string
+                          env:
+                            type: string
+                          namespace:
+                            type: string
+                        """))
                 .selector(byEntityKind("/acme/kinds/config-layer")
                         .withNamePatterns(List.of(
                                 "/acme/configs/branches/main/instance-level-config.yaml",
@@ -226,7 +237,12 @@ public class ITs extends TestResources {
 
         entityStore.upsert(new MicaKindV1.Builder()
                 .name("/acme/kinds/entity")
-                .schema(object(Map.of("value", any()), Set.of("value")))
+                .schema(parseObject("""
+                        properties:
+                          value:
+                            type: string
+                        required: ["value"]
+                        """))
                 .build()
                 .toPartialEntity(objectMapper));
 
@@ -309,8 +325,11 @@ public class ITs extends TestResources {
 
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/acme/views/imports-demo")
-                .parameters(object(Map.of(
-                        "env", string()), Set.of()))
+                .parameters(parseObject("""
+                        properties:
+                          env:
+                            type: string
+                        """))
                 .selector(byEntityKind("/acme/kinds/entity")
                         .withNamePatterns(List.of("/${parameters.env}/.*"))
                         .withIncludes(List.of(
@@ -509,5 +528,13 @@ public class ITs extends TestResources {
                 Duration.ofSeconds(60).toMillis());
         assertEquals(FINISHED, process.getStatus(), () -> getProcessLog(process.getInstanceId()));
         return process;
+    }
+
+    private static ObjectNode parseObject(@Language("yaml") String s) {
+        try {
+            return objectMapper.copyWith(new YAMLFactory()).readValue(s, ObjectNode.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

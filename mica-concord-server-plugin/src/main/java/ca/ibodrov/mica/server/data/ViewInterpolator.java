@@ -1,23 +1,19 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.ViewLike;
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
-import ca.ibodrov.mica.schema.Validator;
-import ca.ibodrov.mica.server.exceptions.EntityValidationException;
+import ca.ibodrov.mica.server.data.Validator.SchemaFetcher;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-
-import static java.util.Objects.requireNonNull;
 
 public class ViewInterpolator {
 
     private final Validator validator;
 
-    public ViewInterpolator(Function<String, Optional<ObjectSchemaNode>> schemaResolver) {
-        this.validator = new Validator(requireNonNull(schemaResolver));
+    public ViewInterpolator(ObjectMapper objectMapper, SchemaFetcher schemaFetcher) {
+        this.validator = Validator.getDefault(objectMapper, schemaFetcher);
     }
 
     public ViewLike interpolate(ViewLike view, JsonNode input) {
@@ -32,7 +28,7 @@ public class ViewInterpolator {
             var schema = maybeSchema.get();
             var validatedInput = validator.validateObject(schema, input);
             if (!validatedInput.isValid()) {
-                throw EntityValidationException.from("Invalid input", validatedInput);
+                throw validatedInput.toException();
             }
         }
 
@@ -102,7 +98,7 @@ public class ViewInterpolator {
             }
 
             @Override
-            public Optional<ObjectSchemaNode> parameters() {
+            public Optional<JsonNode> parameters() {
                 return view.parameters();
             }
         };

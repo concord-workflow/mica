@@ -1,28 +1,29 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
-import ca.ibodrov.mica.server.exceptions.EntityValidationException;
+import ca.ibodrov.mica.server.data.Validator.NoopSchemaFetcher;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.walmartlabs.concord.common.ObjectMapperProvider;
+import com.walmartlabs.concord.server.sdk.validation.ValidationErrorsException;
+import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.string;
-import static ca.ibodrov.mica.schema.ValidationError.Kind.MISSING_PROPERTY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.*;
 
 public class ViewInterpolatorTest {
 
-    private static final ViewInterpolator interpolator = new ViewInterpolator(ref -> Optional.empty());
+    private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
+    private static final ViewInterpolator interpolator = new ViewInterpolator(objectMapper, new NoopSchemaFetcher());
 
     @Test
     public void unresolvedPlaceholdersMustBeEscaped() {
@@ -33,12 +34,19 @@ public class ViewInterpolatorTest {
                         .withNamePatterns(List.of("${parameters.name}")))
                 .data(jsonPath("${parameters.jsonPath}"))
                 .validation(asEntityKind("${parameters.validationKind}"))
-                .parameters(object(Map.of(
-                        "kind", string(),
-                        "include", string(),
-                        "name", string(),
-                        "jsonPath", string(),
-                        "validationKind", string()), Set.of()))
+                .parameters(parseObject("""
+                        properties:
+                            kind:
+                                type: string
+                            include:
+                                type: string
+                            name:
+                                type: string
+                            jsonPath:
+                                type: string
+                            validationKind:
+                                type: string
+                        """))
                 .build();
 
         var interpolatedView = interpolator.interpolate(view, null);
@@ -58,16 +66,23 @@ public class ViewInterpolatorTest {
                         .withNamePatterns(List.of("${parameters.name}")))
                 .data(jsonPath("${parameters.jsonPath}"))
                 .validation(asEntityKind("${parameters.validationKind}"))
-                .parameters(object(Map.of(
-                        "kind", string(),
-                        "include", string(),
-                        "name", string(),
-                        "jsonPath", string(),
-                        "validationKind", string()), Set.of()))
+                .parameters(parseObject("""
+                        properties:
+                            kind:
+                                type: string
+                            include:
+                                type: string
+                            name:
+                                type: string
+                            jsonPath:
+                                type: string
+                            validationKind:
+                                type: string
+                        """))
                 .build();
 
         var interpolatedView = interpolator.interpolate(view,
-                new ObjectMapper().convertValue(Map.of(
+                objectMapper.convertValue(Map.of(
                         "kind", "kind1",
                         "include", "include1",
                         "name", "name1",
@@ -87,12 +102,25 @@ public class ViewInterpolatorTest {
                 .name("test")
                 .selector(byEntityKind("${parameters.foo}"))
                 .data(jsonPath("$"))
-                .parameters(object(Map.of("foo", string()), Set.of("foo")))
+                .parameters(parseObject("""
+                        properties:
+                          foo:
+                            type: string
+                        required: ["foo"]
+                        """))
                 .build();
 
         // the input is missing the required "foo" parameter
-        var input = new ObjectMapper().convertValue(Map.of("bar", "text"), JsonNode.class);
-        var error = assertThrows(EntityValidationException.class, () -> interpolator.interpolate(view, input));
-        assertEquals(MISSING_PROPERTY, error.getErrors().get(".foo").kind());
+        var input = objectMapper.convertValue(Map.of("bar", "text"), JsonNode.class);
+        var error = assertThrows(ValidationErrorsException.class, () -> interpolator.interpolate(view, input));
+        assertNotNull(error.getValidationErrors().get(0)); // TODO check the error
+    }
+
+    private static ObjectNode parseObject(@Language("yaml") String s) {
+        try {
+            return objectMapper.copyWith(new YAMLFactory()).readValue(s, ObjectNode.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

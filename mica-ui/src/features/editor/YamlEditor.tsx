@@ -1,8 +1,9 @@
 import { useDebounce } from '@uidotdev/usehooks';
-import { MonacoYaml, SchemasSettings, configureMonacoYaml } from 'monaco-yaml';
+import { editor } from 'monaco-editor';
+import { MonacoYaml, configureMonacoYaml } from 'monaco-yaml';
 
 import Editor, { useMonaco } from '@monaco-editor/react';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 window.MonacoEnvironment = {
@@ -33,43 +34,45 @@ interface Props {
     onChange: (value: string | undefined) => void;
 }
 
+const MONACO_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
+    minimap: { enabled: false },
+};
+
 const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChange }: Props) => {
     const debouncedEntityKind = useDebounce(entityKind, 500);
-    const schemas: SchemasSettings[] = React.useMemo(() => {
-        if (!debouncedEntityKind || debouncedEntityKind === '') {
-            return [];
-        }
-        return [
-            {
-                uri: `${window.location.protocol}//${
-                    window.location.host
-                }/api/mica/ui/editorSchema?kind=${encodeURIComponent(debouncedEntityKind)}`,
-                fileMatch: ['*'],
-            },
-        ];
-    }, [debouncedEntityKind]);
 
+    const monaco = useMonaco();
     const monacoYaml = React.useRef<MonacoYaml>();
 
-    // initialize monaco-yaml
-    const monaco = useMonaco();
     React.useEffect(() => {
         if (!monaco) {
             return;
         }
-        monacoYaml.current = configureMonacoYaml(monaco);
-    }, [monaco]);
 
-    // update monaco-yaml config every time schemas change
-    useEffect(() => {
         if (!monacoYaml.current) {
+            monacoYaml.current = configureMonacoYaml(monaco, { enableSchemaRequest: true });
+        }
+
+        let effectiveKind = debouncedEntityKind;
+        if (!effectiveKind || effectiveKind === '') {
             return;
         }
+
+        if (effectiveKind[0] != '/') {
+            effectiveKind = '/' + effectiveKind;
+        }
+
+        const schemas = [
+            {
+                uri: `${window.location.protocol}//${window.location.host}/api/mica/ui/editorSchema${effectiveKind}`,
+                fileMatch: ['*'],
+            },
+        ];
+
         monacoYaml.current.update({
-            enableSchemaRequest: true,
             schemas,
         });
-    }, [monacoYaml, schemas]);
+    }, [monaco, debouncedEntityKind]);
 
     return (
         <ErrorBoundary fallback={<b>Something went wrong while trying to render the editor.</b>}>
@@ -77,9 +80,7 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
                 loading={isLoading || isFetching || isSaving}
                 height="100%"
                 defaultLanguage="yaml"
-                options={{
-                    minimap: { enabled: false },
-                }}
+                options={MONACO_OPTIONS}
                 value={value}
                 onChange={onChange}
             />

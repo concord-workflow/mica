@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.db;
 
+import ca.ibodrov.mica.db.MicaDatabaseModule.MicaDBChangeLogProvider;
 import com.codahale.metrics.MetricRegistry;
 import com.walmartlabs.concord.db.DataSourceUtils;
 import com.walmartlabs.concord.db.DatabaseConfiguration;
@@ -23,7 +24,7 @@ public class MicaDataSourceProvider implements Provider<DataSource> {
     @Override
     public DataSource get() {
         DataSource ds = DataSourceUtils.createDataSource(cfg, "mica", cfg.username(), cfg.password(), metricRegistry);
-        DataSourceUtils.migrateDb(ds, new MicaDatabaseModule.MicaDBChangeLogProvider(), cfg.changeLogParameters());
+        DataSourceUtils.migrateDb(ds, new MicaDBChangeLogProvider(), cfg.changeLogParameters());
         return ds;
     }
 }

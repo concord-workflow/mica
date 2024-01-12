@@ -7,11 +7,15 @@ import ca.ibodrov.mica.api.model.RenderRequest;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.data.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.Streams;
+import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -22,8 +26,6 @@ import java.util.Set;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.object;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.string;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,7 +39,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         var uuidGenerator = new UuidGenerator();
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
-        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
+        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas);
         var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));
         viewResource = new ViewResource(dsl(), entityStore, entityKindStore, entityFetchers, objectMapper);
     }
@@ -47,7 +49,11 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // create entity kind
         entityStore.upsert(new MicaKindV1.Builder()
                 .name("/test-record-kind")
-                .schema(object(Map.of("value", string()), Set.of("value")))
+                .schema(parseObject("""
+                        properties:
+                          value:
+                            type: integer
+                        """))
                 .build()
                 .toPartialEntity(objectMapper));
 
@@ -87,7 +93,11 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // create entity kind
         entityStore.upsert(new MicaKindV1.Builder()
                 .name(recordKind)
-                .schema(object(Map.of("value", string()), Set.of("value")))
+                .schema(parseObject("""
+                        properties:
+                          value:
+                            type: integer
+                        """))
                 .build()
                 .toPartialEntity(objectMapper));
 
@@ -102,7 +112,13 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // create view
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/test-name-pattern-substitution")
-                .parameters(object("x", string()))
+                .parameters(parseObject("""
+                        properties:
+                          x:
+                            type: string
+                          y:
+                            type: string
+                        """))
                 .selector(byEntityKind(recordKind)
                         .withNamePatterns(List.of("/${parameters.x}/record", "/${parameters.y}/record")))
                 .data(jsonPath("$").withMerge())
@@ -123,7 +139,12 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         var recordKindV1 = "/test-kind-v1-" + System.currentTimeMillis();
         entityStore.upsert(new MicaKindV1.Builder()
                 .name(recordKindV1)
-                .schema(object(Map.of("foo", string()), Set.of("foo")))
+                .schema(parseObject("""
+                        properties:
+                          foo:
+                            type: string
+                        required: ["foo"]
+                        """))
                 .build()
                 .toPartialEntity(objectMapper));
 
@@ -131,7 +152,12 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         var recordKindV2 = "/test-kind-v2-" + System.currentTimeMillis();
         entityStore.upsert(new MicaKindV1.Builder()
                 .name(recordKindV2)
-                .schema(object(Map.of("bar", string()), Set.of("bar")))
+                .schema(parseObject("""
+                        properties:
+                          bar:
+                            type: string
+                        required: ["bar"]
+                        """))
                 .build()
                 .toPartialEntity(objectMapper));
 
@@ -144,7 +170,11 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // create view
         entityStore.upsert(new MicaViewV1.Builder()
                 .name("/test-view-validation")
-                .parameters(object("x", string()))
+                .parameters(parseObject("""
+                        properties:
+                          x:
+                            type: string
+                        """))
                 .selector(byEntityKind(recordKindV1))
                 .data(jsonPath("$"))
                 .validation(asEntityKind(recordKindV2))
@@ -156,10 +186,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .render(RenderRequest.parameterized("/test-view-validation", NullNode.getInstance(), 10));
         assertEquals(2, result.data().get("data").size());
         assertEquals(2, result.data().get("validation").size());
-        assertEquals("MISSING_PROPERTY",
-                result.data().get("validation").get(0).get("properties").get("bar").get("error").get("kind").asText());
-        assertEquals("MISSING_PROPERTY",
-                result.data().get("validation").get(1).get("properties").get("bar").get("error").get("kind").asText());
+        assertEquals("required", result.data().get("validation").get(0).get("messages").get(0).get("type").asText());
     }
 
     private static String randomPathPrefix() {
@@ -168,5 +195,13 @@ public class ViewResourceTest extends AbstractDatabaseTest {
 
     private static JsonNode parameters(String k1, JsonNode v1, String k2, JsonNode v2) {
         return objectMapper.convertValue(Map.of(k1, v1, k2, v2), JsonNode.class);
+    }
+
+    private static ObjectNode parseObject(@Language("yaml") String s) {
+        try {
+            return objectMapper.copyWith(new YAMLFactory()).readValue(s, ObjectNode.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

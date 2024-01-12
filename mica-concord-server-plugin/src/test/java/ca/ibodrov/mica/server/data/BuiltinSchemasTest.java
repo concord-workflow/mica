@@ -1,26 +1,19 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.YamlMapper;
-import ca.ibodrov.mica.server.exceptions.ApiException;
+import ca.ibodrov.mica.server.data.Validator.BuiltinSchemasFetcher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
-import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
-import static ca.ibodrov.mica.api.kinds.MicaKindV1.SCHEMA_PROPERTY;
-import static ca.ibodrov.mica.schema.ObjectSchemaNode.*;
-import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BuiltinSchemasTest {
 
@@ -34,7 +27,7 @@ public class BuiltinSchemasTest {
         objectMapper = new ObjectMapperProvider().get();
         yamlMapper = new YamlMapper(objectMapper);
         builtinSchemas = new BuiltinSchemas(objectMapper);
-        validator = new Validator(ref -> builtinSchemas.get(ref));
+        validator = Validator.getDefault(objectMapper, new BuiltinSchemasFetcher(builtinSchemas, objectMapper));
     }
 
     @Test
@@ -53,12 +46,18 @@ public class BuiltinSchemasTest {
 
         var input = yamlMapper.convertValue(entity, JsonNode.class);
 
-        var oldSchema = object(Map.of(
-                "id", string(),
-                "kind", enums(TextNode.valueOf(MICA_KIND_V1)),
-                "name", string(),
-                SCHEMA_PROPERTY, any()),
-                Set.of("kind", "name", SCHEMA_PROPERTY));
+        var oldSchema = parseObject("""
+                properties:
+                  id:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                  schema:
+                    type: object
+                required: ["kind", "name", "schema"]
+                """);
 
         var newSchema = builtinSchemas.getMicaKindV1Schema();
 
@@ -68,48 +67,17 @@ public class BuiltinSchemasTest {
         assertTrue(newResult.isValid());
     }
 
-    @Test
-    public void testBadViews() {
-        var entity = parseEntityYaml("""
-                name: MyView
-                kind: /mica/view/v1
-                # broken parameters
-                parameters:
-                  foo:
-                selector:
-                  entityKind: /mica/record/v1
-                data:
-                  jsonPath: $
-                """);
-
-        assertThrows(ApiException.class, () -> asViewLike(objectMapper, entity));
-    }
-
-    @Test
-    public void testObjectSchemaNodeSchemaValidation() throws Exception {
-        var schema = builtinSchemas.getObjectSchemaNodeSchema();
-
-        // invalid type
-        var yaml = """
-                type: foo
-                """;
-        var result = validator.validateObject(schema, yamlMapper.readTree(yaml));
-        assertFalse(result.isValid());
-
-        // invalid property type
-        yaml = """
-                type: object
-                properties:
-                  foo:
-                    type: bar
-                """;
-        result = validator.validateObject(schema, yamlMapper.readTree(yaml));
-        assertFalse(result.isValid());
-    }
-
     private static PartialEntity parseEntityYaml(@Language("yaml") String yaml) {
         try {
             return yamlMapper.readValue(yaml, PartialEntity.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static ObjectNode parseObject(@Language("yaml") String s) {
+        try {
+            return yamlMapper.readValue(s, ObjectNode.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

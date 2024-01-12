@@ -613,19 +613,8 @@ found.
 
 ## Supported JSON Schema Features
 
-Mica implements a subset of JSON Schema features:
-
-- `type`: array, boolean, object, string, number, null, any (see `ca.ibodrov.mica.schema.ValueType`);
-- `required` properties;
-- `enum` values;
-- array `items`;
-- `additionalProperties` option (`true`, `false` or a schema object);
-- `$ref`
-- _TODO_ format: uri, email, uuid, date, time, etc;
-
-The major difference from the standard is that Mica does not support `null`
-values. When validating `required` properties, Mica treats `null` values as
-"missing" properties.
+Mica uses [networknt/json-schema-validator](https://github.com/networknt/json-schema-validator)
+under the hood. The default JSON Schema version is [2020-12](https://json-schema.org/draft/2020-12/release-notes).
 
 ## Database Design
 

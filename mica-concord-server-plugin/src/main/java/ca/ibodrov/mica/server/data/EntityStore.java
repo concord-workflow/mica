@@ -277,7 +277,7 @@ public class EntityStore {
     }
 
     @VisibleForTesting
-    public static byte[] inplaceUpdate(byte[] doc, String... kvs) {
+    static byte[] inplaceUpdate(byte[] doc, String... kvs) {
         assert kvs != null && kvs.length % 2 == 0;
         var s = new String(doc, UTF_8);
         // update properties in the reverse order so that pre-pending a new key adds the

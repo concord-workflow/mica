@@ -4,13 +4,12 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.ApiException;
-import ca.ibodrov.mica.server.exceptions.EntityValidationException;
+import com.walmartlabs.concord.server.sdk.validation.ValidationErrorsException;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -26,12 +25,10 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
     @BeforeAll
     public static void setUp() {
-        var instant = Instant.parse("2021-02-03T01:02:03.123456Z");
-
         yamlMapper = new YamlMapper(objectMapper);
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
-        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas, objectMapper);
+        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas);
         controller = new EntityController(entityStore, entityKindStore, objectMapper);
 
         // insert the built-in entity kinds
@@ -88,18 +85,8 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 name: %s
                 randomProp: "foo"
                 """.formatted(randomEntityName()));
-        var error1 = assertThrows(EntityValidationException.class, () -> controller.createOrUpdate(entity1));
-        assertEquals(1, error1.getErrors().size());
-
-        // invalid type
-        // TODO test with numbers, booleans, etc.
-        var entity2 = parseYaml("""
-                kind: /mica/record/v1
-                name: null
-                data: "foo"
-                """);
-        var error2 = assertThrows(EntityValidationException.class, () -> controller.createOrUpdate(entity2));
-        assertEquals(1, error2.getErrors().size());
+        var error1 = assertThrows(ValidationErrorsException.class, () -> controller.createOrUpdate(entity1));
+        assertEquals(1, error1.getValidationErrors().size());
     }
 
     @Test

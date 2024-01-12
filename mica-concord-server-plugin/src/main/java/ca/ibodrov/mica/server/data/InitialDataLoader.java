@@ -2,10 +2,10 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.schema.ObjectSchemaNode;
 import ca.ibodrov.mica.server.YamlMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -77,9 +77,9 @@ public class InitialDataLoader {
         log.info("Created or replaced an entity: {}", entity.name());
     }
 
-    private PartialEntity schema(String name, ObjectSchemaNode schema) {
+    private PartialEntity schema(String name, ObjectNode schema) {
         return PartialEntity.create(name, MICA_KIND_V1,
-                Map.of("schema", objectMapper.convertValue(schema, JsonNode.class)));
+                Map.of("schema", schema));
     }
 
     private PartialEntity build(MicaViewV1.Builder builder) {

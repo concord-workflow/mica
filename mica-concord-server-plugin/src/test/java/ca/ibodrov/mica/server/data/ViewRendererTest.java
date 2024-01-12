@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.server.YamlMapper;
+import ca.ibodrov.mica.server.data.Validator.NoopSchemaFetcher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
@@ -24,7 +24,7 @@ public class ViewRendererTest {
     private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
     private static final YamlMapper yamlMapper = new YamlMapper(objectMapper);
     private static final ViewRenderer renderer = new ViewRenderer(objectMapper);
-    private static final ViewInterpolator interpolator = new ViewInterpolator((ref) -> Optional.empty());
+    private static final ViewInterpolator interpolator = new ViewInterpolator(objectMapper, new NoopSchemaFetcher());
 
     @Test
     public void simpleExample() {

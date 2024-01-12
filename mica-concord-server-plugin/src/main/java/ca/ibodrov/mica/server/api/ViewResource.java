@@ -2,7 +2,6 @@ package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.schema.Validator;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
@@ -26,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -35,12 +35,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class ViewResource implements Resource {
 
     private static final String RESULT_ENTITY_KIND = "/mica/materializedView/v1";
-    public static final String INTERNAL_ENTITY_STORE_URI = URI.create("mica://internal").toString();
-
-    /**
-     * Don't validate these properties, they are added by the system.
-     */
-    private static final Set<String> STANDARD_PROPERTIES = Set.of("id", "kind", "name", "createdAt", "updatedAt");
 
     private final DSLContext dsl;
     private final EntityStore entityStore;
@@ -63,9 +57,10 @@ public class ViewResource implements Resource {
         this.entityKindStore = requireNonNull(entityKindStore);
         this.includeFetchers = requireNonNull(includeFetchers);
         this.objectMapper = requireNonNull(objectMapper);
-        this.viewInterpolator = new ViewInterpolator(entityKindStore::getSchemaForKind);
+        var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
+        this.viewInterpolator = new ViewInterpolator(objectMapper, schemaFetcher);
         this.viewRenderer = new ViewRenderer(objectMapper);
-        this.validator = new Validator(entityKindStore::getSchemaForKind);
+        this.validator = Validator.getDefault(objectMapper, schemaFetcher);
     }
 
     @POST
@@ -186,7 +181,7 @@ public class ViewResource implements Resource {
                     .orElseThrow(() -> ApiException
                             .badRequest("Can't validate the view, schema not found: " + v.asEntityKind()));
             var validatedEntities = renderedView.data().stream()
-                    .map(row -> validator.validateObject(schema, row, STANDARD_PROPERTIES))
+                    .map(row -> validator.validateObject(schema, row))
                     .toList();
             return objectMapper.convertValue(validatedEntities, JsonNode.class);
         });
