@@ -8,6 +8,7 @@ import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
 import YamlEditor from '../features/editor/YamlEditor.tsx';
 import PreviewView from '../features/views/PreviewView.tsx';
+import RestoreIcon from '@mui/icons-material/Restore';
 import SaveIcon from '@mui/icons-material/Save';
 import {
     Alert,
@@ -69,8 +70,7 @@ const getYamlField = (yaml: string, key: string): string | undefined => {
 
 const PreviewDrawer = styled(Drawer)(() => ({
     '.MuiPaper-root': {
-        minHeight: '40%',
-        maxHeight: '40%',
+        height: '40%',
     },
 }));
 
@@ -91,10 +91,12 @@ const EditEntityPage = () => {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         keepPreviousData: false,
-        enabled: entityId !== undefined && entityId !== '_new' && !hasUnsavedChanges,
+        enabled: entityId !== undefined && entityId !== '_new',
         onSuccess: (data) => {
-            setEditorValue(data);
-            setDirty(false);
+            if (!hasUnsavedChanges) {
+                setEditorValue(data);
+                setDirty(false);
+            }
         },
     });
 
@@ -128,10 +130,11 @@ const EditEntityPage = () => {
 
     // stuff for the live preview feature
     const [showPreview, setShowPreview] = React.useState<boolean>(false);
-    const handlePreviewSwitch = React.useCallback((enable: boolean) => {
-        setShowPreview(enable);
-    }, []);
     const handlePreviewClose = React.useCallback(() => setShowPreview(false), []);
+    const handlePreviewSwitch = React.useCallback(
+        (ev: React.ChangeEvent<HTMLInputElement>) => setShowPreview(ev.target.checked),
+        [],
+    );
 
     const handleEditorOnChange = React.useCallback((value: string | undefined) => {
         setEditorValue(value ?? '');
@@ -175,6 +178,12 @@ const EditEntityPage = () => {
         localStorage.removeItem(`dirty-${entityId}`);
     }, [entityId, mutateAsync, navigate, refetch, editorValue]);
 
+    const handleReset = React.useCallback(() => {
+        localStorage.removeItem(`dirty-${entityId}`);
+        setEditorValue(serverValue ?? '');
+        setDirty(false);
+    }, [entityId, serverValue]);
+
     // save any changes to local storage before navigating away
     useBeforeUnload(
         React.useCallback(() => {
@@ -215,7 +224,7 @@ const EditEntityPage = () => {
                 open={showUnsavedChangesRestored}
                 autoHideDuration={5000}
                 onClose={handleUnsavedChangesRestoredClose}
-                message="Unsaved changes restored"
+                message={`Unsaved changes restored. Click "Reset" to discard them.`}
             />
             <Box display="flex" flexDirection="column" height="100%">
                 <Box margin={2}>
@@ -235,24 +244,27 @@ const EditEntityPage = () => {
                                     control={
                                         <Switch
                                             checked={showPreview}
-                                            onChange={(ev) =>
-                                                handlePreviewSwitch(ev.target.checked)
-                                            }
+                                            onChange={handlePreviewSwitch}
                                         />
                                     }
                                     label="Preview"
                                 />
                             </FormControl>
                         )}
-                        <FormControl>
-                            <Button
-                                disabled={isFetching || isSaving || !dirty}
-                                startIcon={<SaveIcon />}
-                                variant="contained"
-                                onClick={handleSave}>
-                                Save
-                            </Button>
-                        </FormControl>
+                        <Button
+                            disabled={isFetching || isSaving || !dirty}
+                            startIcon={<RestoreIcon />}
+                            variant="contained"
+                            onClick={handleReset}>
+                            Reset
+                        </Button>
+                        <Button
+                            disabled={isFetching || isSaving || !dirty}
+                            startIcon={<SaveIcon />}
+                            variant="contained"
+                            onClick={handleSave}>
+                            Save
+                        </Button>
                     </ActionBar>
                     {saveError && (
                         <Alert severity="error">

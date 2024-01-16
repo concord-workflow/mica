@@ -1,0 +1,21 @@
+# schema for a config layer. Config layers will be merged to form the effective
+# config (of a different "kind"). All parameters here are optional,
+# the effective config must contain all required parameters.
+name: /examples/config/config-layer
+kind: /mica/kind/v1
+schema:
+  unevaluatedProperties: false
+  type: object
+  properties:
+    app1:
+      properties:
+        key1:
+          type: string
+        key2:
+          type: boolean
+    app2:
+      properties:
+        key1:
+          type: integer
+        key2:
+          type: boolean

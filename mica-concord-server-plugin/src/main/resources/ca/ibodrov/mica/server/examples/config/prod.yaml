@@ -1,0 +1,6 @@
+name: /examples/config/prod
+kind: /examples/config/config-layer
+app1:
+  key2: true
+app2:
+  key2: false

@@ -44,6 +44,7 @@ public final class BuiltinSchemas {
                 .copyWith(new YAMLFactory());
 
         this.standardProperties = makeJsonSchema(mapper, """
+                type: object
                 properties:
                   id:
                     type: string

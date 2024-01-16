@@ -1,0 +1,6 @@
+name: /examples/config/common
+kind: /examples/config/config-layer
+app1:
+  key1: "common-key1"
+app2:
+  key1: 41

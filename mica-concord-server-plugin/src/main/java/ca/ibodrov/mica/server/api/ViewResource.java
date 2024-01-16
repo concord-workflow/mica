@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
@@ -154,10 +156,18 @@ public class ViewResource implements Resource {
             var patterns = view.selector().namePatterns().get();
 
             result = Stream.empty();
-            for (var pattern : patterns) {
+            for (var regex : patterns) {
+                Pattern pattern;
+                try {
+                    pattern = Pattern.compile(regex);
+                } catch (PatternSyntaxException e) {
+                    throw ApiException.badRequest("Invalid namePatterns pattern: " + regex
+                            + view.parameters().map(p -> " (invalid parameters?)").orElse(""));
+                }
+
                 result = Stream.concat(result, entities.stream()
                         .filter(e -> e.name() != null) // TODO validate the whole entity instead?
-                        .filter(e -> e.name().matches(pattern)));
+                        .filter(e -> pattern.matcher(e.name()).matches()));
             }
         }
 

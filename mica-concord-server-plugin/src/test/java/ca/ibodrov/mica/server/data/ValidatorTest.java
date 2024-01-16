@@ -1,7 +1,9 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.server.data.Validator.NoopSchemaFetcher;
 import ca.ibodrov.mica.server.data.Validator.SchemaFetcher;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -33,6 +35,22 @@ public class ValidatorTest {
         assertEquals(2, result.messages().size());
     }
 
+    @Test
+    public void testInvalidType() {
+        var objectMapper = new ObjectMapperProvider().get();
+        var validator = Validator.getDefault(objectMapper, new NoopSchemaFetcher());
+        var schema = parseYaml(objectMapper, """
+                type: object
+                properties:
+                  foo:
+                    type: string
+                required: [foo]
+                """);
+        var input = parseYaml(objectMapper, "'hello!'");
+        var result = validator.validateObject(schema, input);
+        assertEquals(1, result.messages().size());
+    }
+
     private static class TestSchemaFetcher implements SchemaFetcher {
 
         @Override
@@ -53,9 +71,9 @@ public class ValidatorTest {
         }
     }
 
-    private static ObjectNode parseYaml(ObjectMapper mapper, @Language("yaml") String s) {
+    private static JsonNode parseYaml(ObjectMapper mapper, @Language("yaml") String s) {
         try {
-            return mapper.copyWith(new YAMLFactory()).readValue(s, ObjectNode.class);
+            return mapper.copyWith(new YAMLFactory()).readValue(s, JsonNode.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

@@ -7,6 +7,7 @@ import ShowRenderedViewDetailsToggle from './ShowRenderedViewDetailsToggle.tsx';
 import ViewParameters from './ViewParameters.tsx';
 import CloseIcon from '@mui/icons-material/Close';
 import { Alert, Box, CircularProgress, IconButton } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import { useDebounce } from '@uidotdev/usehooks';
 import { parse as parseYaml } from 'yaml';
 
@@ -68,6 +69,31 @@ const parseData = (data: string): PreviewRequestOrError => {
     }
 };
 
+const parseValidationErrors = (entity: PartialEntity | undefined): string[][] | undefined => {
+    if (!entity || !entity.validation) {
+        return;
+    }
+
+    interface Message {
+        message: string;
+    }
+
+    interface Entry {
+        messages: Array<Message>;
+    }
+
+    const validation = entity.validation as unknown as Array<Entry>;
+    const result = validation
+        .map((entry) => entry.messages.map((message) => message.message))
+        .filter((messages) => messages.length > 0);
+
+    if (result.length === 0) {
+        return;
+    }
+
+    return result;
+};
+
 const PreviewView = ({ data, onClose }: Props) => {
     const [lastGoodData, setLastGoodData] = React.useState<PartialEntity>();
 
@@ -126,34 +152,47 @@ const PreviewView = ({ data, onClose }: Props) => {
         setShowDetails(value);
     }, []);
 
+    const validationErrors = parseValidationErrors(lastGoodData);
+
     return (
-        <>
-            {apiError && (
-                <Alert color="error" sx={{ position: 'relative' }}>
-                    <ReadableApiError error={apiError} />
-                </Alert>
-            )}
-            {requestError && (
-                <Alert color="error" sx={{ position: 'relative' }}>
-                    {requestError.message}
-                </Alert>
-            )}
-            <Box>
-                <Box position="absolute" right={0}>
-                    <Box display="flex" justifyContent="flex-end" marginBottom={1}>
-                        <ShowRenderedViewDetailsToggle
-                            checked={showDetails}
-                            onChange={handleDetailsToggle}
-                        />
-                        <IconButton onClick={onClose}>
-                            <CloseIcon />
-                        </IconButton>
-                    </Box>
+        <Grid container>
+            <Grid xs={4}>
+                <Box>
+                    {apiError && (
+                        <Alert color="error">
+                            <ReadableApiError error={apiError} />
+                        </Alert>
+                    )}
+                    {requestError && <Alert color="error">{requestError.message}</Alert>}
+                    {validationErrors &&
+                        validationErrors.map((messages, idx) => (
+                            <Alert key={idx} color="warning" title={`Validation error #${idx}`}>
+                                Validation failed:
+                                <ul>
+                                    {messages.map((message, idx) => (
+                                        <li key={idx}>{message}</li>
+                                    ))}
+                                </ul>
+                            </Alert>
+                        ))}
+                </Box>
+                <Box margin={1}>
                     <ViewParameters
                         parameters={parameters}
                         values={requestParameters}
                         onChange={handleParameterChange}
                     />
+                </Box>
+            </Grid>
+            <Grid xs={8}>
+                <Box position="fixed" right={0}>
+                    <ShowRenderedViewDetailsToggle
+                        checked={showDetails}
+                        onChange={handleDetailsToggle}
+                    />
+                    <IconButton onClick={onClose}>
+                        <CloseIcon />
+                    </IconButton>
                 </Box>
                 {debouncedIsLoading && (
                     <Overlay>
@@ -162,8 +201,8 @@ const PreviewView = ({ data, onClose }: Props) => {
                 )}
                 {requestError && <Overlay />}
                 {lastGoodData && <DataView data={showDetails ? lastGoodData : lastGoodData.data} />}
-            </Box>
-        </>
+            </Grid>
+        </Grid>
     );
 };
 

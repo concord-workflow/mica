@@ -1,0 +1,20 @@
+# a view that generates effective configuration for a given environment and instance
+name: /examples/config/effective-config-view
+kind: /mica/view/v1
+parameters:
+  properties:
+    env:
+      type: string
+    instance:
+      type: string
+selector:
+  entityKind: /examples/config/config-layer
+  namePatterns:
+    - /examples/config/common
+    - /examples/config/${parameters.env}
+    - /examples/config/${parameters.env}-instance-${parameters.instance}
+data:
+  jsonPath: $
+  merge: true
+validation:
+  asEntityKind: /examples/config/effective-config

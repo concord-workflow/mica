@@ -64,7 +64,7 @@ const ViewParameters = ({
 }) => {
     const fields = parameters ? Object.keys(parameters.properties ?? {}) : [];
     return (
-        <Box textAlign="right" marginRight={2}>
+        <>
             <Typography variant="h6" marginRight={2}>
                 Parameters
             </Typography>
@@ -80,7 +80,7 @@ const ViewParameters = ({
                         />
                     </Box>
                 ))}
-        </Box>
+        </>
     );
 };
 

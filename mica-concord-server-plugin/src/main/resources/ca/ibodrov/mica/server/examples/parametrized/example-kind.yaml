@@ -2,6 +2,7 @@ name: /examples/parametrized/example-kind
 kind: /mica/kind/v1
 schema:
   unevaluatedProperties: false
+  type: object
   properties:
     x:
       type: string

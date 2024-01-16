@@ -1,0 +1,6 @@
+name: /examples/config/prod-instance-b
+kind: /examples/config/config-layer
+app1:
+  key1: "prod-instance-b-key1"
+app2:
+  key1: 43
