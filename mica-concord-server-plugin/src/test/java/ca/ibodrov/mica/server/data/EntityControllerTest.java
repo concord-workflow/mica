@@ -14,8 +14,8 @@ import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class EntityControllerTest extends AbstractDatabaseTest {
 
@@ -99,7 +99,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName());
 
         var entity = parseYaml(doc);
-        var initialVersion = controller.createOrUpdate(entity, doc.getBytes(UTF_8));
+        var initialVersion = controller.createOrUpdate(entity, doc.getBytes(UTF_8), false);
         var createdAt = initialVersion.updatedAt();
         var updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
 
@@ -119,7 +119,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertEquals(expected, updatedDoc);
 
         entity = parseYaml(updatedDoc);
-        var updatedVersion = controller.createOrUpdate(entity, updatedDoc.getBytes(UTF_8));
+        var updatedVersion = controller.createOrUpdate(entity, updatedDoc.getBytes(UTF_8), false);
         updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
 
         expected = """
@@ -136,6 +136,47 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 entity.name());
 
         assertEquals(expected, updatedDoc);
+    }
+
+    @Test
+    public void usersCanOverwriteConflicts() {
+        // create the initial version
+
+        var doc = """
+                kind: /mica/record/v1
+                name: %s
+                data: foo! # inline comment
+                # some other comment
+                """.formatted(randomEntityName());
+
+        var entity = parseYaml(doc);
+        var initialVersion = controller.createOrUpdate(entity, doc.getBytes(UTF_8), false);
+
+        // fetch the created document
+
+        var createdDoc = entityStore.getEntityDocById(initialVersion.id(), initialVersion.updatedAt())
+                .map(bytes -> new String(bytes, UTF_8))
+                .orElseThrow();
+
+        // modify and update the document as if it was done by a user
+        var updatedDoc = createdDoc + "\n # updated by user1";
+        var updatedVersion = controller.createOrUpdate(parseYaml(updatedDoc), updatedDoc.getBytes(UTF_8), false);
+        assertEquals(initialVersion.id(), updatedVersion.id());
+        assertNotEquals(initialVersion.updatedAt(), updatedVersion.updatedAt());
+
+        // modify and try updating the same original document as if it was done by
+        // another user
+        var updatedDocAlternative = createdDoc + "\n # updated by user2";
+        var error = assertThrows(ApiException.class,
+                () -> controller.createOrUpdate(parseYaml(updatedDocAlternative), updatedDocAlternative.getBytes(UTF_8),
+                        false));
+        assertEquals(CONFLICT, error.getStatus());
+
+        // overwrite the document
+        var overwrittenVersion = controller.createOrUpdate(parseYaml(updatedDocAlternative),
+                updatedDocAlternative.getBytes(UTF_8), true);
+        assertEquals(initialVersion.id(), overwrittenVersion.id());
+        assertNotEquals(initialVersion.updatedAt(), overwrittenVersion.updatedAt());
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {

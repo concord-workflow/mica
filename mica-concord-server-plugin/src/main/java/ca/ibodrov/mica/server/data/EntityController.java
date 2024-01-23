@@ -32,10 +32,13 @@ public class EntityController {
     }
 
     public EntityVersion createOrUpdate(PartialEntity entity) {
-        return createOrUpdate(entity, null);
+        return createOrUpdate(entity, null, false);
     }
 
-    public EntityVersion createOrUpdate(PartialEntity entity, @Nullable byte[] doc) {
+    public EntityVersion createOrUpdate(PartialEntity entity,
+                                        @Nullable byte[] doc,
+                                        boolean overwrite) {
+
         var kind = validateKind(entity.kind());
 
         var schema = entityKindStore.getSchemaForKind(kind)
@@ -57,8 +60,11 @@ public class EntityController {
 
         // TODO check if there are any changes, return the same version if not
 
-        return entityStore.upsert(entity, doc)
-                .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
+        var newVersion = entityStore.upsert(entity, doc);
+        if (newVersion.isEmpty() && overwrite) {
+            newVersion = entityStore.upsert(entity.withoutUpdatedAt(), doc);
+        }
+        return newVersion.orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
     }
 
     public void deleteIfExists(String name) {

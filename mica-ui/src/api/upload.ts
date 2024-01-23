@@ -23,8 +23,8 @@ const putPartialYaml = (
         },
     ).then(handleJsonResponse<EntityVersion>);
 
-const putYamlString = (body: string): Promise<EntityVersion> =>
-    doFetch('/api/mica/v1/upload/yaml', {
+const putYamlString = (body: string, overwrite: boolean): Promise<EntityVersion> =>
+    doFetch('/api/mica/v1/upload/yaml?overwrite=' + overwrite, {
         method: 'PUT',
         headers: {
             'Content-Type': 'text/yaml',
@@ -46,10 +46,15 @@ export const usePutPartialYaml = (
         options,
     );
 
+interface PutYamlStringRequest {
+    body: string;
+    overwrite: boolean;
+}
+
 export const usePutYamlString = (
-    options?: UseMutationOptions<EntityVersion, ApiError, { body: string }>,
+    options?: UseMutationOptions<EntityVersion, ApiError, PutYamlStringRequest>,
 ) =>
-    useMutation<EntityVersion, ApiError, { body: string }>(
-        ({ body }) => putYamlString(body),
+    useMutation<EntityVersion, ApiError, PutYamlStringRequest>(
+        ({ body, overwrite }) => putYamlString(body, overwrite),
         options,
     );

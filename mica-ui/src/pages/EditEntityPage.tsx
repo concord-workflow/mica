@@ -19,6 +19,7 @@ import {
     FormControlLabel,
     Snackbar,
     Switch,
+    Tooltip,
     styled,
 } from '@mui/material';
 
@@ -153,30 +154,40 @@ const EditEntityPage = () => {
         setSelectedKind((prev) => (prev === newKind ? prev : newKind));
     }, [editorValue]);
 
-    const handleSave = React.useCallback(async () => {
-        // save and get the new version
-        const version = await mutateAsync({ body: editorValue });
+    const handleSave = React.useCallback(
+        async (_ev: unknown, overwrite?: boolean) => {
+            // save and get the new version
+            const version = await mutateAsync({ body: editorValue, overwrite: overwrite ?? false });
 
-        if (entityId === '_new') {
-            // update the URL
-            navigate(`/entity/${version.id}/edit?success`, { replace: true });
-        } else {
-            const { data, error } = await refetch();
-            if (error) {
-                console.error("Couldn't re-fetch the entity:", error);
-                return;
+            if (entityId === '_new') {
+                // update the URL
+                navigate(`/entity/${version.id}/edit?success`, { replace: true });
+            } else {
+                const { data, error } = await refetch();
+                if (error) {
+                    console.error("Couldn't re-fetch the entity:", error);
+                    return;
+                }
+                if (data) {
+                    setEditorValue(data);
+                }
             }
-            if (data) {
-                setEditorValue(data);
-            }
-        }
 
-        setDirty(false);
-        setShowSuccess(true);
+            setDirty(false);
+            setShowSuccess(true);
 
-        // remove unsaved changes from local storage
-        localStorage.removeItem(`dirty-${entityId}`);
-    }, [entityId, mutateAsync, navigate, refetch, editorValue]);
+            // remove unsaved changes from local storage
+            localStorage.removeItem(`dirty-${entityId}`);
+        },
+        [entityId, mutateAsync, navigate, refetch, editorValue],
+    );
+
+    const handleOverwrite = React.useCallback(
+        async (_ev: unknown) => {
+            await handleSave(_ev, true);
+        },
+        [handleSave],
+    );
 
     const handleReset = React.useCallback(() => {
         localStorage.removeItem(`dirty-${entityId}`);
@@ -267,8 +278,19 @@ const EditEntityPage = () => {
                         </Button>
                     </ActionBar>
                     {saveError && (
-                        <Alert severity="error">
+                        <Alert severity="error" sx={{ mt: 1 }}>
                             <ReadableApiError error={saveError} />
+                            {saveError.status === 409 && (
+                                <Tooltip title="Overwrite existing entity, ignoring current updatedAt value">
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{ ml: 2 }}
+                                        onClick={handleOverwrite}>
+                                        Overwrite
+                                    </Button>
+                                </Tooltip>
+                            )}
                         </Alert>
                     )}
                 </Box>

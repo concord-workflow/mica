@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.annotation.Nullable;
@@ -46,9 +47,11 @@ public class EntityUploadResource implements Resource {
     @Path("yaml")
     @Consumes("*/yaml")
     @Operation(summary = "Upload an entity in YAML format", operationId = "putYaml")
-    public EntityVersion putYaml(InputStream in) {
+    public EntityVersion putYaml(InputStream in,
+                                 @QueryParam("overwrite") @DefaultValue("false") boolean overwrite) {
+
         // assume the name is present in the document
-        return putPartialYaml(null, null, false, in);
+        return putPartialYaml(null, null, false, overwrite, in);
     }
 
     @PUT
@@ -57,7 +60,8 @@ public class EntityUploadResource implements Resource {
     @Operation(summary = "Upload a partial entity in YAML format", description = "Upload a (possibly) partial entity in YAML format with 'name' or 'kind' overrides", operationId = "putPartialYaml")
     public EntityVersion putPartialYaml(@Nullable @QueryParam("entityName") String entityName,
                                         @Nullable @QueryParam("entityKind") String entityKind,
-                                        @QueryParam("replace") @DefaultValue("false") boolean replace,
+                                        @Parameter(description = "Replace any entity with the same name") @QueryParam("replace") @DefaultValue("false") boolean replace,
+                                        @Parameter(description = "Overwrite any other changes to the entity") @QueryParam("overwrite") @DefaultValue("false") boolean overwrite,
                                         InputStream in) {
         byte[] doc;
         try {
@@ -85,7 +89,7 @@ public class EntityUploadResource implements Resource {
         if (replace) {
             controller.deleteIfExists(entity.name());
         }
-        return controller.createOrUpdate(entity, doc);
+        return controller.createOrUpdate(entity, doc, overwrite);
     }
 
     private void assertValid(PartialEntity entity) {
