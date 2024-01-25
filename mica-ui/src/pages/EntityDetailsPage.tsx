@@ -28,6 +28,7 @@ import {
     TableHead,
     TableRow,
     Tooltip,
+    Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import { Theme } from '@mui/material/styles';
@@ -68,10 +69,10 @@ const kindToPayloadTitle = (kind: string): string => {
 
 const MAX_PROPERTY_TEXT_LENGTH = 1000;
 
-const Property = ({ name, value }: { name: string; value: object }) => {
+const Property = ({ name, value, search }: { name: string; value: object; search: string }) => {
     const [expand, setExpand] = useState<boolean>(false);
     let text = JSON.stringify((value as Record<string, object>)[name], null, 2);
-    if (!expand && text.length > MAX_PROPERTY_TEXT_LENGTH) {
+    if (search === '' && !expand && text.length > MAX_PROPERTY_TEXT_LENGTH) {
         text =
             text.substring(0, MAX_PROPERTY_TEXT_LENGTH) +
             `...[${text.length - MAX_PROPERTY_TEXT_LENGTH} more character(s)]`;
@@ -84,14 +85,24 @@ const Property = ({ name, value }: { name: string; value: object }) => {
             </>
         );
     }
-    return <pre>{text}</pre>;
+    return <pre>{highlightSubstring(text, search)}</pre>;
 };
 
 const searchProperties = (entity: Entity, search: string): Array<string> => {
     const searchLower = search.toLowerCase();
-    return Object.keys(entity)
-        .filter((key) => !STANDARD_ENTITY_PROPERTIES.includes(key))
-        .filter((key) => key.toLowerCase().includes(searchLower));
+    return Object.entries(entity)
+        .filter(([key]) => !STANDARD_ENTITY_PROPERTIES.includes(key))
+        .filter(([key, value]) => {
+            const keyText = key.toLowerCase();
+            let valueText;
+            if (typeof value === 'string') {
+                valueText = value.toLowerCase();
+            } else {
+                valueText = JSON.stringify(value).toLowerCase();
+            }
+            return keyText.includes(searchLower) || valueText.includes(searchLower);
+        })
+        .map(([key]) => key);
 };
 
 interface MetadataGridProps {
@@ -120,6 +131,14 @@ const MetadataItem = ({ label, children }: MetadataItemProps) => (
         <Grid xs={10}>{children}</Grid>
     </>
 );
+
+const PropertiesFound = ({ count }: { count: number }) => {
+    return (
+        <Typography variant="body2">
+            {count} propert{count === 1 ? 'y' : 'ies'} found
+        </Typography>
+    );
+};
 
 const EntityDetailsPage = () => {
     const { entityId } = useParams<RouteParams>();
@@ -245,6 +264,7 @@ const EntityDetailsPage = () => {
                     <SectionTitle>{kindToPayloadTitle(entity.kind)}</SectionTitle>
                     <ActionBar sx={{ mb: 2 }}>
                         <Spacer />
+                        {search !== '' && <PropertiesFound count={visibleProperties.length} />}
                         <SearchField value={search} onChange={(search) => setSearch(search)} />
                     </ActionBar>
                     <TableContainer component={Paper}>
@@ -270,7 +290,7 @@ const EntityDetailsPage = () => {
                                                 verticalAlign: 'top',
                                                 fontFamily: 'Roboto Mono',
                                             }}>
-                                            <Property name={key} value={entity} />
+                                            <Property name={key} value={entity} search={search} />
                                         </TableCell>
                                     </TableRow>
                                 ))}

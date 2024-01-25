@@ -10,7 +10,7 @@ interface Props {
 
 const ActionBar = ({ sx, children }: Props) => {
     return (
-        <Stack direction="row" spacing={2} sx={sx}>
+        <Stack direction="row" spacing={2} sx={sx} alignItems="center">
             {children}
         </Stack>
     );
