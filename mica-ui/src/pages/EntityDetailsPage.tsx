@@ -33,7 +33,7 @@ import Grid from '@mui/material/Unstable_Grid2';
 import { Theme } from '@mui/material/styles';
 import { SxProps } from '@mui/system';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
@@ -66,12 +66,25 @@ const kindToPayloadTitle = (kind: string): string => {
     }
 };
 
-const renderPropertyValue = (o: object, key: string) => {
-    let json = JSON.stringify((o as Record<string, object>)[key], null, 2);
-    if (json.length > 1000) {
-        json = json.substring(0, 1000) + '...[cut]';
+const MAX_PROPERTY_TEXT_LENGTH = 1000;
+
+const Property = ({ name, value }: { name: string; value: object }) => {
+    const [expand, setExpand] = useState<boolean>(false);
+    let text = JSON.stringify((value as Record<string, object>)[name], null, 2);
+    if (!expand && text.length > MAX_PROPERTY_TEXT_LENGTH) {
+        text =
+            text.substring(0, MAX_PROPERTY_TEXT_LENGTH) +
+            `...[${text.length - MAX_PROPERTY_TEXT_LENGTH} more character(s)]`;
+        return (
+            <>
+                <pre>{text}</pre>
+                <Button size="small" onClick={() => setExpand(true)}>
+                    Expand
+                </Button>
+            </>
+        );
     }
-    return json;
+    return <pre>{text}</pre>;
 };
 
 const searchProperties = (entity: Entity, search: string): Array<string> => {
@@ -257,7 +270,7 @@ const EntityDetailsPage = () => {
                                                 verticalAlign: 'top',
                                                 fontFamily: 'Roboto Mono',
                                             }}>
-                                            <pre>{renderPropertyValue(entity, key)}</pre>
+                                            <Property name={key} value={entity} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
