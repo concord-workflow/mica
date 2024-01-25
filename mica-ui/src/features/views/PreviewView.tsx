@@ -159,7 +159,7 @@ const PreviewView = ({ data, onClose }: Props) => {
             <Grid xs={4}>
                 <Box>
                     {apiError && (
-                        <Alert color="error">
+                        <Alert color="error" sx={{ m: 1 }}>
                             <ReadableApiError error={apiError} />
                         </Alert>
                     )}
