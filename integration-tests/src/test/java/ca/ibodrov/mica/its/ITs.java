@@ -4,6 +4,8 @@ import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.api.model.RenderRequest;
+import ca.ibodrov.mica.server.api.ViewResource;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,6 +31,7 @@ import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import javax.validation.ConstraintViolationException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -54,12 +57,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ITs extends TestResources {
 
     private static EntityStore entityStore;
+    private static ViewResource viewResource;
     private static ObjectMapper objectMapper;
 
     @BeforeAll
     public static void setUp() {
         var injector = micaServer.getServer().getInjector();
         entityStore = injector.getInstance(EntityStore.class);
+        viewResource = injector.getInstance(ViewResource.class);
         objectMapper = injector.getInstance(ObjectMapper.class);
     }
 
@@ -505,6 +510,11 @@ public class ITs extends TestResources {
         entity = entityStore.getById(EntityId.fromString(updatedVersionId)).orElseThrow();
         assertEquals(456, entity.data().get("data").get("y").asInt());
         assertEquals(789, entity.data().get("data").get("z").asInt());
+    }
+
+    @Test
+    public void requestsMustBeValidated() {
+        assertThrows(ConstraintViolationException.class, () -> viewResource.render(RenderRequest.of("_invalid_", 10)));
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)

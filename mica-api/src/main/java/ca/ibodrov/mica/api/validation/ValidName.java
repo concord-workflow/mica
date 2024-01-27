@@ -5,12 +5,16 @@ import javax.validation.Payload;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @NotEmpty
 @Pattern(regexp = "/[a-zA-Z0-9.\\-_/\\\\]{3,1023}")
 @Retention(RUNTIME)
+@Target({ FIELD, TYPE_USE })
 @Constraint(validatedBy = {})
 public @interface ValidName {
 

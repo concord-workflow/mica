@@ -1,11 +1,12 @@
 package ca.ibodrov.mica.api.model;
 
+import ca.ibodrov.mica.api.validation.ValidName;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Optional;
 
 public record RenderRequest(Optional<EntityId> viewId,
-        Optional<String> viewName,
+        Optional<@ValidName String> viewName,
         int limit,
         Optional<JsonNode> parameters) {
 

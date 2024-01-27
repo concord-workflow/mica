@@ -5,15 +5,15 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walmartlabs.concord.repository.*;
 import com.walmartlabs.concord.repository.FetchRequest.Version;
-import com.walmartlabs.concord.repository.Repository;
-import com.walmartlabs.concord.repository.RepositoryException;
 import com.walmartlabs.concord.sdk.Secret;
+import com.walmartlabs.concord.server.cfg.GitConfiguration;
+import com.walmartlabs.concord.server.cfg.RepositoryConfiguration;
 import com.walmartlabs.concord.server.org.OrganizationManager;
 import com.walmartlabs.concord.server.org.project.ProjectRepositoryManager;
 import com.walmartlabs.concord.server.org.secret.SecretManager;
 import com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope;
-import com.walmartlabs.concord.server.repository.RepositoryManager;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -31,26 +32,70 @@ import static java.util.stream.Collectors.*;
 
 public class ConcordGitEntityFetcher implements EntityFetcher {
 
+    private static final Duration GIT_OPERATION_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration GIT_FETCH_TIMEOUT = Duration.ofSeconds(15);
+
     private static final String DEFAULT_REF = "main";
 
     private final OrganizationManager orgManager;
     private final ProjectRepositoryManager projectRepositoryManager;
-    private final RepositoryManager repositoryManager;
     private final SecretManager secretManager;
     private final YamlMapper yamlMapper;
+    private final RepositoryProviders repositoryProviders;
+    private final RepositoryCache repositoryCache;
 
     @Inject
     public ConcordGitEntityFetcher(OrganizationManager orgManager,
                                    ProjectRepositoryManager projectRepositoryManager,
-                                   RepositoryManager repositoryManager,
                                    SecretManager secretManager,
+                                   GitConfiguration gitCfg,
+                                   RepositoryConfiguration repoCfg,
                                    ObjectMapper objectMapper) {
 
         this.orgManager = requireNonNull(orgManager);
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);
-        this.repositoryManager = requireNonNull(repositoryManager);
         this.secretManager = requireNonNull(secretManager);
         this.yamlMapper = new YamlMapper(objectMapper);
+
+        // use shorter timeouts than Concord's default provider
+        var gitCliCfg = GitClientConfiguration.builder()
+                .defaultOperationTimeout(GIT_OPERATION_TIMEOUT)
+                .fetchTimeout(GIT_FETCH_TIMEOUT)
+                .sshTimeout(GIT_OPERATION_TIMEOUT)
+                .sshTimeoutRetryCount(gitCfg.getSshTimeoutRetryCount())
+                .build();
+        this.repositoryProviders = new RepositoryProviders(List.of(new GitCliRepositoryProvider(gitCliCfg)));
+
+        // use separate repository cache
+        try {
+            var cacheDir = mkdirs(repoCfg.getCacheDir(), "_micaCache");
+            var cacheInfoDir = mkdirs(repoCfg.getCacheInfoDir(), "_micaInfoCache");
+            var lockTimeout = GIT_OPERATION_TIMEOUT.multipliedBy(2);
+            this.repositoryCache = new RepositoryCache(cacheDir,
+                    cacheInfoDir,
+                    lockTimeout,
+                    repoCfg.getMaxAge(),
+                    repoCfg.getLockCount(),
+                    objectMapper);
+        } catch (IOException e) {
+            throw new RuntimeException("Error initializing the repository cache");
+        }
+    }
+
+    private static Path mkdirs(Path dir, String name) {
+        var path = dir.resolve(name);
+        if (Files.exists(path)) {
+            if (!Files.isDirectory(path)) {
+                throw new RuntimeException("Expected a directory: " + path);
+            }
+            return path;
+        }
+        try {
+            Files.createDirectories(path);
+        } catch (IOException e) {
+            throw new RuntimeException("Error while creating directories: " + path);
+        }
+        return path;
     }
 
     @Override
@@ -104,7 +149,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
             var secret = Optional.ofNullable(repoEntry.getSecretName())
                     .map(secretName -> getSecret(org.getId(), secretName));
-            return repositoryManager.withLock(repoEntry.getUrl(), () -> {
+            return repositoryCache.withLock(repoEntry.getUrl(), () -> {
                 var result = fetch(repoEntry.getUrl(), ref, pathInRepo, secret.orElse(null));
                 try {
                     // noinspection Convert2MethodRef,resource
@@ -150,8 +195,16 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     private Repository fetch(String url, String ref, String pathInRepo, Secret secret) {
+        Path dest = repositoryCache.getPath(url);
         try {
-            return repositoryManager.fetch(url, Version.from(ref), pathInRepo, secret, false);
+            return repositoryProviders.fetch(FetchRequest.builder()
+                    .url(url)
+                    .shallow(true)
+                    .checkAlreadyFetched(true)
+                    .version(Version.from(ref))
+                    .secret(secret)
+                    .destination(dest)
+                    .build(), pathInRepo);
         } catch (RepositoryException e) {
             throw new StoreException("Error while fetching entities. " + e.getMessage(), e);
         }

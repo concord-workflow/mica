@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -21,6 +22,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class MicaClient {
+
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     private final HttpClient client;
     private final URI baseUri;
@@ -93,7 +96,9 @@ public class MicaClient {
     }
 
     private HttpRequest.Builder newRequest(String path) {
-        var builder = HttpRequest.newBuilder().uri(baseUri.resolve(path));
+        var builder = HttpRequest.newBuilder()
+                .timeout(REQUEST_TIMEOUT)
+                .uri(baseUri.resolve(path));
         return authorization.applyTo(builder);
     }
 
