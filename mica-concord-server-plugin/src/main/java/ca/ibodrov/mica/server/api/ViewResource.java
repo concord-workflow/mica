@@ -76,7 +76,10 @@ public class ViewResource implements Resource {
         var entities = fetch(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
-        return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
+        return toEntity(view.name(),
+                objectMapper.convertValue(renderedView.data(), JsonNode.class),
+                objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
+                validation);
     }
 
     @GET
@@ -100,7 +103,10 @@ public class ViewResource implements Resource {
         var entities = fetch(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
-        return toEntity(view.name(), objectMapper.convertValue(renderedView.data(), JsonNode.class), validation);
+        return toEntity(view.name(),
+                objectMapper.convertValue(renderedView.data(), JsonNode.class),
+                objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
+                validation);
     }
 
     @POST
@@ -122,7 +128,10 @@ public class ViewResource implements Resource {
                         .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
                 return entity.withVersion(version);
             });
-            return toEntity(view.name(), objectMapper.convertValue(data, JsonNode.class), Optional.empty());
+            return toEntity(view.name(),
+                    objectMapper.convertValue(data, JsonNode.class),
+                    objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
+                    Optional.empty());
         });
     }
 
@@ -211,10 +220,14 @@ public class ViewResource implements Resource {
         throw ApiException.badRequest("viewId or viewName is required");
     }
 
-    private PartialEntity toEntity(String name, JsonNode data, Optional<JsonNode> validation) {
+    private static PartialEntity toEntity(String name,
+                                          JsonNode data,
+                                          JsonNode entityNames,
+                                          Optional<JsonNode> validation) {
         var entityData = ImmutableMap.<String, JsonNode>builder();
         entityData.put("data", data);
         entityData.put("length", IntNode.valueOf(data.size()));
+        entityData.put("entityNames", entityNames);
         validation.ifPresent(v -> entityData.put("validation", v));
         return PartialEntity.create(name, RESULT_ENTITY_KIND, entityData.build());
     }

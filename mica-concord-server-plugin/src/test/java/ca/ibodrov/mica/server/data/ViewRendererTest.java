@@ -304,6 +304,39 @@ public class ViewRendererTest {
         assertEquals("88eccc0c-99e1-11ee-b9d1-0242ac120002", result.data().get(0).get("id").asText());
     }
 
+    @Test
+    public void entityNamesShouldBeReturned() {
+        var foo = parseYaml("""
+                kind: /myRecord
+                name: /foo
+                x: 1
+                """);
+
+        var bar = parseYaml("""
+                kind: /myRecord
+                name: /bar
+                y: 2
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: /myRecord
+                data:
+                  jsonPath: $.z
+                """);
+
+        // the view that should return no data but entityNames should contain both
+        // entities
+        // (we fetched the entities but filtered them out by jsonPath)
+        var result = renderer.render(view, Stream.of(foo, bar));
+        assertEquals(0, result.data().size());
+        assertEquals(2, result.entityNames().size());
+        assertEquals("/foo", result.entityNames().get(0));
+        assertEquals("/bar", result.entityNames().get(1));
+    }
+
     private static ViewLike parseView(@Language("yaml") String yaml) {
         return asViewLike(objectMapper, parseYaml(yaml));
     }

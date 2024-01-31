@@ -8,10 +8,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.InvalidJsonPatchException;
 import com.flipkart.zjsonpatch.JsonPatch;
 import com.flipkart.zjsonpatch.JsonPatchApplicationException;
+import com.google.common.collect.ImmutableList;
 import com.jayway.jsonpath.*;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
@@ -68,14 +70,17 @@ public class ViewRenderer {
         // interpolate JSON path using the supplied parameters
         var jsonPath = requireNonNull(view.data().jsonPath());
 
+        var entityNames = ImmutableList.<String>builder();
+
         // apply JSON path
         var data = entities
+                .peek(entity -> entityNames.add(entity.name()))
                 .map(row -> applyJsonPath(row.name(), objectMapper.convertValue(row, JsonNode.class), jsonPath))
                 .flatMap(Optional::stream)
                 .toList();
 
         if (data.isEmpty()) {
-            return RenderedView.empty(view);
+            return RenderedView.empty(view, entityNames.build());
         }
 
         // flatten - convert an array of arrays into a single array by concatenating
@@ -124,7 +129,7 @@ public class ViewRenderer {
                     .toList();
         }
 
-        return new RenderedView(view, data);
+        return new RenderedView(view, data, entityNames.build());
     }
 
     private Optional<JsonNode> applyJsonPath(String entityName, JsonNode data, String jsonPath) {
@@ -135,7 +140,7 @@ public class ViewRenderer {
             throw ApiException.badRequest(
                     "Error while processing entity '%s'. %s (%s)".formatted(entityName, e.getMessage(), jsonPath));
         }
-        if (result == null) {
+        if (result == null || result instanceof NullNode) {
             return Optional.empty();
         }
         if (!(result instanceof JsonNode)) {
