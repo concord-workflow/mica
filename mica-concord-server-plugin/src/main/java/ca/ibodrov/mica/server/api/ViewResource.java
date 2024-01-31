@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.google.common.collect.ImmutableMap;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.sdk.validation.Validate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +21,6 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -212,11 +212,11 @@ public class ViewResource implements Resource {
     }
 
     private PartialEntity toEntity(String name, JsonNode data, Optional<JsonNode> validation) {
-        return PartialEntity.create(name, RESULT_ENTITY_KIND,
-                Map.of("data", data,
-                        "length", IntNode.valueOf(data.size()),
-                        "validation", validation.orElseGet(NullNode::getInstance)));
-
+        var entityData = ImmutableMap.<String, JsonNode>builder();
+        entityData.put("data", data);
+        entityData.put("length", IntNode.valueOf(data.size()));
+        validation.ifPresent(v -> entityData.put("validation", v));
+        return PartialEntity.create(name, RESULT_ENTITY_KIND, entityData.build());
     }
 
     private static URI parseUri(String s) {
