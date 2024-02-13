@@ -6,6 +6,7 @@ import ca.ibodrov.mica.server.YamlMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ import java.util.Map;
 import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_RECORD_V1;
+import static ca.ibodrov.mica.server.data.UserEntryUtils.systemUser;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -46,10 +48,12 @@ public class InitialDataLoader {
     }
 
     public void load() {
+        var session = new UserPrincipal("system", systemUser());
+
         // built-in entity kinds
-        createOrReplace(schema(MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()), null);
-        createOrReplace(schema(MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()), null);
-        createOrReplace(schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()), null);
+        createOrReplace(session, schema(MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()), null);
+        createOrReplace(session, schema(MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()), null);
+        createOrReplace(session, schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()), null);
 
         // load example files
         var cl = getClass().getClassLoader();
@@ -60,19 +64,19 @@ public class InitialDataLoader {
                 assert in != null;
                 var doc = in.readAllBytes();
                 var entity = yamlMapper.readValue(new ByteArrayInputStream(doc), PartialEntity.class);
-                createOrReplace(entity, doc);
+                createOrReplace(session, entity, doc);
             } catch (IOException e) {
                 throw new RuntimeException("Error loading " + resourceName, e);
             }
         });
     }
 
-    private void createOrReplace(PartialEntity entity, byte[] doc) {
+    private void createOrReplace(UserPrincipal session, PartialEntity entity, byte[] doc) {
         entityStore.getByName(entity.name())
-                .flatMap(existingEntity -> entityStore.deleteById(existingEntity.id()))
+                .flatMap(existingEntity -> entityStore.deleteById(session, existingEntity.id()))
                 .ifPresent(deleted -> log.info("Removed old version of {}: {}", entity.name(), deleted));
 
-        entityStore.upsert(entity, doc);
+        entityStore.upsert(session, entity, doc);
 
         log.info("Created or replaced an entity: {}", entity.name());
     }

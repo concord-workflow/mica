@@ -38,7 +38,7 @@ public class MicaTask implements Task {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final URI defaultBaseUri;
-    private final String sessionToken;
+    private final Optional<String> sessionToken;
 
     private final Map<String, Object> defaultVariables;
 
@@ -53,8 +53,7 @@ public class MicaTask implements Task {
                 .build();
 
         this.defaultBaseUri = URI.create(ctx.apiConfiguration().baseUrl());
-        this.sessionToken = requireNonNull(ctx.processConfiguration().processInfo().sessionToken(),
-                "sessionToken is null");
+        this.sessionToken = Optional.ofNullable(ctx.processConfiguration().processInfo().sessionToken());
         this.defaultVariables = ctx.defaultVariables().toMap();
     }
 
@@ -182,7 +181,8 @@ public class MicaTask implements Task {
             return new ApiKey(apiKey);
         }
 
-        return new SessionToken(sessionToken);
+        return new SessionToken(sessionToken.orElseThrow(() -> new IllegalArgumentException(
+                "Authentication error: no session token found and no 'apiKey' provided")));
     }
 
     private static Map<String, Object> parseParameters(Variables input) {

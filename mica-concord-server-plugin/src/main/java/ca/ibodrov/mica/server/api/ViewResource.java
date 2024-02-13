@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.google.common.collect.ImmutableMap;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.sdk.validation.Validate;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jooq.DSLContext;
@@ -19,6 +20,7 @@ import org.jooq.DSLContext;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -114,7 +116,7 @@ public class ViewResource implements Resource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Materialize a view", description = "Render a view and save the result as entities", operationId = "materialize")
     @Validate
-    public PartialEntity materialize(@Valid RenderRequest request) {
+    public PartialEntity materialize(@Context UserPrincipal session, @Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
         var entities = fetch(view, request.limit());
@@ -124,7 +126,7 @@ public class ViewResource implements Resource {
         return dsl.transactionResult(tx -> {
             var data = renderedView.data().stream().map(row -> {
                 var entity = objectMapper.convertValue(row, PartialEntity.class);
-                var version = entityStore.upsert(tx.dsl(), entity)
+                var version = entityStore.upsert(tx.dsl(), session, entity)
                         .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
                 return entity.withVersion(version);
             });

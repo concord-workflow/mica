@@ -27,6 +27,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.walmartlabs.concord.server.Utils.bindJaxRsResource;
+import static com.walmartlabs.concord.server.Utils.bindServletFilter;
 
 /**
  * Mica's Guice module.
@@ -73,6 +74,10 @@ public class MicaModule implements Module {
 
         newSetBinder(binder, FilterChainConfigurator.class).addBinding().to(MicaFilterChainConfigurator.class);
 
+        // custom @Context support
+
+        bindServletFilter(binder, UserPrincipalContextProvider.class);
+
         // exception mappers
 
         bindExceptionMapper(binder, DataAccessExceptionMapper.class);
@@ -82,6 +87,7 @@ public class MicaModule implements Module {
         // jax-rs resources
 
         bindJaxRsResource(binder, BatchOperationResource.class);
+        bindJaxRsResource(binder, EntityHistoryResource.class);
         bindJaxRsResource(binder, EditorSchemaResource.class);
         bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, EntityUploadResource.class);

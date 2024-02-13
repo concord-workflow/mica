@@ -1,5 +1,5 @@
+import { MONACO_OPTIONS } from './options.ts';
 import { useDebounce } from '@uidotdev/usehooks';
-import { editor } from 'monaco-editor';
 import { MonacoYaml, configureMonacoYaml } from 'monaco-yaml';
 
 import Editor, { useMonaco } from '@monaco-editor/react';
@@ -33,10 +33,6 @@ interface Props {
     value: string;
     onChange: (value: string | undefined) => void;
 }
-
-const MONACO_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
-    minimap: { enabled: false },
-};
 
 const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChange }: Props) => {
     const debouncedEntityKind = useDebounce(entityKind, 500);

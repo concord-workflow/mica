@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.server;
 
 import ca.ibodrov.mica.server.data.BuiltinSchemas;
+import ca.ibodrov.mica.server.data.EntityHistoryController;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +26,8 @@ public class AbstractDatabaseTest {
         uuidGenerator = new UuidGenerator();
 
         var dsl = testDatabase.getJooqConfiguration().dsl();
-        var entityStore = new EntityStore(dsl, objectMapper, uuidGenerator);
+        var entityHistoryController = new EntityHistoryController(dsl);
+        var entityStore = new EntityStore(dsl, objectMapper, uuidGenerator, entityHistoryController);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         new InitialDataLoader(builtinSchemas, entityStore, objectMapper).load();
     }

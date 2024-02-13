@@ -6,8 +6,8 @@ import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.EntityStore.ListEntitiesRequest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.walmartlabs.concord.common.DateTimeUtils;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
@@ -16,13 +16,13 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
+import static ca.ibodrov.mica.server.api.ApiUtils.nonBlank;
+import static ca.ibodrov.mica.server.api.ApiUtils.parseIsoAsInstant;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
@@ -116,21 +116,8 @@ public class EntityResource implements Resource {
     @DELETE
     @Path("{id}")
     @Operation(summary = "Delete an existing entity by its ID", operationId = "deleteById")
-    public EntityVersion deleteById(@PathParam("id") UUID entityId) {
-        return entityStore.deleteById(new EntityId(entityId))
+    public EntityVersion deleteById(@Context UserPrincipal session, @PathParam("id") UUID entityId) {
+        return entityStore.deleteById(session, new EntityId(entityId))
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
-    }
-
-    private static String nonBlank(String s) {
-        if (s == null || s.isBlank()) {
-            return null;
-        }
-        return s;
-    }
-
-    private static Optional<Instant> parseIsoAsInstant(String s) {
-        return Optional.ofNullable(nonBlank(s))
-                .map(DateTimeUtils::fromIsoString)
-                .map(OffsetDateTime::toInstant);
     }
 }

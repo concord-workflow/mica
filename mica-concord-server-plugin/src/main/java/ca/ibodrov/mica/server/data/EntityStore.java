@@ -2,12 +2,15 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.db.jooq.tables.records.MicaEntitiesRecord;
 import ca.ibodrov.mica.server.UuidGenerator;
+import ca.ibodrov.mica.server.data.EntityHistoryController.EntityHistoryEntry;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
@@ -22,6 +25,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
+import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.DELETE;
+import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.UPDATE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
@@ -38,15 +43,18 @@ public class EntityStore {
     private final DSLContext dsl;
     private final ObjectMapper objectMapper;
     private final UuidGenerator uuidGenerator;
+    private final EntityHistoryController historyController;
 
     @Inject
     public EntityStore(@MicaDB DSLContext dsl,
                        ObjectMapper objectMapper,
-                       UuidGenerator uuidGenerator) {
+                       UuidGenerator uuidGenerator,
+                       EntityHistoryController historyController) {
 
         this.dsl = requireNonNull(dsl);
         this.objectMapper = requireNonNull(objectMapper);
         this.uuidGenerator = requireNonNull(uuidGenerator);
+        this.historyController = requireNonNull(historyController);
     }
 
     public record ListEntitiesRequest(@Nullable String search,
@@ -151,13 +159,23 @@ public class EntityStore {
         return query.fetchOptional(Record1::value1);
     }
 
-    public Optional<EntityVersion> deleteById(EntityId entityId) {
-        return dsl.transactionResult(tx -> tx.dsl()
-                .deleteFrom(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(entityId.id()))
-                .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT)
-                .fetchOptional()
-                .map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)), r.get(MICA_ENTITIES.UPDATED_AT))));
+    public Optional<EntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
+        return dsl.transactionResult(tx -> {
+            var version = tx.dsl()
+                    .deleteFrom(MICA_ENTITIES)
+                    .where(MICA_ENTITIES.ID.eq(entityId.id()))
+                    .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT, MICA_ENTITIES.DOC)
+                    .fetchOptional();
+
+            if (version.isPresent()) {
+                var doc = version.map(MicaEntitiesRecord::getDoc).orElseGet(() -> "n/a".getBytes(UTF_8));
+                historyController.addEntry(tx.dsl(),
+                        new EntityHistoryEntry(entityId, getDatabaseInstant(), DELETE, session.getUsername()), doc);
+            }
+
+            return version.map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)),
+                    r.get(MICA_ENTITIES.UPDATED_AT)));
+        });
     }
 
     public List<EntityVersionAndName> deleteByNamePatterns(List<String> namePatterns) {
@@ -197,19 +215,19 @@ public class EntityStore {
         return dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName).and(MICA_ENTITIES.KIND.eq(entityKind)));
     }
 
-    public Optional<EntityVersion> upsert(PartialEntity entity) {
-        return upsert(entity, null);
+    public Optional<EntityVersion> upsert(UserPrincipal session, PartialEntity entity) {
+        return dsl.transactionResult(tx -> upsert(tx.dsl(), entity, session.getUsername(), null));
     }
 
-    public Optional<EntityVersion> upsert(PartialEntity entity, @Nullable byte[] doc) {
-        return dsl.transactionResult(tx -> upsert(tx.dsl(), entity, doc));
+    public Optional<EntityVersion> upsert(UserPrincipal session, PartialEntity entity, @Nullable byte[] doc) {
+        return dsl.transactionResult(tx -> upsert(tx.dsl(), entity, session.getUsername(), doc));
     }
 
-    public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity) {
-        return upsert(tx, entity, null);
+    public Optional<EntityVersion> upsert(DSLContext tx, UserPrincipal session, PartialEntity entity) {
+        return upsert(tx, entity, session.getUsername(), null);
     }
 
-    public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, @Nullable byte[] doc) {
+    private Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, String author, @Nullable byte[] doc) {
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
 
@@ -224,11 +242,13 @@ public class EntityStore {
                     "id", objectMapper.convertValue(id, String.class),
                     "createdAt", objectMapper.convertValue(createdAt, String.class),
                     "updatedAt", objectMapper.convertValue(updatedAt, String.class));
+        } else {
+            doc = "n/a".getBytes(UTF_8);
         }
 
         var data = serializeData(entity.data());
 
-        return tx.insertInto(MICA_ENTITIES)
+        var version = tx.insertInto(MICA_ENTITIES)
                 .set(MICA_ENTITIES.ID, id)
                 .set(MICA_ENTITIES.NAME, entity.name())
                 .set(MICA_ENTITIES.KIND, entity.kind())
@@ -247,6 +267,10 @@ public class EntityStore {
                 .returning(MICA_ENTITIES.UPDATED_AT)
                 .fetchOptional()
                 .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt()));
+
+        historyController.addEntry(tx, new EntityHistoryEntry(new EntityId(id), updatedAt, UPDATE, author), doc);
+
+        return version;
     }
 
     private Entity toEntity(Record6<UUID, String, String, Instant, Instant, JSONB> record) {

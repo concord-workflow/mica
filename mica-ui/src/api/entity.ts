@@ -101,9 +101,6 @@ export const STANDARD_ENTITY_PROPERTIES = ['id', 'name', 'kind', 'createdAt', 'u
 export const getEntity = (id: string): Promise<Entity> =>
     doFetch(`/api/mica/v1/entity/${id}`).then(handleJsonResponse<Entity>);
 
-export const getEntityAsYamlString = (id: string): Promise<string> =>
-    doFetch(`/api/mica/v1/entity/${id}/yaml`).then(handleTextResponse);
-
 export const getEntityDoc = (id: string): Promise<string> =>
     doFetch(`/api/mica/v1/entity/${id}/doc`).then(handleTextResponse);
 

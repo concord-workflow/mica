@@ -6,6 +6,7 @@ import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -31,11 +32,12 @@ public class EntityController {
                 new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper));
     }
 
-    public EntityVersion createOrUpdate(PartialEntity entity) {
-        return createOrUpdate(entity, null, false);
+    public EntityVersion createOrUpdate(UserPrincipal session, PartialEntity entity) {
+        return createOrUpdate(session, entity, null, false);
     }
 
-    public EntityVersion createOrUpdate(PartialEntity entity,
+    public EntityVersion createOrUpdate(UserPrincipal session,
+                                        PartialEntity entity,
                                         @Nullable byte[] doc,
                                         boolean overwrite) {
 
@@ -60,15 +62,15 @@ public class EntityController {
 
         // TODO check if there are any changes, return the same version if not
 
-        var newVersion = entityStore.upsert(entity, doc);
+        var newVersion = entityStore.upsert(session, entity, doc);
         if (newVersion.isEmpty() && overwrite) {
-            newVersion = entityStore.upsert(entity.withoutUpdatedAt(), doc);
+            newVersion = entityStore.upsert(session, entity.withoutUpdatedAt(), doc);
         }
         return newVersion.orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
     }
 
-    public void deleteIfExists(String name) {
-        entityStore.getIdByName(name).ifPresent(entityStore::deleteById);
+    public void deleteIfExists(UserPrincipal session, String name) {
+        entityStore.getIdByName(name).ifPresent(entityId -> entityStore.deleteById(session, entityId));
     }
 
     private String validateKind(String kind) {

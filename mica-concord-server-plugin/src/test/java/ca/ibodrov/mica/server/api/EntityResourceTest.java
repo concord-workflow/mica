@@ -3,12 +3,10 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.model.EntityMetadata;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.data.BuiltinSchemas;
-import ca.ibodrov.mica.server.data.EntityController;
-import ca.ibodrov.mica.server.data.EntityKindStore;
-import ca.ibodrov.mica.server.data.EntityStore;
+import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.walmartlabs.concord.common.DateTimeUtils;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -19,19 +17,22 @@ import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static java.time.ZoneOffset.UTC;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EntityResourceTest extends AbstractDatabaseTest {
 
+    private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static EntityUploadResource entityUploadResource;
     private static EntityResource entityResource;
 
     @BeforeAll
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
-        var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
+        var entityHistoryController = new EntityHistoryController(dsl());
+        var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
         var builtInSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtInSchemas);
         var controller = new EntityController(entityStore, entityKindStore, objectMapper);
@@ -61,7 +62,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                       type: string
                       required: true
                 """;
-        var result1 = entityUploadResource.putYaml(new ByteArrayInputStream(yaml.getBytes()), false);
+        var result1 = entityUploadResource.putYaml(session, new ByteArrayInputStream(yaml.getBytes()), false);
         assertNotNull(result1.id());
         assertNotNull(result1.updatedAt());
 
@@ -69,7 +70,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         var yamlWithId = "id: %s\nupdatedAt: %s\n%s".formatted(result1.id().toExternalForm(), result1.updatedAt(),
                 yaml);
-        var result2 = entityUploadResource.putYaml(new ByteArrayInputStream(yamlWithId.getBytes()), false);
+        var result2 = entityUploadResource.putYaml(session, new ByteArrayInputStream(yamlWithId.getBytes()), false);
         assertNotNull(result2.id());
         assertNotNull(result2.updatedAt());
         assertEquals(result1.id(), result2.id());
@@ -78,7 +79,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         // try updating a stale version
 
         var error = assertThrows(ApiException.class,
-                () -> entityUploadResource.putYaml(new ByteArrayInputStream(yamlWithId.getBytes()), false));
+                () -> entityUploadResource.putYaml(session, new ByteArrayInputStream(yamlWithId.getBytes()), false));
         assertEquals(CONFLICT, error.getStatus());
     }
 
@@ -86,7 +87,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     public void testList() {
         // insert an entity
 
-        var entity1Version = entityUploadResource.putYaml(new ByteArrayInputStream("""
+        var entity1Version = entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 kind: /mica/record/v1
                 name: /testRecord
                 data: |
@@ -101,7 +102,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         // insert another entity with a similar name and try finding them both
 
-        var entity2Version = entityUploadResource.putYaml(new ByteArrayInputStream("""
+        var entity2Version = entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 kind: /mica/record/v1
                 name: /anotherTestRecord
                 data:
@@ -118,7 +119,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
     @Test
     public void testPutAndGetAsYaml() {
-        var entityVersion = entityUploadResource.putYaml(new ByteArrayInputStream("""
+        var entityVersion = entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 kind: /mica/record/v1
                 name: /yamlRecord
                 # comments are ignored unless the doc is saved with the entity
@@ -150,7 +151,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
     @Test
     public void testPutListDelete() {
-        var createdVersion = entityUploadResource.putYaml(new ByteArrayInputStream("""
+        var createdVersion = entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 kind: /mica/record/v1
                 name: /someRecord
                 data: "foo"
@@ -159,7 +160,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         var entityList = entityResource.listEntities(null, null, "/someRecord", null, null, 10);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).anyMatch(createdVersion::equals));
 
-        var deletedVersion = entityResource.deleteById(createdVersion.id().id());
+        var deletedVersion = entityResource.deleteById(session, createdVersion.id().id());
         assertEquals(createdVersion, deletedVersion);
 
         entityList = entityResource.listEntities(null, null, "/someRecord", null, null, 10);
@@ -170,7 +171,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     public void testValidation() {
         // name too short (2 characters)
         assertThrows(ConstraintViolationException.class,
-                () -> entityUploadResource.putYaml(new ByteArrayInputStream("""
+                () -> entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                         kind: /mica/record/v1
                         name: /f
                         # comments are ignored
@@ -183,7 +184,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         // name too long (1025 characters)
         assertThrows(ConstraintViolationException.class,
-                () -> entityUploadResource.putYaml(new ByteArrayInputStream(
+                () -> entityUploadResource.putYaml(session, new ByteArrayInputStream(
                         """
                                 kind: /mica/record/v1
                                 name: %s
@@ -200,7 +201,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
         // not a valid name (doesn't start with a forward slash)
         assertThrows(ConstraintViolationException.class,
-                () -> entityUploadResource.putYaml(new ByteArrayInputStream("""
+                () -> entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                         kind: /mica/record/v1
                         name: foobar/
                         # comments are ignored
@@ -215,7 +216,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     @Test
     public void validateUsingCustomKind() {
         var kind = randomEntityName(32);
-        entityUploadResource.putYaml(new ByteArrayInputStream("""
+        entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 kind: /mica/kind/v1
                 name: %s
                 schema:
@@ -224,7 +225,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                       type: string
                 """.formatted(kind).getBytes()), false);
 
-        entityUploadResource.putYaml(new ByteArrayInputStream("""
+        entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 kind: %s
                 name: %s
                 foo: "bar"
@@ -233,7 +234,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
 
     @Test
     public void testGetByIdAndUpdatedAt() {
-        var version1 = entityUploadResource.putYaml(new ByteArrayInputStream("""
+        var version1 = entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 kind: /mica/record/v1
                 name: /testGetByIdAndUpdatedAt/a
                 data: aaa
@@ -245,7 +246,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
             Thread.currentThread().interrupt();
         }
 
-        var version2 = entityUploadResource.putYaml(new ByteArrayInputStream("""
+        var version2 = entityUploadResource.putYaml(session, new ByteArrayInputStream("""
                 id: "%s"
                 updatedAt: "%s"
                 kind: /mica/record/v1

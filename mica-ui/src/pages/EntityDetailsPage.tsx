@@ -8,6 +8,7 @@ import SectionTitle from '../components/SectionTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
+import EntityChangesTable from '../features/history/EntityChangesTable.tsx';
 import RenderView from '../features/views/RenderView.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -143,7 +144,9 @@ const PropertiesFound = ({ count }: { count: number }) => {
 const EntityDetailsPage = () => {
     const { entityId } = useParams<RouteParams>();
 
-    const { data: entity, isFetching } = useQuery(
+    // TODO handle errors
+
+    const { data: entity, isFetching: isEntityFetching } = useQuery(
         ['entity', entityId],
         () => getEntity(entityId!),
         {
@@ -201,7 +204,7 @@ const EntityDetailsPage = () => {
                                 variant="outlined"
                                 color="error"
                                 onClick={handleDelete}
-                                disabled={isFetching}>
+                                disabled={isEntityFetching}>
                                 Delete
                             </Button>
                         </FormControl>
@@ -219,7 +222,7 @@ const EntityDetailsPage = () => {
             <MetadataGrid sx={{ mb: 2 }}>
                 <MetadataItem label="ID">
                     {entityId} {entityId && <CopyToClipboardButton text={entityId} />}{' '}
-                    {isFetching && <CircularProgress size={16} />}
+                    {isEntityFetching && <CircularProgress size={16} />}
                 </MetadataItem>
                 <MetadataItem label="Kind">
                     {entity ? (
@@ -297,6 +300,12 @@ const EntityDetailsPage = () => {
                             </TableBody>
                         </Table>
                     </TableContainer>
+                </>
+            )}
+            {entityId && (
+                <>
+                    <Divider sx={{ mt: 10 }} />
+                    <EntityChangesTable entityId={entityId} />
                 </>
             )}
         </Container>

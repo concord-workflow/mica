@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.Streams;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,18 +27,21 @@ import java.util.Set;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
+import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ViewResourceTest extends AbstractDatabaseTest {
 
+    private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static EntityStore entityStore;
     private static ViewResource viewResource;
 
     @BeforeAll
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
+        var entityHistoryController = new EntityHistoryController(dsl());
+        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas);
         var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));
@@ -47,7 +51,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     @Test
     public void entityOrderMustBePreservedWhenUsingNamePatterns() {
         // create entity kind
-        entityStore.upsert(new MicaKindV1.Builder()
+        entityStore.upsert(session, new MicaKindV1.Builder()
                 .name("/test-record-kind")
                 .schema(parseObject("""
                         properties:
@@ -58,15 +62,21 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // create test records, 2 for each name pattern
-        entityStore.upsert(PartialEntity.create("/first-1", "/test-record-kind", Map.of("value", IntNode.valueOf(1))));
-        entityStore.upsert(PartialEntity.create("/first-2", "/test-record-kind", Map.of("value", IntNode.valueOf(2))));
-        entityStore.upsert(PartialEntity.create("/second-1", "/test-record-kind", Map.of("value", IntNode.valueOf(3))));
-        entityStore.upsert(PartialEntity.create("/second-2", "/test-record-kind", Map.of("value", IntNode.valueOf(4))));
-        entityStore.upsert(PartialEntity.create("/third-1", "/test-record-kind", Map.of("value", IntNode.valueOf(5))));
-        entityStore.upsert(PartialEntity.create("/third-2", "/test-record-kind", Map.of("value", IntNode.valueOf(6))));
+        entityStore.upsert(session,
+                PartialEntity.create("/first-1", "/test-record-kind", Map.of("value", IntNode.valueOf(1))));
+        entityStore.upsert(session,
+                PartialEntity.create("/first-2", "/test-record-kind", Map.of("value", IntNode.valueOf(2))));
+        entityStore.upsert(session,
+                PartialEntity.create("/second-1", "/test-record-kind", Map.of("value", IntNode.valueOf(3))));
+        entityStore.upsert(session,
+                PartialEntity.create("/second-2", "/test-record-kind", Map.of("value", IntNode.valueOf(4))));
+        entityStore.upsert(session,
+                PartialEntity.create("/third-1", "/test-record-kind", Map.of("value", IntNode.valueOf(5))));
+        entityStore.upsert(session,
+                PartialEntity.create("/third-2", "/test-record-kind", Map.of("value", IntNode.valueOf(6))));
 
         // create view
-        entityStore.upsert(new MicaViewV1.Builder()
+        entityStore.upsert(session, new MicaViewV1.Builder()
                 .name("/test-name-patterns")
                 .selector(byEntityKind("/test-record-kind")
                         .withNamePatterns(List.of(
@@ -91,7 +101,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         var recordKind = "/test-record-kind-" + System.currentTimeMillis();
 
         // create entity kind
-        entityStore.upsert(new MicaKindV1.Builder()
+        entityStore.upsert(session, new MicaKindV1.Builder()
                 .name(recordKind)
                 .schema(parseObject("""
                         properties:
@@ -102,15 +112,15 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // create test records
-        entityStore.upsert(
+        entityStore.upsert(session,
                 PartialEntity.create("/first/record", recordKind, Map.of("value", IntNode.valueOf(1))));
-        entityStore.upsert(
+        entityStore.upsert(session,
                 PartialEntity.create("/second/record", recordKind, Map.of("value", IntNode.valueOf(2))));
-        entityStore.upsert(
+        entityStore.upsert(session,
                 PartialEntity.create("/third/record", recordKind, Map.of("value", IntNode.valueOf(3))));
 
         // create view
-        entityStore.upsert(new MicaViewV1.Builder()
+        entityStore.upsert(session, new MicaViewV1.Builder()
                 .name("/test-name-pattern-substitution")
                 .parameters(parseObject("""
                         properties:
@@ -137,7 +147,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     public void viewDataCanBeValidated() {
         // create v1 of the schema
         var recordKindV1 = "/test-kind-v1-" + System.currentTimeMillis();
-        entityStore.upsert(new MicaKindV1.Builder()
+        entityStore.upsert(session, new MicaKindV1.Builder()
                 .name(recordKindV1)
                 .schema(parseObject("""
                         properties:
@@ -150,7 +160,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
 
         // create v2 of the schema in which we replace the "foo" property with "bar"
         var recordKindV2 = "/test-kind-v2-" + System.currentTimeMillis();
-        entityStore.upsert(new MicaKindV1.Builder()
+        entityStore.upsert(session, new MicaKindV1.Builder()
                 .name(recordKindV2)
                 .schema(parseObject("""
                         properties:
@@ -162,13 +172,13 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // create test records
-        entityStore.upsert(PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
+        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
                 Map.of("foo", TextNode.valueOf("1"))));
-        entityStore.upsert(PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
+        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
                 Map.of("foo", TextNode.valueOf("2"))));
 
         // create view
-        entityStore.upsert(new MicaViewV1.Builder()
+        entityStore.upsert(session, new MicaViewV1.Builder()
                 .name("/test-view-validation")
                 .parameters(parseObject("""
                         properties:

@@ -24,6 +24,7 @@ import com.walmartlabs.concord.server.org.project.ProjectEntry;
 import com.walmartlabs.concord.server.org.project.ProjectManager;
 import com.walmartlabs.concord.server.org.project.RepositoryEntry;
 import com.walmartlabs.concord.server.process.ProcessSecurityContext;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import com.walmartlabs.concord.server.user.UserManager;
 import com.walmartlabs.concord.server.user.UserType;
 import org.eclipse.jgit.api.Git;
@@ -42,6 +43,7 @@ import java.util.UUID;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
+import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -56,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ITs extends TestResources {
 
+    private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static EntityStore entityStore;
     private static ViewResource viewResource;
     private static ObjectMapper objectMapper;
@@ -77,7 +80,7 @@ public class ITs extends TestResources {
         // one-time setup
 
         // add an entity kind to represent a config layer
-        entityStore.upsert(new MicaKindV1.Builder()
+        entityStore.upsert(session, new MicaKindV1.Builder()
                 .name("/acme/kinds/config-layer")
                 .schema(parseObject("""
                         properties:
@@ -89,7 +92,7 @@ public class ITs extends TestResources {
                 .toPartialEntity(objectMapper));
 
         // add a view to render the effective config
-        entityStore.upsert(new MicaViewV1.Builder()
+        entityStore.upsert(session, new MicaViewV1.Builder()
                 .name("/acme/effective-configs/components/foobar/instance-config")
                 .parameters(parseObject("""
                         properties:
@@ -111,15 +114,15 @@ public class ITs extends TestResources {
                 .toPartialEntity(objectMapper));
 
         // add the base config and the env config layers
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 "/acme/configs/branches/main/instance-level-config.yaml",
                 "/acme/kinds/config-layer",
                 Map.of("app", objectMapper.convertValue(Map.of("level", "base"), JsonNode.class))));
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 "/acme/configs/env/ci/instance-level-config.yaml",
                 "/acme/kinds/config-layer",
                 Map.of("app", objectMapper.convertValue(Map.of("level", "ci"), JsonNode.class))));
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 "/acme/configs/env/prod/instance-level-config.yaml",
                 "/acme/kinds/config-layer",
                 Map.of("app", objectMapper.convertValue(Map.of("level", "prod"), JsonNode.class))));
@@ -240,7 +243,7 @@ public class ITs extends TestResources {
     public void validateGitIncludesInViews() throws Exception {
         // add an entity kind to represent a config layer
 
-        entityStore.upsert(new MicaKindV1.Builder()
+        entityStore.upsert(session, new MicaKindV1.Builder()
                 .name("/acme/kinds/entity")
                 .schema(parseObject("""
                         properties:
@@ -253,12 +256,12 @@ public class ITs extends TestResources {
 
         // add some entities to the DB
 
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 "/test/foo",
                 "/acme/kinds/entity",
                 Map.of("value", TextNode.valueOf("foo!"))));
 
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 "/test/bar",
                 "/acme/kinds/entity",
                 Map.of("value", TextNode.valueOf("bar!"))));
@@ -328,7 +331,7 @@ public class ITs extends TestResources {
         // add a view to render both the entities from the DB and the ones from the Git
         // repo
 
-        entityStore.upsert(new MicaViewV1.Builder()
+        entityStore.upsert(session, new MicaViewV1.Builder()
                 .name("/acme/views/imports-demo")
                 .parameters(parseObject("""
                         properties:
@@ -373,17 +376,17 @@ public class ITs extends TestResources {
 
         var namePrefix = "/test" + System.currentTimeMillis();
 
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 namePrefix + "/aaa/foo",
                 "/mica/record/v1",
                 Map.of("value", TextNode.valueOf("foo!"))));
 
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 namePrefix + "/aaa/bar",
                 "/mica/record/v1",
                 Map.of("value", TextNode.valueOf("bar!"))));
 
-        entityStore.upsert(PartialEntity.create(
+        entityStore.upsert(session, PartialEntity.create(
                 namePrefix + "/bbb/baz",
                 "/mica/record/v1",
                 Map.of("value", TextNode.valueOf("baz!"))));
@@ -520,7 +523,7 @@ public class ITs extends TestResources {
     @Test
     public void nullParametersAreSkipped() throws Exception {
         // add a view an optional parameter "foo"
-        entityStore.upsert(new MicaViewV1.Builder()
+        entityStore.upsert(session, new MicaViewV1.Builder()
                 .name("/acme/views/optional-foo")
                 .parameters(parseObject("""
                         properties:

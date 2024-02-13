@@ -1,11 +1,13 @@
 configuration:
+  runtime: "concord-v2"
   dependencies:
-    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.11
+    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.17
 
 flows:
   default:
     - task: mica
       in:
+        apiKey: mica
         action: listEntities
         search: foo
       out: result

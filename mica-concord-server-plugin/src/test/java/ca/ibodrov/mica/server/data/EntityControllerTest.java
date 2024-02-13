@@ -5,6 +5,7 @@ import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.walmartlabs.concord.server.sdk.validation.ValidationErrorsException;
+import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.UUID;
 
+import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
@@ -19,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class EntityControllerTest extends AbstractDatabaseTest {
 
+    private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static YamlMapper yamlMapper;
     private static EntityController controller;
     private static EntityStore entityStore;
@@ -26,7 +29,8 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         yamlMapper = new YamlMapper(objectMapper);
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator);
+        var entityHistoryController = new EntityHistoryController(dsl());
+        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas);
         controller = new EntityController(entityStore, entityKindStore, objectMapper);
@@ -44,20 +48,20 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                   some text
                 """;
 
-        var error = assertThrows(ApiException.class, () -> controller.createOrUpdate(parseYaml(yaml)));
+        var error = assertThrows(ApiException.class, () -> controller.createOrUpdate(session, parseYaml(yaml)));
         assertEquals(BAD_REQUEST, error.getStatus());
     }
 
     @Test
     public void testUploadBuiltInEntityKinds() {
-        controller.createOrUpdate(parseYaml("""
+        controller.createOrUpdate(session, parseYaml("""
                 kind: /mica/record/v1
                 name: %s
                 data: |
                   some text
                 """.formatted(randomEntityName())));
 
-        controller.createOrUpdate(parseYaml("""
+        controller.createOrUpdate(session, parseYaml("""
                 kind: /mica/kind/v1
                 name: %s
                 schema:
@@ -67,7 +71,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                       type: string
                 """.formatted(randomEntityName())));
 
-        controller.createOrUpdate(parseYaml("""
+        controller.createOrUpdate(session, parseYaml("""
                 kind: /mica/view/v1
                 name: %s
                 selector:
@@ -85,7 +89,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 name: %s
                 randomProp: "foo"
                 """.formatted(randomEntityName()));
-        var error1 = assertThrows(ValidationErrorsException.class, () -> controller.createOrUpdate(entity1));
+        var error1 = assertThrows(ValidationErrorsException.class, () -> controller.createOrUpdate(session, entity1));
         assertEquals(1, error1.getValidationErrors().size());
     }
 
@@ -99,7 +103,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName());
 
         var entity = parseYaml(doc);
-        var initialVersion = controller.createOrUpdate(entity, doc.getBytes(UTF_8), false);
+        var initialVersion = controller.createOrUpdate(session, entity, doc.getBytes(UTF_8), false);
         var createdAt = initialVersion.updatedAt();
         var updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
 
@@ -119,7 +123,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertEquals(expected, updatedDoc);
 
         entity = parseYaml(updatedDoc);
-        var updatedVersion = controller.createOrUpdate(entity, updatedDoc.getBytes(UTF_8), false);
+        var updatedVersion = controller.createOrUpdate(session, entity, updatedDoc.getBytes(UTF_8), false);
         updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
 
         expected = """
@@ -150,7 +154,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName());
 
         var entity = parseYaml(doc);
-        var initialVersion = controller.createOrUpdate(entity, doc.getBytes(UTF_8), false);
+        var initialVersion = controller.createOrUpdate(session, entity, doc.getBytes(UTF_8), false);
 
         // fetch the created document
 
@@ -160,7 +164,8 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
         // modify and update the document as if it was done by a user
         var updatedDoc = createdDoc + "\n # updated by user1";
-        var updatedVersion = controller.createOrUpdate(parseYaml(updatedDoc), updatedDoc.getBytes(UTF_8), false);
+        var updatedVersion = controller.createOrUpdate(session, parseYaml(updatedDoc), updatedDoc.getBytes(UTF_8),
+                false);
         assertEquals(initialVersion.id(), updatedVersion.id());
         assertNotEquals(initialVersion.updatedAt(), updatedVersion.updatedAt());
 
@@ -168,12 +173,13 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         // another user
         var updatedDocAlternative = createdDoc + "\n # updated by user2";
         var error = assertThrows(ApiException.class,
-                () -> controller.createOrUpdate(parseYaml(updatedDocAlternative), updatedDocAlternative.getBytes(UTF_8),
+                () -> controller.createOrUpdate(session, parseYaml(updatedDocAlternative),
+                        updatedDocAlternative.getBytes(UTF_8),
                         false));
         assertEquals(CONFLICT, error.getStatus());
 
         // overwrite the document
-        var overwrittenVersion = controller.createOrUpdate(parseYaml(updatedDocAlternative),
+        var overwrittenVersion = controller.createOrUpdate(session, parseYaml(updatedDocAlternative),
                 updatedDocAlternative.getBytes(UTF_8), true);
         assertEquals(initialVersion.id(), overwrittenVersion.id());
         assertNotEquals(initialVersion.updatedAt(), overwrittenVersion.updatedAt());

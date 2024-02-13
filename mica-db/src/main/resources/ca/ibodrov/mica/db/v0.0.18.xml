@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="mica-0.0.18-000" author="ibodrov@gmail.com">
+        <sql>
+            CREATE TYPE MICA_HISTORY_OPERATION_TYPE AS ENUM ('UPDATE', 'DELETE');
+        </sql>
+
+        <createTable tableName="MICA_ENTITY_HISTORY">
+            <column name="ENTITY_ID" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="UPDATED_AT" type="TIMESTAMPTZ">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="OPERATION_TYPE" type="MICA_HISTORY_OPERATION_TYPE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="AUTHOR" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DOC" type="BYTEA">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
