@@ -17,15 +17,22 @@ import {
     Drawer,
     FormControl,
     FormControlLabel,
+    Link,
     Snackbar,
     Switch,
     Tooltip,
     styled,
 } from '@mui/material';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useQuery } from 'react-query';
-import { useBeforeUnload, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+    Link as RouterLink,
+    useBeforeUnload,
+    useNavigate,
+    useParams,
+    useSearchParams,
+} from 'react-router-dom';
 
 type RouteParams = {
     entityId: '_new' | string;
@@ -223,6 +230,8 @@ const EditEntityPage = () => {
         setShowUnsavedChangesRestored(true);
     }, [entityId]);
 
+    const lastNamePart = useMemo(() => selectedName?.split('/').pop(), [selectedName]);
+
     return (
         <>
             <Snackbar
@@ -243,7 +252,19 @@ const EditEntityPage = () => {
                         <PageTitle help={HELP}>
                             {selectedName && (
                                 <>
-                                    <PathBreadcrumbs path={selectedName} />
+                                    <PathBreadcrumbs path={selectedName}>
+                                        {selectedId && (
+                                            <>
+                                                &nbsp;
+                                                <Link
+                                                    component={RouterLink}
+                                                    to={`/entity/${selectedId}/details`}>
+                                                    {'/'}
+                                                    {lastNamePart ? lastNamePart : '?'}
+                                                </Link>
+                                            </>
+                                        )}
+                                    </PathBreadcrumbs>
                                     <CopyToClipboardButton text={selectedName} />
                                 </>
                             )}

@@ -1,7 +1,7 @@
 import HomeIcon from '@mui/icons-material/Home';
 import { Link, Tooltip, styled } from '@mui/material';
 
-import React from 'react';
+import React, { PropsWithChildren } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const InlineHomeIcon = styled(HomeIcon)(() => ({
@@ -9,11 +9,14 @@ const InlineHomeIcon = styled(HomeIcon)(() => ({
     top: '3px',
 }));
 
-const PathBreadcrumbs = ({ path }: { path: string }) => {
+const PathBreadcrumbs = ({ path, children }: PropsWithChildren<{ path: string }>) => {
     const parts = React.useMemo(() => {
         const items = path.split('/').filter((part) => part.length > 0);
         return items.map((part, index) => {
             if (index == items.length - 1) {
+                if (children) {
+                    return children;
+                }
                 return <React.Fragment key={index}>&nbsp;/{part}</React.Fragment>;
             }
             return (
@@ -28,7 +31,7 @@ const PathBreadcrumbs = ({ path }: { path: string }) => {
                 </React.Fragment>
             );
         });
-    }, [path]);
+    }, [path, children]);
 
     return (
         <>
