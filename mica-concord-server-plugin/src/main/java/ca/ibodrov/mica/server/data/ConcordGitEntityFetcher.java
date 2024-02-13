@@ -59,6 +59,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
 
         // use shorter timeouts than Concord's default provider
         var gitCliCfg = GitClientConfiguration.builder()
+                .oauthToken(gitCfg.getOauthToken())
                 .defaultOperationTimeout(GIT_OPERATION_TIMEOUT)
                 .fetchTimeout(GIT_FETCH_TIMEOUT)
                 .sshTimeout(GIT_OPERATION_TIMEOUT)
