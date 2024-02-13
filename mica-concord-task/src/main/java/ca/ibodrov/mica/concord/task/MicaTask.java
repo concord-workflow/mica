@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
@@ -101,7 +102,7 @@ public class MicaTask implements Task {
 
     private TaskResult renderView(Variables input) {
         var viewName = input.assertString("name");
-        var parameters = input.getMap("parameters", Map.of());
+        var parameters = parseParameters(input);
         var limit = input.getInt("limit", -1);
         var body = new RenderRequest(Optional.empty(), Optional.of(viewName), limit,
                 Optional.of(objectMapper.convertValue(parameters, JsonNode.class)));
@@ -182,5 +183,12 @@ public class MicaTask implements Task {
         }
 
         return new SessionToken(sessionToken);
+    }
+
+    private static Map<String, Object> parseParameters(Variables input) {
+        Map<String, Object> params = input.getMap("parameters", Map.of());
+        // remove all "null" values
+        params.values().removeIf(Objects::isNull);
+        return params;
     }
 }

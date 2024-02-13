@@ -517,6 +517,49 @@ public class ITs extends TestResources {
         assertThrows(ConstraintViolationException.class, () -> viewResource.render(RenderRequest.of("_invalid_", 10)));
     }
 
+    @Test
+    public void nullParametersAreSkipped() throws Exception {
+        // add a view an optional parameter "foo"
+        entityStore.upsert(new MicaViewV1.Builder()
+                .name("/acme/views/optional-foo")
+                .parameters(parseObject("""
+                        properties:
+                          foo:
+                            type: string
+                        """))
+                .selector(byEntityKind("/mica/record/v1")
+                        .withNamePatterns(List.of("${parameters.foo}")))
+                .data(jsonPath("$"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // render the view setting "foo" to null
+        // the task should skip the parameter and render the view without it
+
+        var ciProcess = startConcordProcess(Map.of(
+                "arguments.githubPr", "123",
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - script: js
+                              body: |
+                                context.variables().set('foo', null);
+                            - task: mica
+                              in:
+                                action: renderView
+                                name: /acme/views/optional-foo
+                                parameters:
+                                  foo: ${foo}
+                              out: result
+                            - log: ${result}
+                        """.strip().getBytes()));
+        assertFinished(ciProcess);
+        var log = getProcessLog(ciProcess.getInstanceId());
+        assertTrue(log.contains("data=[]"));
+    }
+
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)
             throws ApiException {
         var processApi = new ProcessApi(concordClient);
