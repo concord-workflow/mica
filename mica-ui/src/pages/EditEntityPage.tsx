@@ -159,7 +159,7 @@ const EditEntityPage = () => {
             // save and get the new version
             const version = await mutateAsync({ body: editorValue, overwrite: overwrite ?? false });
 
-            if (entityId === '_new') {
+            if (selectedId === '_new' || selectedId === undefined) {
                 // update the URL
                 navigate(`/entity/${version.id}/edit?success`, { replace: true });
             } else {
@@ -177,9 +177,9 @@ const EditEntityPage = () => {
             setShowSuccess(true);
 
             // remove unsaved changes from local storage
-            localStorage.removeItem(`dirty-${entityId}`);
+            localStorage.removeItem(`dirty-${selectedId}`);
         },
-        [entityId, mutateAsync, navigate, refetch, editorValue],
+        [selectedId, mutateAsync, navigate, refetch, editorValue],
     );
 
     const handleOverwrite = React.useCallback(
