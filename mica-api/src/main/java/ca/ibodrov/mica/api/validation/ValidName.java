@@ -12,15 +12,19 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @NotEmpty
-@Pattern(regexp = "/[a-zA-Z0-9.\\-_/\\\\]{3,1023}")
+@Pattern(regexp = ValidName.NAME_PATTERN)
 @Retention(RUNTIME)
 @Target({ FIELD, TYPE_USE })
 @Constraint(validatedBy = {})
 public @interface ValidName {
 
-    String message() default "Names should start with a forward slash '/' and can include lowercase and uppercase " +
+    String NAME_PATTERN = "/[a-zA-Z0-9.\\-_/\\\\]{3,1023}";
+
+    String MESSAGE = "Names should start with a forward slash '/' and can include lowercase and uppercase " +
             "letters (a-z, A-Z), digits, dots, dashes, and forward slashes. Length must be between 4 and 1024 " +
             "characters (including the first slash).";
+
+    String message() default MESSAGE;
 
     Class<?>[] groups() default {};
 
