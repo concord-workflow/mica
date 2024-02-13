@@ -141,15 +141,13 @@ public class ViewResource implements Resource {
     }
 
     private Stream<? extends EntityLike> fetch(ViewLike view, int limit) {
-        // TODO limit is not very useful right now
-
         var includes = view.selector().includes().orElse(List.of(INTERNAL_ENTITY_STORE_URI));
 
         // grab all entities matching the selector's entity kind
         var entities = includes.stream()
                 .filter(include -> include != null && !include.isBlank())
                 .map(ViewResource::parseUri)
-                .flatMap(include -> fetchIncludeUri(include, view.selector().entityKind(), limit))
+                .flatMap(include -> fetchIncludeUri(include, view.selector().entityKind(), -1))
                 .toList();
 
         // TODO filter out invalid entities?
@@ -178,6 +176,10 @@ public class ViewResource implements Resource {
                         .filter(e -> e.name() != null) // TODO validate the whole entity instead?
                         .filter(e -> pattern.matcher(e.name()).matches()));
             }
+        }
+
+        if (limit > 0) {
+            result = result.limit(limit);
         }
 
         return result;

@@ -48,7 +48,7 @@ const HELP: React.ReactNode = (
     </>
 );
 
-const DEFAULT_ROW_LIMIT = 100;
+const DEFAULT_ROW_LIMIT = 1000;
 
 interface FileRow {
     key: string;

@@ -12,7 +12,10 @@ import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
@@ -335,6 +338,39 @@ public class ViewRendererTest {
         assertEquals(2, result.entityNames().size());
         assertEquals("/foo", result.entityNames().get(0));
         assertEquals("/bar", result.entityNames().get(1));
+    }
+
+    @Test
+    public void lotsOfEntities() {
+        var foos = IntStream.iterate(0, i -> i < 500, i -> i + 1)
+                .mapToObj(i -> parseYaml("""
+                        kind: /myRecord
+                        name: /foo-%d
+                        x: 1
+                        """.formatted(i)));
+
+        var bars = IntStream.iterate(0, i -> i < 500, i -> i + 1)
+                .mapToObj(i -> parseYaml("""
+                        kind: /myRecord
+                        name: /bar-%d
+                        y: 2
+                        """.formatted(i)));
+
+        var entities = new ArrayList<>(Stream.concat(foos, bars).toList());
+        Collections.shuffle(entities);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: /myRecord
+                  namePatterns:
+                    - /foo-.*
+                data:
+                  jsonPath: $.x
+                """);
+        var result = renderer.render(view, entities.stream());
+        assertEquals(500, result.data().size());
     }
 
     private static ViewLike parseView(@Language("yaml") String yaml) {
