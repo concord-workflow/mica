@@ -146,14 +146,10 @@ const EntityDetailsPage = () => {
 
     // TODO handle errors
 
-    const { data: entity, isFetching: isEntityFetching } = useQuery(
-        ['entity', entityId],
-        () => getEntity(entityId!),
-        {
-            keepPreviousData: false,
-            enabled: entityId !== undefined,
-        },
-    );
+    const { data, isFetching } = useQuery(['entity', entityId], () => getEntity(entityId!), {
+        keepPreviousData: false,
+        enabled: entityId !== undefined,
+    });
 
     const [search, setSearch] = React.useState<string>('');
 
@@ -161,25 +157,25 @@ const EntityDetailsPage = () => {
 
     const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
     const handleDelete = React.useCallback(() => {
-        if (!entity) {
+        if (!data) {
             return;
         }
         setOpenDeleteConfirmation(true);
-    }, [entity]);
+    }, [data]);
 
     const visibleProperties = React.useMemo(
-        () => (entity ? searchProperties(entity, search).sort() : []),
-        [entity, search],
+        () => (data ? searchProperties(data, search).sort() : []),
+        [data, search],
     );
 
     const [showPreview, setShowPreview] = React.useState(false);
 
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
-            {entity && (
+            {data && (
                 <DeleteEntityConfirmation
-                    entityId={entity.id}
-                    entityName={entity.name}
+                    entityId={data.id}
+                    entityName={data.name}
                     open={openDeleteConfirmation}
                     onSuccess={() => navigate('/entity')}
                     onClose={() => setOpenDeleteConfirmation(false)}
@@ -188,10 +184,10 @@ const EntityDetailsPage = () => {
             <Grid container>
                 <Grid xs={10}>
                     <PageTitle help={HELP}>
-                        {entity && (
+                        {data && (
                             <>
-                                <PathBreadcrumbs path={entity.name} />
-                                <CopyToClipboardButton text={entity.name} />
+                                <PathBreadcrumbs path={data.name} />
+                                <CopyToClipboardButton text={data.name} />
                             </>
                         )}
                     </PageTitle>
@@ -204,7 +200,7 @@ const EntityDetailsPage = () => {
                                 variant="outlined"
                                 color="error"
                                 onClick={handleDelete}
-                                disabled={isEntityFetching}>
+                                disabled={isFetching}>
                                 Delete
                             </Button>
                         </FormControl>
@@ -222,30 +218,30 @@ const EntityDetailsPage = () => {
             <MetadataGrid sx={{ mb: 2 }}>
                 <MetadataItem label="ID">
                     {entityId} {entityId && <CopyToClipboardButton text={entityId} />}{' '}
-                    {isEntityFetching && <CircularProgress size={16} />}
+                    {isFetching && <CircularProgress size={16} />}
                 </MetadataItem>
                 <MetadataItem label="Kind">
-                    {entity ? (
+                    {data ? (
                         <>
                             <Link
                                 component={RouterLink}
-                                to={`/redirect?type=entityByName&entityName=${entity.kind}`}>
-                                {entity.kind}
+                                to={`/redirect?type=entityByName&entityName=${data.kind}`}>
+                                {data.kind}
                             </Link>
-                            <CopyToClipboardButton text={entity.kind} />
+                            <CopyToClipboardButton text={data.kind} />
                         </>
                     ) : (
                         '?'
                     )}
                 </MetadataItem>
                 <MetadataItem label="Created">
-                    {entity ? new Date(entity.createdAt).toLocaleString() : '?'}
+                    {data ? new Date(data.createdAt).toLocaleString() : '?'}
                 </MetadataItem>
                 <MetadataItem label="Updated">
-                    {entity ? new Date(entity.updatedAt).toLocaleString() : '?'}
+                    {data ? new Date(data.updatedAt).toLocaleString() : '?'}
                 </MetadataItem>
             </MetadataGrid>
-            {entity && entity.kind == MICA_VIEW_KIND && (
+            {data && data.kind == MICA_VIEW_KIND && (
                 <FormControl sx={{ mt: 2, mb: 2 }}>
                     <Tooltip title="Render this view using a small subset of data">
                         <Button
@@ -261,10 +257,10 @@ const EntityDetailsPage = () => {
                     <RenderView request={{ viewId: entityId, limit: 10 }} />
                 </Paper>
             )}
-            {entity && (
+            {data && (
                 <>
                     <Divider />
-                    <SectionTitle>{kindToPayloadTitle(entity.kind)}</SectionTitle>
+                    <SectionTitle>{kindToPayloadTitle(data.kind)}</SectionTitle>
                     <ActionBar sx={{ mb: 2 }}>
                         <Spacer />
                         {search !== '' && <PropertiesFound count={visibleProperties.length} />}
@@ -293,7 +289,7 @@ const EntityDetailsPage = () => {
                                                 verticalAlign: 'top',
                                                 fontFamily: 'Roboto Mono',
                                             }}>
-                                            <Property name={key} value={entity} search={search} />
+                                            <Property name={key} value={data} search={search} />
                                         </TableCell>
                                     </TableRow>
                                 ))}
