@@ -64,6 +64,7 @@ public class MicaTask implements Task {
             case "batch" -> batchAction(input);
             case "listEntities" -> listEntities(input);
             case "renderView" -> renderView(input);
+            case "renderProperties" -> renderProperties(input);
             case "upload" -> upload(input);
             case "upsert" -> upsert(input);
             default -> throw new RuntimeException("Unknown 'action': " + action);
@@ -99,15 +100,25 @@ public class MicaTask implements Task {
                 .value("data", objectMapper.convertValue(entityList.data(), List.class));
     }
 
-    private TaskResult renderView(Variables input) {
+    private RenderRequest parseRenderRequest(Variables input) {
         var viewName = input.assertString("name");
         var parameters = parseParameters(input);
         var limit = input.getInt("limit", -1);
-        var body = new RenderRequest(Optional.empty(), Optional.of(viewName), limit,
+        return new RenderRequest(Optional.empty(), Optional.of(viewName), limit,
                 Optional.of(objectMapper.convertValue(parameters, JsonNode.class)));
+    }
+
+    private TaskResult renderView(Variables input) {
+        var body = parseRenderRequest(input);
         var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper).renderView(body);
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(rendered.data().get("data"), List.class));
+    }
+
+    private TaskResult renderProperties(Variables input) {
+        var body = parseRenderRequest(input);
+        var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper).renderProperties(body);
+        return TaskResult.success().value("data", rendered);
     }
 
     private TaskResult upload(Variables input) throws FileNotFoundException {

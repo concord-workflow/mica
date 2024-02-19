@@ -39,7 +39,7 @@ public class InternalEntityFetcher implements EntityFetcher {
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.KIND.eq(kind));
+                .where(MICA_ENTITIES.KIND.likeRegex(kind));
 
         if (limit > 0) {
             step.limit(limit);

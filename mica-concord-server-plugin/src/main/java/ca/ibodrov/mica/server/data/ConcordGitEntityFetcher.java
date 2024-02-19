@@ -1,10 +1,11 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
-import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import com.walmartlabs.concord.repository.*;
 import com.walmartlabs.concord.repository.FetchRequest.Version;
 import com.walmartlabs.concord.sdk.Secret;
@@ -24,8 +25,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
-import java.util.regex.Pattern;
 
+import static ca.ibodrov.mica.server.data.EntityFile.PROPERTIES_KIND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.*;
@@ -131,8 +132,10 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         var namePrefix = Optional.ofNullable(queryParams.get("namePrefix"))
                 .flatMap(p -> Optional.ofNullable(p.get(0)))
                 .orElse("");
+        var allowedFormats = parseAllowedFormats(queryParams);
 
-        return getAllByKind(orgName, projectName, repoName, ref, kind, path, useFileNames, namePrefix, limit);
+        return getAllByKind(orgName, projectName, repoName, ref, kind, path, useFileNames, namePrefix, allowedFormats,
+                limit);
     }
 
     private List<EntityLike> getAllByKind(String orgName,
@@ -143,7 +146,11 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                                           String pathInRepo,
                                           boolean useFileNames,
                                           String namePrefix,
+                                          Set<FileFormat> allowedFormats,
                                           int limit) {
+
+        assert namePrefix != null;
+        assert !allowedFormats.isEmpty();
 
         try {
             var org = orgManager.assertAccess(orgName, false);
@@ -151,35 +158,9 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             var secret = Optional.ofNullable(repoEntry.getSecretName())
                     .map(secretName -> getSecret(org.getId(), secretName));
             return repositoryCache.withLock(repoEntry.getUrl(), () -> {
-                var result = fetch(repoEntry.getUrl(), ref, pathInRepo, secret.orElse(null));
-                try {
-                    // noinspection Convert2MethodRef,resource
-                    var data = Files.walk(result.path())
-                            .filter(p -> isMicaYamlFile(p))
-                            .filter(p -> isOfValidKind(p, kind))
-                            .map(p -> {
-                                var e = parseFile(p);
-                                var name = e.name();
-                                if (useFileNames) {
-                                    name = p.getFileName().toString();
-                                    // strip the extension
-                                    // TODO should this be an option?
-                                    var idx = name.lastIndexOf('.');
-                                    if (idx > 0) {
-                                        name = name.substring(0, idx);
-                                    }
-                                }
-                                return e.withName(namePrefix + name);
-                            });
-
-                    if (limit > 0) {
-                        data = data.limit(limit);
-                    }
-
-                    return data.toList();
-                } catch (IOException e) {
-                    throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
-                }
+                var repository = fetch(repoEntry.getUrl(), ref, pathInRepo, secret.orElse(null));
+                return walkAndParse(yamlMapper, repository.path(), kind, useFileNames, namePrefix, allowedFormats,
+                        limit);
             });
         } catch (StoreException e) {
             throw e;
@@ -211,38 +192,97 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         }
     }
 
-    private EntityLike parseFile(Path path) {
-        try (var reader = Files.newBufferedReader(path, UTF_8)) {
-            return yamlMapper.readValue(reader, PartialEntity.class);
+    private static Set<FileFormat> parseAllowedFormats(Map<String, List<String>> queryParams) {
+        return Optional.ofNullable(queryParams.get("allowedFormats"))
+                .flatMap(p -> Optional.ofNullable(p.get(0)))
+                .map(s -> {
+                    var formats = s.split(",");
+                    if (formats.length < 1) {
+                        throw new StoreException("Invalid 'allowedFormats': " + s);
+                    }
+                    var result = ImmutableSet.<FileFormat>builder();
+                    for (var f : formats) {
+                        try {
+                            result.add(FileFormat.valueOf(f.toUpperCase()));
+                        } catch (IllegalArgumentException e) {
+                            throw new StoreException("Invalid 'allowedFormats' value: " + f);
+                        }
+                    }
+                    return (Set<FileFormat>) result.build();
+                })
+                .orElse(Set.of(FileFormat.YAML));
+    }
+
+    @VisibleForTesting
+    static List<EntityLike> walkAndParse(YamlMapper yamlMapper,
+                                         Path rootPath,
+                                         String kind,
+                                         boolean useFileNames,
+                                         String namePrefix,
+                                         Set<FileFormat> allowedFormats,
+                                         int limit) {
+
+        try {
+            // noinspection resource
+            var data = Files.walk(rootPath)
+                    .flatMap(path -> EntityFile.from(path).stream())
+                    .filter(file -> allowedFormats.contains(file.format()))
+                    .filter(file -> matchesKind(rootPath, file, kind))
+                    .map(file -> {
+                        var e = file.parseAsEntity(yamlMapper, rootPath);
+                        var name = e.name();
+                        if (useFileNames) {
+                            name = file.path().getFileName().toString();
+                            // strip the extension
+                            // TODO should this be an option?
+                            var idx = name.lastIndexOf('.');
+                            if (idx > 0) {
+                                name = name.substring(0, idx);
+                            }
+                        }
+                        return e.withName(namePrefix + name);
+                    });
+
+            if (limit > 0) {
+                data = data.limit(limit);
+            }
+
+            return data.toList();
         } catch (IOException e) {
-            throw new StoreException("Error while reading %s: %s".formatted(path, e.getMessage()), e);
+            throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
         }
     }
 
-    private static boolean isMicaYamlFile(Path path) {
-        var fileName = path.getFileName().toString();
-        return fileName.endsWith(".yaml") || fileName.endsWith(".yml");
-    }
-
-    private static boolean isOfValidKind(Path path, String kind) {
-        // a cheap way to check if the file is of the given kind
-        try (var reader = Files.newBufferedReader(path, UTF_8)) {
-            return reader.lines().anyMatch(l -> l.matches("kind:\\s+" + Pattern.quote(kind)));
-        } catch (IOException e) {
-            throw new StoreException("Error while reading %s: %s".formatted(path, e.getMessage()), e);
+    private static boolean matchesKind(Path rootPath, EntityFile entityFile, String kindPattern) {
+        // should be a cheap way to check if the file is of the given kind
+        switch (entityFile.format()) {
+            case YAML -> {
+                try (var reader = Files.newBufferedReader(entityFile.path(), UTF_8)) {
+                    return reader.lines().anyMatch(l -> l.matches("kind:\\s+" + kindPattern));
+                } catch (IOException e) {
+                    throw new StoreException("Error while reading %s: %s".formatted(entityFile.path(), e.getMessage()),
+                            e);
+                }
+            }
+            case PROPERTIES -> {
+                return PROPERTIES_KIND.matches(kindPattern);
+            }
+            default ->
+                throw new StoreException("Unsupported file format " + entityFile.format() + ": "
+                        + rootPath.relativize(entityFile.path()));
         }
     }
 
-    public Map<String, List<String>> parseQueryParameters(String s) {
+    private static Map<String, List<String>> parseQueryParameters(String s) {
         if (s == null || s.isBlank()) {
             return Map.of();
         }
         return Arrays.stream(s.split("&"))
-                .map(this::splitQueryParameter)
-                .collect(groupingBy(Map.Entry::getKey, LinkedHashMap::new, mapping(Map.Entry::getValue, toList())));
+                .map(ConcordGitEntityFetcher::splitQueryParameter)
+                .collect(groupingBy(Map.Entry::getKey, HashMap::new, mapping(Map.Entry::getValue, toList())));
     }
 
-    public SimpleEntry<String, String> splitQueryParameter(String it) {
+    private static SimpleEntry<String, String> splitQueryParameter(String it) {
         var idx = it.indexOf("=");
         var key = idx > 0 ? it.substring(0, idx) : it;
         var value = idx > 0 && it.length() > idx + 1 ? it.substring(idx + 1) : null;

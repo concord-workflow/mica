@@ -63,10 +63,14 @@ public class ViewRenderer {
                 .build());
     }
 
+    public RenderedView render(ViewLike view, Stream<? extends EntityLike> entities) {
+        return render(view, RenderOverrides.none(), entities);
+    }
+
     /**
      * Render a /mica/view/v1 using the given entities and parameters.
      */
-    public RenderedView render(ViewLike view, Stream<? extends EntityLike> entities) {
+    public RenderedView render(ViewLike view, RenderOverrides overrides, Stream<? extends EntityLike> entities) {
         // interpolate JSON path using the supplied parameters
         var jsonPath = requireNonNull(view.data().jsonPath());
 
@@ -93,7 +97,7 @@ public class ViewRenderer {
         }
 
         // merge - convert an array of objects into a single object
-        var merge = view.data().merge().orElse(false);
+        var merge = overrides.alwaysMerge() || view.data().merge().orElse(false);
         if (merge && data.stream().allMatch(JsonNode::isObject)) {
             var mergedData = data.stream()
                     .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
@@ -163,6 +167,17 @@ public class ViewRenderer {
             return mapper.updateValue(left, right);
         } catch (JsonProcessingException e) {
             throw new ViewProcessorException("Error while merging JSON objects: " + e.getMessage());
+        }
+    }
+
+    public record RenderOverrides(boolean alwaysMerge) {
+
+        public static RenderOverrides none() {
+            return new RenderOverrides(false);
+        }
+
+        public static RenderOverrides merged() {
+            return new RenderOverrides(true);
         }
     }
 }

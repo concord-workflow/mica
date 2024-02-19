@@ -199,6 +199,48 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         assertEquals("required", result.data().get("validation").get(0).get("messages").get(0).get("type").asText());
     }
 
+    @Test
+    public void viewsCanBeRenderedAsPropertiesFile() throws Exception {
+        // create kind
+        var recordKindV1 = "/test-kind-v1-" + System.currentTimeMillis();
+        entityStore.upsert(session, new MicaKindV1.Builder()
+                .name(recordKindV1)
+                .schema(parseObject("""
+                        properties:
+                          data:
+                            type: object
+                        required: ["data"]
+                        """))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // create test records
+        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
+                Map.of("data", objectMapper.readTree("""
+                        {
+                            "x.y": false
+                        }
+                        """))));
+        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
+                Map.of("data", objectMapper.readTree("""
+                        {
+                            "x.y": true
+                        }
+                        """))));
+
+        // create view
+        entityStore.upsert(session, new MicaViewV1.Builder()
+                .name("/test-properties")
+                .selector(byEntityKind(recordKindV1))
+                .data(jsonPath("$.data"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // we expect entities to be flattened into a .properties format
+        var result = viewResource.renderProperties(RenderRequest.of("/test-properties", 10));
+        assertEquals("x.y=true\n", result);
+    }
+
     private static String randomPathPrefix() {
         return "/test-" + System.currentTimeMillis();
     }

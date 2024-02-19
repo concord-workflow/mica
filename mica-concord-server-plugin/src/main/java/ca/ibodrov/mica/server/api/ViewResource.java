@@ -3,12 +3,15 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.data.*;
+import ca.ibodrov.mica.server.data.ViewRenderer.RenderOverrides;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.sdk.validation.Validate;
@@ -23,6 +26,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -32,6 +36,7 @@ import java.util.stream.Stream;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 @Tag(name = "View")
 @Path("/api/mica/v1/view")
@@ -82,6 +87,36 @@ public class ViewResource implements Resource {
                 objectMapper.convertValue(renderedView.data(), JsonNode.class),
                 objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
                 validation);
+    }
+
+    @POST
+    @Path("renderProperties")
+    @Consumes(APPLICATION_JSON)
+    @Produces(TEXT_PLAIN)
+    @Operation(summary = "Render a view into a .properties file", operationId = "renderProperties")
+    @Validate
+    public String renderProperties(@Valid RenderRequest request) {
+        var parameters = request.parameters().orElseGet(NullNode::getInstance);
+        var view = interpolateView(assertViewEntity(request), parameters);
+        var entities = fetch(view, request.limit());
+
+        var renderedView = viewRenderer.render(view, RenderOverrides.merged(), entities);
+        if (renderedView.data().size() != 1) {
+            throw ApiException.badRequest("Expected a view flattened down to a single entity, got "
+                    + renderedView.data().size() + " entities");
+        }
+
+        var validation = validate(view, renderedView);
+        if (validation.isPresent() && !validation.get().isEmpty()) {
+            throw ApiException.badRequest("Validation failed: " + validation.get());
+        }
+
+        var properties = formatAsProperties((ObjectNode) renderedView.data().get(0));
+        return properties.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .sorted()
+                .reduce((a, b) -> a + "\n" + b)
+                .orElse("# empty") + "\n";
     }
 
     @GET
@@ -242,5 +277,26 @@ public class ViewResource implements Resource {
         } catch (IllegalArgumentException e) {
             throw ApiException.badRequest("Invalid URI: " + s);
         }
+    }
+
+    @VisibleForTesting
+    static Map<String, String> formatAsProperties(ObjectNode node) {
+        var builder = ImmutableMap.<String, String>builder();
+        putProperty(builder, node, "");
+        return builder.build();
+    }
+
+    private static void putProperty(ImmutableMap.Builder<String, String> builder, ObjectNode node, String path) {
+        node.fields().forEachRemaining(e -> {
+            var k = e.getKey();
+            var v = e.getValue();
+            switch (v.getNodeType()) {
+                case OBJECT -> putProperty(builder, (ObjectNode) v, k + ".");
+                case NULL -> {
+                    // skip
+                }
+                default -> builder.put(path + k, v.asText());
+            }
+        });
     }
 }

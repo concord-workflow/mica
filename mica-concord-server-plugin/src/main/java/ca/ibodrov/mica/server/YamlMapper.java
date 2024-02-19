@@ -56,4 +56,8 @@ public class YamlMapper {
     public JsonNode readTree(String in) throws JsonProcessingException {
         return delegate.readTree(in);
     }
+
+    public JsonNode createObjectNode() {
+        return delegate.createObjectNode();
+    }
 }

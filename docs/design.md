@@ -401,7 +401,9 @@ Supported parameters:
 - `useFileNames` -- optional, if `true`, use file names as entity names (even if
   `name` present in the file). Default is `false`;
 - `namePrefix` -- optional, if specified, prepend the given string to each
-  entity name. Default is empty string.
+  entity name. Default is empty string;
+- `allowedFormats` -- optional, a comma-separated list of file types to look for. 
+  Default is `yaml`. See [Property Files Support](#property-files-support) for details.
 
 By default, `includes` contain the URL of the internal entity store:
 
@@ -420,6 +422,95 @@ selector:
   includes:
     - mica://internal
     - concord+git://myConcordOrg/myConcordProject/myFavoriteGitRepo?path=/stuff/configs&ref=main  
+```
+
+## Property Files Support
+
+By default, Mica includes only YAML files when fetching data from
+a `concord+git://` reference. To include other file types, use
+the `allowedFormats` parameter:
+
+```yaml
+selector:
+  includes:
+    - concord+git://myConcordOrg/myConcordProject/myGitRepo?allowedFormats=yaml,properties
+```
+
+The `properties` value enables support for Java `.properties` files. When
+fetching data from a Git repository, Mica will look for `.properties` files and
+render them as entities.
+
+For example, given a `foo/bar.properties` file:
+
+```properties
+a.b.c=123
+#disabledProperty=456
+aBool=false
+aValueWithCurlyBraces={{mustache}}
+```
+
+Mica will render the following entity:
+
+```yaml
+name: /foo/bar.properties
+kind: /mica/java-properties/v1
+data:
+  "a.b.c": 123
+  aBool: false
+  aValueWithCurlyBraces: "{{mustache}}"
+```
+
+Property keys are used "as is".  Property values are treated as JSON values, so
+`true` and `false` are rendered as booleans, and numbers are rendered as
+numbers, etc.
+
+Views can be rendered as flat properties files as well.
+
+For example, given the view definition:
+
+```yaml
+name: /examples/properties/effective-properties
+kind: /mica/view/v1
+selector:
+  entityKind: /mica/java-properties/v1
+  # the properties will be merged in the order they match the patterns
+  namePatterns:
+    - "/examples/properties/foo.properties"
+    - "/examples/properties/bar.properties"
+data:
+  jsonPath: $.data
+  flatten: true # always true when using /api/mica/v1/view/renderProperties
+```
+
+and a couple of entities:
+
+```yaml
+name: /examples/properties/foo.properties
+kind: /mica/java-properties/v1
+data:
+  a.b.c: 123
+  aBool: false
+  aValueWithCurlyBraces: "{{mustache}}"
+```
+
+```yaml
+name: /examples/properties/bar.properties
+kind: /mica/java-properties/v1
+data:
+  a.b.c: 234
+  aBool: true
+```
+
+The view can be rendered as a flat properties file:
+
+```yaml
+curl -i --json '{"viewName": "/examples/properties/effective-properties" }' 'http://localhost:8080/api/mica/v1/view/renderProperties'
+```
+
+```properties
+a.b.c=234
+aBool=true
+aValueWithCurlyBraces={{mustache}}
 ```
 
 ## Materialize View Data As Entities

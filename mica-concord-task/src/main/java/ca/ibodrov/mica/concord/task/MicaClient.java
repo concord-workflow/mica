@@ -79,6 +79,15 @@ public class MicaClient {
         return parseResponseAsJson(response, PartialEntity.class);
     }
 
+    public String renderProperties(RenderRequest body) {
+        var request = newRequest("/api/mica/v1/view/renderProperties")
+                .header("Content-Type", "application/json")
+                .POST(BodyPublishers.ofByteArray(serialize(body)))
+                .build();
+        var response = send(request, ofInputStream());
+        return parseResponseAsText(response);
+    }
+
     public EntityVersion uploadPartialYaml(String kind, String name, boolean replace, BodyPublisher bodyPublisher) {
         var qp = queryParameters(
                 "entityKind", kind,
@@ -121,21 +130,23 @@ public class MicaClient {
         }
     }
 
+    private String parseResponseAsText(HttpResponse<InputStream> response) {
+        try {
+            handleResponseErrors(response);
+            assertContentType(response, "text");
+            try (var responseBody = response.body()) {
+                return new String(responseBody.readAllBytes(), UTF_8);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error parsing response: " + e.getMessage(), e);
+        }
+    }
+
     private <T> T parseResponseAsJson(HttpResponse<InputStream> response,
                                       Class<T> type) {
         try {
-            var statusCode = response.statusCode();
-            if (statusCode < 200 || statusCode > 299) {
-                try (var body = response.body()) {
-                    throw new RuntimeException(
-                            "Request error: " + response.statusCode() + " " + new String(body.readAllBytes(), UTF_8));
-                }
-            }
-            if (response.headers().firstValue("Content-Type")
-                    .filter(contentType -> contentType.toLowerCase().contains("json"))
-                    .isEmpty()) {
-                throw new RuntimeException("Not a JSON response, status code: " + response.statusCode());
-            }
+            handleResponseErrors(response);
+            assertContentType(response, "json");
             try (var responseBody = response.body()) {
                 return objectMapper.readValue(responseBody, type);
             }
@@ -151,6 +162,24 @@ public class MicaClient {
             return Optional.empty();
         }
         return Optional.of(parseResponseAsJson(response, type));
+    }
+
+    private static void handleResponseErrors(HttpResponse<InputStream> response) throws IOException {
+        var statusCode = response.statusCode();
+        if (statusCode < 200 || statusCode > 299) {
+            try (var body = response.body()) {
+                throw new RuntimeException(
+                        "Request error: " + response.statusCode() + " " + new String(body.readAllBytes(), UTF_8));
+            }
+        }
+    }
+
+    private static void assertContentType(HttpResponse<?> response, String expected) {
+        if (response.headers().firstValue("Content-Type")
+                .filter(contentType -> contentType.toLowerCase().contains(expected))
+                .isEmpty()) {
+            throw new RuntimeException("Not a '" + expected + "' response, status code: " + response.statusCode());
+        }
     }
 
     private static String queryParameters(Object... kvs) {
