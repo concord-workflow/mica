@@ -28,8 +28,10 @@ public class ConcordGitEntityFetcherTest {
 
         var barProperties = tempDir.resolve("bar.properties");
         Files.writeString(barProperties, """
-                a=one
+                a=1
                 c.d=three
+                e=false
+                f={"hello": "world"}
                 """);
 
         var randomStuff = tempDir.resolve("random-stuff.txt");
@@ -45,7 +47,8 @@ public class ConcordGitEntityFetcherTest {
         assertEquals(3, entityFoo.data().get("c").get("d").asInt());
 
         var entityBar = result.stream().filter(e -> e.name().equals("bar")).findFirst().orElseThrow();
-        assertEquals("one", entityBar.data().get("a").asText());
+        assertEquals("1", entityBar.data().get("a").asText());
         assertEquals("three", entityBar.data().get("c.d").asText());
+        assertEquals("{\"hello\": \"world\"}", entityBar.data().get("f").asText());
     }
 }

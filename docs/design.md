@@ -426,8 +426,11 @@ selector:
 
 ## Property Files Support
 
+Mica can ingest Java `.properties` files and render them as view entities. In
+turn, views can be rendered as flat properties files.
+
 By default, Mica includes only YAML files when fetching data from
-a `concord+git://` reference. To include other file types, use
+`concord+git://` references. To include other file types, use
 the `allowedFormats` parameter:
 
 ```yaml
@@ -460,9 +463,7 @@ data:
   aValueWithCurlyBraces: "{{mustache}}"
 ```
 
-Property keys are used "as is".  Property values are treated as JSON values, so
-`true` and `false` are rendered as booleans, and numbers are rendered as
-numbers, etc.
+Property keys and values are treated as strings and used "as is".
 
 Views can be rendered as flat properties files as well.
 

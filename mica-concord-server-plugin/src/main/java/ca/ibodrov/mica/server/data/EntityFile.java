@@ -7,6 +7,7 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.IOException;
@@ -61,16 +62,7 @@ record EntityFile(FileFormat format, Path path) {
             throws IOException {
 
         var node = new ObjectMapper().createObjectNode();
-        props.forEach((k, v) -> {
-            JsonNode value;
-            try {
-                value = yamlMapper.readTree((String) v);
-            } catch (IOException e) {
-                throw new StoreException(
-                        "Error while reading %s: %s".formatted(entityFile.path(), e.getMessage()), e);
-            }
-            node.set((String) k, value);
-        });
+        props.forEach((k, v) -> node.set((String) k, TextNode.valueOf((String) v)));
 
         var data = ImmutableMap.<String, JsonNode>builder();
         node.fields().forEachRemaining(e -> data.put(e.getKey(), e.getValue()));
