@@ -28,7 +28,7 @@ public class MicaFilterChainConfigurator implements FilterChainConfigurator {
         // delegate the rest of the requests to the Concord authenticating filter
         manager.addFilter("mica", concordDelegate);
         manager.addFilter("mica-user-session", new UserPrincipalContextProvider());
-        manager.createChain("/api/mica/ui/whoami", "mica-user-session");
+        manager.createChain("/api/mica/ui/**", "mica-user-session");
         manager.createChain("/api/mica/oidc/**", "mica, mica-user-session");
         manager.createChain("/api/mica/v1/**", "mica, mica-user-session");
     }
