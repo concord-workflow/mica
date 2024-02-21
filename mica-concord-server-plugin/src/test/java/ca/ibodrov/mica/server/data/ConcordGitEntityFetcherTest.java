@@ -37,8 +37,9 @@ public class ConcordGitEntityFetcherTest {
         var randomStuff = tempDir.resolve("random-stuff.txt");
         Files.writeString(randomStuff, "hello");
 
-        var result = ConcordGitEntityFetcher.walkAndParse(yamlMapper, tempDir, ".*", true, "",
-                EnumSet.allOf(FileFormat.class), -1);
+        var result = ConcordGitEntityFetcher
+                .walkAndParse(yamlMapper, tempDir, ".*", true, "", EnumSet.allOf(FileFormat.class))
+                .toList();
 
         assertEquals(2, result.size());
 

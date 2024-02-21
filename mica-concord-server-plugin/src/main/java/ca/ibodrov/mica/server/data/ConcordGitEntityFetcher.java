@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.EntityFile.PROPERTIES_KIND;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -102,70 +104,43 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
 
     @Override
     public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
+        // TODO replace with a separate method
         if (!"concord+git".equals(uri.getScheme())) {
             return List.of();
         }
 
-        if (uri.getPath() == null) {
-            throw new StoreException("Invalid URI: " + uri);
-        }
-
-        var pathElements = uri.getPath().split("/");
-        if (pathElements.length != 3) {
-            throw new StoreException("Invalid URI: " + uri);
-        }
-
-        var orgName = uri.getHost();
-        var projectName = pathElements[1];
-        var repoName = pathElements[2];
-        var queryParams = parseQueryParameters(uri.getQuery());
-        var ref = Optional.ofNullable(queryParams.get("ref"))
-                .flatMap(r -> Optional.ofNullable(r.get(0)))
-                .orElse(DEFAULT_REF);
-        var path = Optional.ofNullable(queryParams.get("path"))
-                .flatMap(p -> Optional.ofNullable(p.get(0)))
-                .orElse("/");
-        var useFileNames = Optional.ofNullable(queryParams.get("useFileNames"))
-                .flatMap(p -> Optional.ofNullable(p.get(0)))
-                .map(Boolean::parseBoolean)
-                .orElse(false);
-        var namePrefix = Optional.ofNullable(queryParams.get("namePrefix"))
-                .flatMap(p -> Optional.ofNullable(p.get(0)))
-                .orElse("");
-        var allowedFormats = parseAllowedFormats(queryParams);
-
-        return getAllByKind(orgName, projectName, repoName, ref, kind, path, useFileNames, namePrefix, allowedFormats,
-                limit);
+        var query = Query.parseWithKind(uri, kind);
+        return getAllByKind(query);
     }
 
-    private List<EntityLike> getAllByKind(String orgName,
-                                          String projectName,
-                                          String repoName,
-                                          String ref,
-                                          String kind,
-                                          String pathInRepo,
-                                          boolean useFileNames,
-                                          String namePrefix,
-                                          Set<FileFormat> allowedFormats,
-                                          int limit) {
+    private List<EntityLike> getAllByKind(Query query) {
+        return fetch(query, repository -> {
+            try {
+                return walkAndParse(yamlMapper, repository.path(), query.kind, query.useFileNames, query.namePrefix,
+                        query.allowedFormats);
+            } catch (IOException e) {
+                throw new StoreException("Error while reading entities: " + e.getMessage(), e);
+            }
+        });
+    }
 
-        assert namePrefix != null;
-        assert !allowedFormats.isEmpty();
-
+    private List<EntityLike> fetch(Query query, Function<Repository, Stream<EntityLike>> fetcher) {
         try {
-            var org = orgManager.assertAccess(orgName, false);
-            var repoEntry = projectRepositoryManager.get(org.getId(), projectName, repoName);
+            var org = orgManager.assertAccess(query.orgName, false);
+            var repoEntry = projectRepositoryManager.get(org.getId(), query.projectName, query.repoName);
             var secret = Optional.ofNullable(repoEntry.getSecretName())
                     .map(secretName -> getSecret(org.getId(), secretName));
             return repositoryCache.withLock(repoEntry.getUrl(), () -> {
-                var repository = fetch(repoEntry.getUrl(), ref, pathInRepo, secret.orElse(null));
-                return walkAndParse(yamlMapper, repository.path(), kind, useFileNames, namePrefix, allowedFormats,
-                        limit);
+                var repository = fetch(repoEntry.getUrl(), query.ref, query.pathInRepo, secret.orElse(null));
+                var data = fetcher.apply(repository);
+                if (query.limit > 0) {
+                    data = data.limit(query.limit);
+                }
+                return data.toList();
             });
         } catch (StoreException e) {
             throw e;
         } catch (RuntimeException e) {
-            // TODO better way
             throw new StoreException(e.getMessage());
         }
     }
@@ -177,7 +152,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     private Repository fetch(String url, String ref, String pathInRepo, Secret secret) {
-        Path dest = repositoryCache.getPath(url);
+        var dest = repositoryCache.getPath(url);
         try {
             return repositoryProviders.fetch(FetchRequest.builder()
                     .url(url)
@@ -214,43 +189,33 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     @VisibleForTesting
-    static List<EntityLike> walkAndParse(YamlMapper yamlMapper,
-                                         Path rootPath,
-                                         String kind,
-                                         boolean useFileNames,
-                                         String namePrefix,
-                                         Set<FileFormat> allowedFormats,
-                                         int limit) {
+    static Stream<EntityLike> walkAndParse(YamlMapper yamlMapper,
+                                           Path rootPath,
+                                           String kind,
+                                           boolean useFileNames,
+                                           String namePrefix,
+                                           Set<FileFormat> allowedFormats)
+            throws IOException {
 
-        try {
-            // noinspection resource
-            var data = Files.walk(rootPath)
-                    .flatMap(path -> EntityFile.from(path).stream())
-                    .filter(file -> allowedFormats.contains(file.format()))
-                    .filter(file -> matchesKind(rootPath, file, kind))
-                    .map(file -> {
-                        var e = file.parseAsEntity(yamlMapper, rootPath);
-                        var name = e.name();
-                        if (useFileNames) {
-                            name = file.path().getFileName().toString();
-                            // strip the extension
-                            // TODO should this be an option?
-                            var idx = name.lastIndexOf('.');
-                            if (idx > 0) {
-                                name = name.substring(0, idx);
-                            }
+        // noinspection resource
+        return Files.walk(rootPath)
+                .flatMap(path -> EntityFile.from(path).stream())
+                .filter(file -> allowedFormats.contains(file.format()))
+                .filter(file -> matchesKind(rootPath, file, kind))
+                .map(file -> {
+                    var e = file.parseAsEntity(yamlMapper, rootPath);
+                    var name = e.name();
+                    if (useFileNames) {
+                        name = file.path().getFileName().toString();
+                        // strip the extension
+                        // TODO should this be an option?
+                        var idx = name.lastIndexOf('.');
+                        if (idx > 0) {
+                            name = name.substring(0, idx);
                         }
-                        return e.withName(namePrefix + name);
-                    });
-
-            if (limit > 0) {
-                data = data.limit(limit);
-            }
-
-            return data.toList();
-        } catch (IOException e) {
-            throw new StoreException("Error while reading the repository: " + e.getMessage(), e);
-        }
+                    }
+                    return e.withName(namePrefix + name);
+                });
     }
 
     private static boolean matchesKind(Path rootPath, EntityFile entityFile, String kindPattern) {
@@ -267,9 +232,8 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             case PROPERTIES -> {
                 return PROPERTIES_KIND.matches(kindPattern);
             }
-            default ->
-                throw new StoreException("Unsupported file format " + entityFile.format() + ": "
-                        + rootPath.relativize(entityFile.path()));
+            default -> throw new StoreException("Unsupported file format " + entityFile.format() + ": "
+                    + rootPath.relativize(entityFile.path()));
         }
     }
 
@@ -289,5 +253,50 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         return new SimpleEntry<>(
                 URLDecoder.decode(key, UTF_8),
                 value != null ? URLDecoder.decode(value, UTF_8) : null);
+    }
+
+    private record Query(String orgName,
+            String projectName,
+            String repoName,
+            String ref,
+            String kind,
+            String pathInRepo,
+            boolean useFileNames,
+            String namePrefix,
+            Set<FileFormat> allowedFormats,
+            int limit) {
+
+        static Query parseWithKind(URI uri, String kind) {
+            if (uri.getPath() == null) {
+                throw new StoreException("Invalid URI: " + uri);
+            }
+
+            var pathElements = uri.getPath().split("/");
+            if (pathElements.length != 3) {
+                throw new StoreException("Invalid URI: " + uri);
+            }
+
+            var orgName = uri.getHost();
+            var projectName = pathElements[1];
+            var repoName = pathElements[2];
+            var queryParams = parseQueryParameters(uri.getQuery());
+            var ref = Optional.ofNullable(queryParams.get("ref"))
+                    .flatMap(r -> Optional.ofNullable(r.get(0)))
+                    .orElse(DEFAULT_REF);
+            var path = Optional.ofNullable(queryParams.get("path"))
+                    .flatMap(p -> Optional.ofNullable(p.get(0)))
+                    .orElse("/");
+            var useFileNames = Optional.ofNullable(queryParams.get("useFileNames"))
+                    .flatMap(p -> Optional.ofNullable(p.get(0)))
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+            var namePrefix = Optional.ofNullable(queryParams.get("namePrefix"))
+                    .flatMap(p -> Optional.ofNullable(p.get(0)))
+                    .orElse("");
+            var allowedFormats = parseAllowedFormats(queryParams);
+
+            return new Query(orgName, projectName, repoName, ref, kind, path, useFileNames, namePrefix, allowedFormats,
+                    0);
+        }
     }
 }
