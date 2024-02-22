@@ -8,7 +8,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.Map;
 
+import static ca.ibodrov.mica.server.data.ConcordGitEntityFetcher.DEFAULT_FILE_FORMAT_OPTIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConcordGitEntityFetcherTest {
@@ -38,7 +40,8 @@ public class ConcordGitEntityFetcherTest {
         Files.writeString(randomStuff, "hello");
 
         var result = ConcordGitEntityFetcher
-                .walkAndParse(yamlMapper, tempDir, ".*", true, "", EnumSet.allOf(FileFormat.class))
+                .walkAndParse(yamlMapper, tempDir, ".*", true, "", EnumSet.allOf(FileFormat.class),
+                        DEFAULT_FILE_FORMAT_OPTIONS)
                 .toList();
 
         assertEquals(2, result.size());
@@ -51,5 +54,28 @@ public class ConcordGitEntityFetcherTest {
         assertEquals("1", entityBar.data().get("a").asText());
         assertEquals("three", entityBar.data().get("c.d").asText());
         assertEquals("{\"hello\": \"world\"}", entityBar.data().get("f").asText());
+    }
+
+    @Test
+    public void testCustomFileNamePatters(@TempDir Path tempDir) throws Exception {
+        var fooProperties = tempDir.resolve("foo.my-props");
+        Files.writeString(fooProperties, """
+                a=one
+                b=two
+                """);
+
+        var barProperties = tempDir.resolve("bar.properties");
+        Files.writeString(barProperties, """
+                a=1
+                b=2
+                """);
+
+        var options = Map.of(FileFormat.PROPERTIES, new FileFormatOptions(".*\\.my-props"));
+        var result = ConcordGitEntityFetcher
+                .walkAndParse(yamlMapper, tempDir, ".*", true, "", EnumSet.allOf(FileFormat.class), options)
+                .toList();
+
+        assertEquals(1, result.size());
+        assertEquals("foo", result.get(0).name());
     }
 }

@@ -403,7 +403,10 @@ Supported parameters:
 - `namePrefix` -- optional, if specified, prepend the given string to each
   entity name. Default is empty string;
 - `allowedFormats` -- optional, a comma-separated list of file types to look for. 
-  Default is `yaml`. See [Property Files Support](#property-files-support) for details.
+  Default is `yaml`. See [Property Files Support](#property-files-support) for details;
+- `{format}.filePattern` -- optional, a regular expression to match file names. 
+  Default is `.*\\.ya?ml` for YAML files and `.*\\.properties` for Java
+  `.properties` files.
 
 By default, `includes` contain the URL of the internal entity store:
 
@@ -421,7 +424,7 @@ syntax:
 selector:
   includes:
     - mica://internal
-    - concord+git://myConcordOrg/myConcordProject/myFavoriteGitRepo?path=/stuff/configs&ref=main  
+    - concord+git://myConcordOrg/myConcordProject/myFavoriteGitRepo?path=/stuff/configs&ref=main
 ```
 
 ## Property Files Support
@@ -442,6 +445,22 @@ selector:
 The `properties` value enables support for Java `.properties` files. When
 fetching data from a Git repository, Mica will look for `.properties` files and
 render them as entities.
+
+Mica uses file names to determine the format. By default, YAML files are using
+`.*\\.ya?ml` pattern and `.properties` files are using `.*\\.properties` pattern.
+Patterns can be overridden using `{format}.filePattern` parameters:
+
+```yaml
+selector:
+  includes:
+    - concord+git://myConcordOrg/myConcordProject/myGitRepo?allowedFormats=properties&properties.filePattern=.*(%5C.custom-format%7C%5C.properties)
+    # unescaped version: .*(\.custom-format|\.properties)
+```
+
+The example above includes files with `.properties` and `.custom-format` extensions.
+
+Note, the `filePattern` value is a regex, all non-URI symbols must be escaped
+for the matching to work.
 
 For example, given a `foo/bar.properties` file:
 

@@ -6,14 +6,12 @@ import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Properties;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -21,13 +19,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 record EntityFile(FileFormat format, Path path) {
 
     static final String PROPERTIES_KIND = "/mica/java-properties/v1";
-
-    static Optional<EntityFile> from(Path path) {
-        return FileFormat.stream()
-                .filter(format -> format.matches(path))
-                .findFirst()
-                .map(format -> new EntityFile(format, path));
-    }
 
     EntityLike parseAsEntity(YamlMapper yamlMapper, Path rootPath) {
         try (var reader = Files.newBufferedReader(this.path(), UTF_8)) {
@@ -61,7 +52,7 @@ record EntityFile(FileFormat format, Path path) {
                                               Properties props)
             throws IOException {
 
-        var node = new ObjectMapper().createObjectNode();
+        var node = yamlMapper.createObjectNode();
         props.forEach((k, v) -> node.set((String) k, TextNode.valueOf((String) v)));
 
         var data = ImmutableMap.<String, JsonNode>builder();

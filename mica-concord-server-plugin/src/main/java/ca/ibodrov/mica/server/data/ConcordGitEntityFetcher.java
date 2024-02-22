@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.AbstractMap.SimpleEntry;
@@ -39,6 +40,14 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     private static final Duration GIT_FETCH_TIMEOUT = Duration.ofSeconds(15);
 
     private static final String DEFAULT_REF = "main";
+    private static final Set<FileFormat> DEFAULT_ALLOWED_FORMATS = Set.of(FileFormat.YAML);
+    private static final String DEFAULT_YAML_FILE_PATTERN = ".*\\.ya?ml";
+    private static final String DEFAULT_PROPERTIES_FILE_PATTERN = ".*\\.properties";
+
+    @VisibleForTesting
+    static final Map<FileFormat, FileFormatOptions> DEFAULT_FILE_FORMAT_OPTIONS = Map.of(
+            FileFormat.YAML, new FileFormatOptions(DEFAULT_YAML_FILE_PATTERN),
+            FileFormat.PROPERTIES, new FileFormatOptions(DEFAULT_PROPERTIES_FILE_PATTERN));
 
     private final OrganizationManager orgManager;
     private final ProjectRepositoryManager projectRepositoryManager;
@@ -116,8 +125,14 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     private List<EntityLike> getAllByKind(Query query) {
         return fetch(query, repository -> {
             try {
-                return walkAndParse(yamlMapper, repository.path(), query.kind, query.useFileNames, query.namePrefix,
-                        query.allowedFormats);
+                return walkAndParse(
+                        yamlMapper,
+                        repository.path(),
+                        query.kind,
+                        query.useFileNames,
+                        query.namePrefix,
+                        query.allowedFormats,
+                        query.formatOptions);
             } catch (IOException e) {
                 throw new StoreException("Error while reading entities: " + e.getMessage(), e);
             }
@@ -185,7 +200,28 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                     }
                     return (Set<FileFormat>) result.build();
                 })
-                .orElse(Set.of(FileFormat.YAML));
+                .orElse(DEFAULT_ALLOWED_FORMATS);
+    }
+
+    private static Map<FileFormat, FileFormatOptions> parseFormatOptions(Set<FileFormat> allowedFormats,
+                                                                         Map<String, List<String>> queryParams) {
+        return allowedFormats.stream()
+                .collect(toMap(f -> f, f -> {
+                    var pattern = Optional.ofNullable(queryParams.get(f.name().toLowerCase() + ".filePattern"))
+                            .flatMap(p -> Optional.ofNullable(p.get(0)))
+                            .orElseGet(() -> {
+                                switch (f) {
+                                    case YAML -> {
+                                        return DEFAULT_YAML_FILE_PATTERN;
+                                    }
+                                    case PROPERTIES -> {
+                                        return DEFAULT_PROPERTIES_FILE_PATTERN;
+                                    }
+                                    default -> throw new StoreException("Unsupported file format: " + f);
+                                }
+                            });
+                    return new FileFormatOptions(pattern);
+                }));
     }
 
     @VisibleForTesting
@@ -194,13 +230,13 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                                            String kind,
                                            boolean useFileNames,
                                            String namePrefix,
-                                           Set<FileFormat> allowedFormats)
+                                           Set<FileFormat> allowedFormats,
+                                           Map<FileFormat, FileFormatOptions> formatOptions)
             throws IOException {
 
         // noinspection resource
         return Files.walk(rootPath)
-                .flatMap(path -> EntityFile.from(path).stream())
-                .filter(file -> allowedFormats.contains(file.format()))
+                .flatMap(path -> parsePath(path, allowedFormats, formatOptions).stream())
                 .filter(file -> matchesKind(rootPath, file, kind))
                 .map(file -> {
                     var e = file.parseAsEntity(yamlMapper, rootPath);
@@ -216,6 +252,25 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                     }
                     return e.withName(namePrefix + name);
                 });
+    }
+
+    private static Optional<EntityFile> parsePath(Path path,
+                                                  Set<FileFormat> allowedFormats,
+                                                  Map<FileFormat, FileFormatOptions> formatOptions) {
+
+        if (!Files.isRegularFile(path)) {
+            return Optional.empty();
+        }
+
+        var fileName = path.getFileName().toString();
+        var format = formatOptions.entrySet().stream()
+                .filter(kv -> allowedFormats.contains(kv.getKey()))
+                .filter(kv -> fileName.matches(kv.getValue().fileNamePattern()))
+                .findFirst()
+                .map(Map.Entry::getKey);
+
+        return format.map(fileFormat -> new EntityFile(fileFormat, path));
+
     }
 
     private static boolean matchesKind(Path rootPath, EntityFile entityFile, String kindPattern) {
@@ -264,6 +319,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             boolean useFileNames,
             String namePrefix,
             Set<FileFormat> allowedFormats,
+            Map<FileFormat, FileFormatOptions> formatOptions,
             int limit) {
 
         static Query parseWithKind(URI uri, String kind) {
@@ -294,8 +350,19 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                     .flatMap(p -> Optional.ofNullable(p.get(0)))
                     .orElse("");
             var allowedFormats = parseAllowedFormats(queryParams);
+            var formatOptions = parseFormatOptions(allowedFormats, queryParams);
 
-            return new Query(orgName, projectName, repoName, ref, kind, path, useFileNames, namePrefix, allowedFormats,
+            return new Query(
+                    orgName,
+                    projectName,
+                    repoName,
+                    ref,
+                    kind,
+                    path,
+                    useFileNames,
+                    namePrefix,
+                    allowedFormats,
+                    formatOptions,
                     0);
         }
     }

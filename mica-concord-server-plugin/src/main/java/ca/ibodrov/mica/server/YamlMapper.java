@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ public class YamlMapper {
         return delegate.readTree(in);
     }
 
-    public JsonNode createObjectNode() {
+    public ObjectNode createObjectNode() {
         return delegate.createObjectNode();
     }
 }
