@@ -1,4 +1,4 @@
-import { EntityEntry, OrderBy, listEntities } from '../api/entity.ts';
+import { Entry, EntryType, list } from '../api/entityList.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
@@ -50,89 +50,48 @@ const HELP: React.ReactNode = (
 
 const DEFAULT_ROW_LIMIT = 1000;
 
-interface FileRow {
-    key: string;
-    label: string;
-    type: 'entity';
-    entity: EntityEntry;
-}
-
-interface FolderRow {
-    key: string;
-    label: string;
-    type: 'folder';
-    path: string;
-}
-
-type DataRow = FileRow | FolderRow;
-
-/**
- * Takes a list of entities and returns a list of rows to be displayed in the table.
- * Each row can be either a "file" (link to an entity) or a "folder" (link to
- * the entity list filtered by the folder's path).
- */
-const filterAndSortData = (data: EntityEntry[], selectedPath: string): DataRow[] => {
-    const files = new Array<FileRow>();
-    const folders = new Array<FolderRow>();
-
-    data.filter((entity) => entity.name.startsWith(selectedPath)).forEach((entity) => {
-        let path = entity.name.substring(0, entity.name.lastIndexOf('/'));
-        if (path.length === 0) {
-            path = '/';
-        }
-        const fileName = entity.name.substring(entity.name.lastIndexOf('/') + 1);
-        if (path === selectedPath) {
-            files.push({
-                key: entity.id,
-                label: fileName,
-                type: 'entity',
-                entity: entity,
-            });
-        } else {
-            const relativePath = entity.name.substring(selectedPath.length);
-            let nextFolder = relativePath.substring(0, relativePath.indexOf('/', 1));
-            if (nextFolder[0] !== '/') {
-                nextFolder = '/' + nextFolder;
-            }
-            if (!folders.find((folder) => folder.label === nextFolder)) {
-                folders.push({
-                    key: entity.id,
-                    label: nextFolder,
-                    type: 'folder',
-                    path: (selectedPath + nextFolder).replace('//', '/'),
-                });
-            }
-        }
-    });
-
-    return [
-        ...folders.sort((a, b) => a.label.localeCompare(b.label)),
-        ...files.sort((a, b) => a.label.localeCompare(b.label)),
-    ];
-};
-
 const EntityTableRow = ({
     row,
     search,
     handleDelete,
+    selectedPath,
 }: {
-    row: FileRow;
+    row: Entry;
     search: string;
-    handleDelete: (row: EntityEntry) => void;
+    handleDelete: (row: Entry) => void;
+    selectedPath: string;
 }) => {
     return (
         <TableRow>
             <TableCell>
-                <Tooltip title={row.entity.kind}>{entityKindToIcon(row.entity.kind)}</Tooltip>
+                {row.type === EntryType.FOLDER && (
+                    <Tooltip title="Folder">
+                        <FolderIcon />
+                    </Tooltip>
+                )}
+                {row.entityKind && (
+                    <Tooltip title={row.entityKind}>{entityKindToIcon(row.entityKind)}</Tooltip>
+                )}
             </TableCell>
             <TableCell>
-                <Link component={RouterLink} to={`/entity/${row.entity.id}/details`}>
-                    {highlightSubstring(row.label, search)}
-                </Link>
+                {row.type === EntryType.FOLDER && (
+                    <Link
+                        component={RouterLink}
+                        to={`/entity?path=${selectedPath}${
+                            selectedPath === '/' ? '' : '/'
+                        }${encodeURIComponent(row.name)}`}>
+                        {highlightSubstring(row.name, search)}
+                    </Link>
+                )}
+                {row.entityId && (
+                    <Link component={RouterLink} to={`/entity/${row.entityId}/details`}>
+                        {highlightSubstring(row.name, search)}
+                    </Link>
+                )}
             </TableCell>
             <TableCell align="right">
                 <RowMenu>
-                    <MenuItem onClick={() => handleDelete(row.entity)}>
+                    <MenuItem onClick={() => handleDelete(row)}>
                         <ListItemIcon>
                             <DeleteIcon fontSize="small" />
                         </ListItemIcon>
@@ -140,24 +99,6 @@ const EntityTableRow = ({
                     </MenuItem>
                 </RowMenu>
             </TableCell>
-        </TableRow>
-    );
-};
-
-const FolderTableRow = ({ row, search }: { row: FolderRow; search: string }) => {
-    return (
-        <TableRow>
-            <TableCell>
-                <Tooltip title="Folder">
-                    <FolderIcon />
-                </Tooltip>
-            </TableCell>
-            <TableCell>
-                <Link component={RouterLink} to={`/entity?path=${encodeURIComponent(row.path)}`}>
-                    {highlightSubstring(row.label, search)}
-                </Link>
-            </TableCell>
-            <TableCell align="right"></TableCell>
         </TableRow>
     );
 };
@@ -176,13 +117,7 @@ const EntityListPage = () => {
     );
     const { data, isFetching } = useQuery(
         ['entity', 'list', selectedPath, selectedKind],
-        () =>
-            listEntities({
-                entityNameStartsWith: selectedPath,
-                entityKind: selectedKind,
-                orderBy: OrderBy.NAME,
-                limit: DEFAULT_ROW_LIMIT,
-            }),
+        () => list(selectedPath, selectedKind),
         {
             keepPreviousData: true,
             select: ({ data }) => data,
@@ -197,25 +132,20 @@ const EntityListPage = () => {
         setOpenUpload(false);
     }, []);
 
-    const [selectedEntity, setSelectedEntity] = React.useState<EntityEntry | undefined>();
+    const [selectedEntry, setSelectedEntry] = React.useState<Entry | undefined>();
     const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
-    const handleDelete = React.useCallback((entry: EntityEntry) => {
-        setSelectedEntity(entry);
+    const handleDelete = React.useCallback((entry: Entry) => {
+        setSelectedEntry(entry);
         setOpenDeleteConfirmation(true);
     }, []);
     const handleCancelDelete = React.useCallback(() => {
-        setSelectedEntity(undefined);
+        setSelectedEntry(undefined);
         setOpenDeleteConfirmation(false);
     }, []);
     const handleSuccessfulDelete = React.useCallback(() => {
         setSuccessNotification('Entity deleted successfully');
         setOpenDeleteConfirmation(false);
     }, []);
-
-    const effectiveData = React.useMemo(
-        () => filterAndSortData(data ?? [], selectedPath),
-        [data, selectedPath],
-    );
 
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
@@ -227,10 +157,10 @@ const EntityListPage = () => {
                     onClose={() => setOpenUpload(false)}
                 />
             )}
-            {selectedEntity && (
+            {selectedEntry?.entityId && (
                 <DeleteEntityConfirmation
-                    entityId={selectedEntity.id}
-                    entityName={selectedEntity.name}
+                    entityId={selectedEntry.entityId}
+                    entityName={selectedEntry.name}
                     open={openDeleteConfirmation}
                     onSuccess={handleSuccessfulDelete}
                     onClose={handleCancelDelete}
@@ -278,31 +208,21 @@ const EntityListPage = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {effectiveData.length > 0 &&
-                            effectiveData
+                        {data &&
+                            data.length > 0 &&
+                            data
                                 .filter((row) =>
-                                    row.label.toLowerCase().includes(search.toLowerCase()),
+                                    row.name.toLowerCase().includes(search.toLowerCase()),
                                 )
-                                .map((row) => {
-                                    if (row.type === 'folder') {
-                                        return (
-                                            <FolderTableRow
-                                                key={row.key}
-                                                row={row}
-                                                search={search}
-                                            />
-                                        );
-                                    } else {
-                                        return (
-                                            <EntityTableRow
-                                                key={row.key}
-                                                row={row}
-                                                search={search}
-                                                handleDelete={handleDelete}
-                                            />
-                                        );
-                                    }
-                                })}
+                                .map((row) => (
+                                    <EntityTableRow
+                                        key={row.name}
+                                        row={row}
+                                        search={search}
+                                        handleDelete={handleDelete}
+                                        selectedPath={selectedPath}
+                                    />
+                                ))}
                         {data && data.length >= DEFAULT_ROW_LIMIT && (
                             <TableRow>
                                 <TableCell colSpan={3} align="center">

@@ -1,0 +1,4 @@
+name: /examples/hello
+kind: /mica/record/v1
+data: |
+  Hello, world!

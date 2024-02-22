@@ -6,10 +6,7 @@ import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;
-import ca.ibodrov.mica.server.ui.EditorSchemaResource;
-import ca.ibodrov.mica.server.ui.OidcResource;
-import ca.ibodrov.mica.server.ui.SwaggerServlet;
-import ca.ibodrov.mica.server.ui.WhoamiResource;
+import ca.ibodrov.mica.server.ui.*;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.typesafe.config.Config;
@@ -87,8 +84,9 @@ public class MicaModule implements Module {
         // jax-rs resources
 
         bindJaxRsResource(binder, BatchOperationResource.class);
-        bindJaxRsResource(binder, EntityHistoryResource.class);
         bindJaxRsResource(binder, EditorSchemaResource.class);
+        bindJaxRsResource(binder, EntityHistoryResource.class);
+        bindJaxRsResource(binder, EntityListResource.class);
         bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, EntityUploadResource.class);
         bindJaxRsResource(binder, OidcResource.class);
