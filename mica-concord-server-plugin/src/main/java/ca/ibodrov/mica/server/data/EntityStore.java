@@ -238,12 +238,14 @@ public class EntityStore {
         var updatedAt = getDatabaseInstant();
         var createdAt = entity.createdAt().orElse(updatedAt);
 
-        // find and replace "id", "createdAt" and "updatedAt" properties in the doc
-        // array
-        // using substring replacement to preserve the original formatting and comments
+        // find and replace "id", "name", "createdAt" and "updatedAt" properties in the
+        // doc
+        // array using substring replacement to preserve the original formatting and
+        // comments
         if (doc != null) {
             doc = inplaceUpdate(doc,
                     "id", objectMapper.convertValue(id, String.class),
+                    "name", entity.name(),
                     "createdAt", objectMapper.convertValue(createdAt, String.class),
                     "updatedAt", objectMapper.convertValue(updatedAt, String.class));
         } else {
@@ -313,8 +315,6 @@ public class EntityStore {
     static byte[] inplaceUpdate(byte[] doc, String... kvs) {
         assert kvs != null && kvs.length % 2 == 0;
         var s = new String(doc, UTF_8);
-        // update properties in the reverse order so that pre-pending a new key adds the
-        // first key to the top
         for (int i = kvs.length - 2; i >= 0; i -= 2) {
             var k = kvs[i];
             var v = kvs[i + 1];

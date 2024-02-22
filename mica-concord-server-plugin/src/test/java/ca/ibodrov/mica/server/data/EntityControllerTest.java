@@ -98,7 +98,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     public void testDocBeingUpdatedAfterUpsert() {
         var doc = """
                 kind: /mica/record/v1
-                name: %s
+                name: "%s"
                 data: foo! # inline comment
                 # some other comment
                 """.formatted(randomEntityName());
@@ -113,7 +113,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 createdAt: "%s"
                 updatedAt: "%s"
                 kind: /mica/record/v1
-                name: %s
+                name: "%s"
                 data: foo! # inline comment
                 # some other comment
                 """.formatted(initialVersion.id().toExternalForm(),
@@ -132,7 +132,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 createdAt: "%s"
                 updatedAt: "%s"
                 kind: /mica/record/v1
-                name: %s
+                name: "%s"
                 data: foo! # inline comment
                 # some other comment
                 """.formatted(updatedVersion.id().toExternalForm(),
