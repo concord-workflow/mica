@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EntityStoreTest {
 
@@ -30,5 +31,14 @@ public class EntityStoreTest {
                 """
                 .getBytes(UTF_8);
         assertArrayEquals(expected, updated);
+    }
+
+    @Test
+    public void testNameNormalization() {
+        assertEquals("/test", EntityStore.normalizeName("/test"));
+        assertEquals("/test", EntityStore.normalizeName("//test"));
+        assertEquals("/test", EntityStore.normalizeName("///test"));
+        assertEquals("/test/foo/bar", EntityStore.normalizeName("/test//foo/bar"));
+        assertEquals("/test/foo/bar", EntityStore.normalizeName("/test//foo///bar"));
     }
 }

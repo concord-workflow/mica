@@ -228,7 +228,9 @@ public class EntityStore {
     }
 
     private Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, String author, @Nullable byte[] doc) {
-        if (isNameUsedAsPathElsewhere(tx, entity.name())) {
+        var name = normalizeName(entity.name());
+
+        if (isNameUsedAsPathElsewhere(tx, name)) {
             throw new StoreException(entity.name() + " is a folder, cannot create an entity with the same name");
         }
 
@@ -245,7 +247,7 @@ public class EntityStore {
         if (doc != null) {
             doc = inplaceUpdate(doc,
                     "id", objectMapper.convertValue(id, String.class),
-                    "name", entity.name(),
+                    "name", name,
                     "createdAt", objectMapper.convertValue(createdAt, String.class),
                     "updatedAt", objectMapper.convertValue(updatedAt, String.class));
         } else {
@@ -256,7 +258,7 @@ public class EntityStore {
 
         var version = tx.insertInto(MICA_ENTITIES)
                 .set(MICA_ENTITIES.ID, id)
-                .set(MICA_ENTITIES.NAME, entity.name())
+                .set(MICA_ENTITIES.NAME, name)
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
                 .set(MICA_ENTITIES.DOC, doc)
@@ -264,7 +266,7 @@ public class EntityStore {
                 .set(MICA_ENTITIES.UPDATED_AT, updatedAt)
                 .onConflict(MICA_ENTITIES.ID)
                 .doUpdate()
-                .set(MICA_ENTITIES.NAME, entity.name())
+                .set(MICA_ENTITIES.NAME, name)
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
                 .set(MICA_ENTITIES.DOC, doc)
@@ -327,6 +329,11 @@ public class EntityStore {
             }
         }
         return s.getBytes(UTF_8);
+    }
+
+    @VisibleForTesting
+    static String normalizeName(String name) {
+        return name.replaceAll("//+", "/");
     }
 
     private static EntityMetadata toEntityMetadata(Record5<UUID, String, String, Instant, Instant> record) {
