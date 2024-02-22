@@ -228,6 +228,10 @@ public class EntityStore {
     }
 
     private Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, String author, @Nullable byte[] doc) {
+        if (isNameUsedAsPathElsewhere(tx, entity.name())) {
+            throw new StoreException(entity.name() + " is a folder, cannot create an entity with the same name");
+        }
+
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
 
@@ -283,6 +287,11 @@ public class EntityStore {
         } catch (IOException e) {
             throw new StoreException("JSON serialization error, most likely a bug: " + e.getMessage(), e);
         }
+    }
+
+    private boolean isNameUsedAsPathElsewhere(DSLContext tx, String name) {
+        var path = name + "/";
+        return tx.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.startsWith(path));
     }
 
     private Instant getDatabaseInstant() {

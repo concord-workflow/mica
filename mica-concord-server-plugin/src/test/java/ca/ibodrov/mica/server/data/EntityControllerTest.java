@@ -4,6 +4,7 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.walmartlabs.concord.server.sdk.validation.ValidationErrorsException;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.intellij.lang.annotations.Language;
@@ -183,6 +184,30 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 updatedDocAlternative.getBytes(UTF_8), true);
         assertEquals(initialVersion.id(), overwrittenVersion.id());
         assertNotEquals(initialVersion.updatedAt(), overwrittenVersion.updatedAt());
+    }
+
+    @Test
+    public void avoidFileAndFolderNameClashes() {
+        var namePrefix = "/test_" + UUID.randomUUID();
+
+        var entityFooBar = parseYaml("""
+                kind: /mica/record/v1
+                name: %s/foo/bar
+                data: |
+                  some text
+                """.formatted(namePrefix));
+
+        controller.createOrUpdate(session, entityFooBar);
+
+        var entityFoo = parseYaml("""
+                kind: /mica/record/v1
+                name: %s/foo
+                data: |
+                  some text
+                """.formatted(namePrefix));
+
+        var error = assertThrows(StoreException.class, () -> controller.createOrUpdate(session, entityFoo));
+        assertTrue(error.getMessage().contains("is a folder"));
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {
