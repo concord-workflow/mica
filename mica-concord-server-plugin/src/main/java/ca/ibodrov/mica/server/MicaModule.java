@@ -23,7 +23,8 @@ import javax.ws.rs.ext.ExceptionMapper;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.walmartlabs.concord.server.Utils.*;
+import static com.walmartlabs.concord.server.Utils.bindJaxRsResource;
+import static com.walmartlabs.concord.server.Utils.bindServletFilter;
 
 /**
  * Mica's Guice module.
@@ -104,8 +105,6 @@ public class MicaModule implements Module {
 
         newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
-
-        bindSingletonBackgroundTask(binder, EntityNormalizer.class);
     }
 
     private static Config loadDefaultConfig() {
