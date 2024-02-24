@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface ViewLike {
 
@@ -35,6 +36,8 @@ public interface ViewLike {
         Optional<Boolean> merge();
 
         Optional<JsonNode> jsonPatch();
+
+        Optional<Set<String>> dropProperties();
     }
 
     interface Validation {

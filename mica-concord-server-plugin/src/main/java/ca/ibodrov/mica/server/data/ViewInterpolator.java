@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class ViewInterpolator {
 
@@ -88,6 +89,11 @@ public class ViewInterpolator {
                     @Override
                     public Optional<JsonNode> jsonPatch() {
                         return view.data().jsonPatch();
+                    }
+
+                    @Override
+                    public Optional<Set<String>> dropProperties() {
+                        return view.data().dropProperties();
                     }
                 };
             }

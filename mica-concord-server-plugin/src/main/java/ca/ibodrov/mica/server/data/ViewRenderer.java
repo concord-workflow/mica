@@ -17,10 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.jayway.jsonpath.*;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -131,6 +128,19 @@ public class ViewRenderer {
                         }
                     })
                     .toList();
+        }
+
+        // drop properties if requested
+        var dropProperties = view.data().dropProperties().orElse(Set.of());
+        if (!dropProperties.isEmpty()) {
+            data.forEach(node -> {
+                if (!node.isObject()) {
+                    throw new ViewProcessorException(
+                            "dropProperties can only be applied to arrays of objects. The data is an array of %ss"
+                                    .formatted(node.getNodeType()));
+                }
+                ((ObjectNode) node).remove(dropProperties);
+            });
         }
 
         return new RenderedView(view, data, entityNames.build());

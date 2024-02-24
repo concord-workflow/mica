@@ -341,6 +341,40 @@ public class ViewRendererTest {
     }
 
     @Test
+    public void dropPropertiesWorkAsExpected() {
+        var foo = parseYaml("""
+                kind: /myRecord
+                name: /foo
+                x: 1
+                """);
+
+        var bar = parseYaml("""
+                kind: /myRecord
+                name: /bar
+                y: 2
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: /myRecord
+                data:
+                  jsonPath: $
+                  merge: true
+                  dropProperties:
+                    - name
+                    - kind
+                """);
+
+        var result = renderer.render(view, Stream.of(foo, bar));
+        assertEquals(1, result.data().size());
+        assertEquals(2, result.data().get(0).size());
+        assertEquals(1, result.data().get(0).get("x").asInt());
+        assertEquals(2, result.data().get(0).get("y").asInt());
+    }
+
+    @Test
     public void lotsOfEntities() {
         var foos = IntStream.iterate(0, i -> i < 500, i -> i + 1)
                 .mapToObj(i -> parseYaml("""

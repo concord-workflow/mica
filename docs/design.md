@@ -182,9 +182,11 @@ entity.
 The resulting data is further processed by applying one or more of the optional
 steps (in the order in which they are applied):
 
+- `jsonPath` -- applies a JSON Path expression to each entity;
 - `flatten` -- joins array of arrays of objects into a regular flat array of objects;
 - `merge` -- merges multiple objects into one by deep-merging fields;
-- `jsonPatch` -- applies a JSON Patch to each object.
+- `jsonPatch` -- applies a JSON Patch to each object;
+- `dropProperties` -- removes specified properties from each object.
 
 ## View Flattening
 
