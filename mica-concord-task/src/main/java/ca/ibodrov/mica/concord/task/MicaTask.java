@@ -110,14 +110,16 @@ public class MicaTask implements Task {
 
     private TaskResult renderView(Variables input) {
         var body = parseRenderRequest(input);
-        var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper).renderView(body);
+        var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
+                .renderView(body);
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(rendered.data().get("data"), List.class));
     }
 
     private TaskResult renderProperties(Variables input) {
         var body = parseRenderRequest(input);
-        var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper).renderProperties(body);
+        var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
+                .renderProperties(body);
         return TaskResult.success().value("data", rendered);
     }
 

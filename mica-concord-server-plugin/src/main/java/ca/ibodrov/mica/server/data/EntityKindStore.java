@@ -3,7 +3,6 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 

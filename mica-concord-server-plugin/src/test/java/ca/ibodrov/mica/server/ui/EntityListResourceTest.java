@@ -5,8 +5,6 @@ import ca.ibodrov.mica.server.ui.EntityListResource.ListResponse;
 import ca.ibodrov.mica.server.ui.EntityListResource.Type;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
 import static org.junit.Assert.assertTrue;
 
 public class EntityListResourceTest extends AbstractDatabaseTest {

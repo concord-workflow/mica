@@ -5,7 +5,6 @@ import ca.ibodrov.mica.server.data.Validator.SchemaFetcher;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.intellij.lang.annotations.Language;
