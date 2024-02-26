@@ -1,9 +1,24 @@
 # Mica
 
+## ToC
+
+- [Core Model](#core-model)
+- [Views](#views)
+  - [View Flattening](#view-flattening)
+  - [Merge Results](#merge-results)
+  - [JSON Patch Support](#json-patch-support)
+  - [Parametrized Views](#parametrized-views)
+  - [View Includes](#view-includes)
+  - [Property Files Support](#property-files-support)
+  - [Materialize View Data As Entities](#materialize-view-data-as-entities)
+  - [Validate View Entities](#validate-view-entities)
+- [Supported JSON Schema Features](#supported-json-schema-features)
+- [Database Design](#database-design)
+
 ## Core Model
 
-The primary concept is `Entity` -- a JSON object, validated using rules of the
-declared `kind`:
+The primary concept is `Entity` -- a JSON object which shape depends on its
+`kind`.
 
 ```text
 Entity
@@ -18,7 +33,7 @@ Entity
 ```
 
 The entity's `kind` is a reference to a `/mica/kind/v1` entity that provides
-the schema. For example, a `CorporateCustomer` entity may look like this:
+the schema. For example, a `/schemas/AcmeClient` entity may look like this:
 
 ```yaml
 name: /clients/AcmeCorp
@@ -188,7 +203,7 @@ steps (in the order in which they are applied):
 - `jsonPatch` -- applies a JSON Patch to each object;
 - `dropProperties` -- removes specified properties from each object.
 
-## View Flattening
+### View Flattening
 
 When returning multiple fields per entity, normally the result is a JSON array
 of arrays. To flatten the result, use the `flatten` option:
@@ -226,7 +241,7 @@ Using the example data from the previous section, the result is:
 
 Note that now the result is a JSON array of objects, not an array of arrays.
 
-## Merge Results
+### Merge Results
 
 View data can be merged into a single JSON object using the `merge` option:
 
@@ -283,7 +298,7 @@ the rendered view will contain the object with keys merged from both entities:
 }
 ```
 
-## JSON Patch Support
+### JSON Patch Support
 
 Views can apply JSON patch commands to each object in the result set:
 
@@ -329,7 +344,7 @@ The view selects all active clients, picks their `id` and `validationUrl`
 properties, flattens the result (so it a simple list of client entries instead
 of a list of lists) and adds the `status` field to each object.
 
-## Parametrized Views
+### Parametrized Views
 
 Views can declare parameters:
 
@@ -368,7 +383,7 @@ To pass the parameters, use the `parameters` field in the request body:
 curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
 
-## View Includes
+### View Includes
 
 Mica can fetch data from both internal and external sources. The `includes`
 field in the view definition specifies the list of URLs to fetch data from:
@@ -429,7 +444,7 @@ selector:
     - concord+git://myConcordOrg/myConcordProject/myFavoriteGitRepo?path=/stuff/configs&ref=main
 ```
 
-## Property Files Support
+### Property Files Support
 
 Mica can ingest Java `.properties` files and render them as view entities. In
 turn, views can be rendered as flat properties files.
@@ -535,7 +550,7 @@ aBool=true
 aValueWithCurlyBraces={{mustache}}
 ```
 
-## Materialize View Data As Entities
+### Materialize View Data As Entities
 
 _This section is a work in progress._
 
@@ -636,7 +651,7 @@ Calling the `migration` endpoints renders and saves the following data:
 }
 ```
 
-## Validate View Entities
+### Validate View Entities
 
 _This section is a work in progress._
 
@@ -717,12 +732,6 @@ results are returned in a separate field:
 In this example, we changed /examples/materialize/v1-to-v2 to disallow any
 extra properties (by adding `additionalProperties: false`). As the result, the
 validation fails for both entities.
-
-## Entity Validation
-
-To validate an entity of kind `K`, Mica looks up the `/mica/kind/v1` entity
-with name `K`. An entity cannot be created or updated if the schema is not
-found.
 
 ## Supported JSON Schema Features
 

@@ -1,6 +1,6 @@
 # mica
 
-An inventory system for ck8s.
+A configuration management system for ck8s.
 
 ## Prerequisites
 
