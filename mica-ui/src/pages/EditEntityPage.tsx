@@ -159,7 +159,11 @@ const EditEntityPage = () => {
 
         const newKind = getYamlField(editorValue, 'kind');
         setSelectedKind((prev) => (prev === newKind ? prev : newKind));
-    }, [editorValue]);
+
+        if (showPreview && newKind !== MICA_VIEW_KIND) {
+            setShowPreview(false);
+        }
+    }, [editorValue, showPreview]);
 
     const handleSave = React.useCallback(
         async (_ev: unknown, overwrite?: boolean) => {
