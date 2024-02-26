@@ -6,9 +6,9 @@ import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
+import ResetButton from '../features/editor/ResetButton.tsx';
 import YamlEditor from '../features/editor/YamlEditor.tsx';
 import PreviewView from '../features/views/PreviewView.tsx';
-import RestoreIcon from '@mui/icons-material/Restore';
 import SaveIcon from '@mui/icons-material/Save';
 import {
     Alert,
@@ -287,13 +287,10 @@ const EditEntityPage = () => {
                                 />
                             </FormControl>
                         )}
-                        <Button
+                        <ResetButton
                             disabled={isFetching || isSaving || !dirty}
-                            startIcon={<RestoreIcon />}
-                            variant="contained"
-                            onClick={handleReset}>
-                            Reset
-                        </Button>
+                            onConfirm={handleReset}
+                        />
                         <Button
                             disabled={isFetching || isSaving || !dirty}
                             startIcon={<SaveIcon />}
