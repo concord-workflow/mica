@@ -6,10 +6,12 @@ import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
@@ -32,7 +34,8 @@ public class EntityController {
                 new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper));
     }
 
-    public EntityVersion createOrUpdate(UserPrincipal session, PartialEntity entity) {
+    @VisibleForTesting
+    EntityVersion createOrUpdate(UserPrincipal session, PartialEntity entity) {
         return createOrUpdate(session, entity, null, false);
     }
 
@@ -53,14 +56,20 @@ public class EntityController {
         }
 
         var existingId = entityStore.getIdByName(entity.name());
-        if (existingId.isPresent()) {
-            if (entity.id().isEmpty() || !entity.id().equals(existingId)) {
-                throw new StoreException("Entity '%s' already exists (with ID=%s)"
-                        .formatted(entity.name(), existingId.get().toExternalForm()));
-            }
+        if (existingId.isPresent() && (entity.id().isEmpty() || !entity.id().equals(existingId))) {
+            throw new StoreException("Entity '%s' already exists (with ID=%s)"
+                    .formatted(entity.name(), existingId.get().toExternalForm()));
         }
 
-        // TODO check if there are any changes, return the same version if not
+        if (entity.id().isPresent() && entity.updatedAt().isPresent()) {
+            var existingDoc = entityStore.getEntityDocById(entity.id().get(), entity.updatedAt().get());
+            if (existingDoc.isPresent()) {
+                if (Arrays.equals(existingDoc.get(), doc)) {
+                    // no changes
+                    return new EntityVersion(entity.id().get(), entity.updatedAt().get());
+                }
+            }
+        }
 
         var newVersion = entityStore.upsert(session, entity, doc);
         if (newVersion.isEmpty() && overwrite) {

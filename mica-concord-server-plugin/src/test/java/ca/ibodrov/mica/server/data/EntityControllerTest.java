@@ -210,6 +210,34 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertTrue(error.getMessage().contains("is a folder"));
     }
 
+    @Test
+    public void submittingTheSameDocTwiceShouldReturnTheSameVersion() {
+        // create the initial version
+        var namePrefix = "/test_" + UUID.randomUUID();
+        var docFoo = """
+                kind: /mica/record/v1
+                name: %s/foo
+                data: |
+                  hello!
+                """.formatted(namePrefix);
+        var entityFoo = parseYaml(docFoo);
+        var initialVersion = controller.createOrUpdate(session, entityFoo, docFoo.getBytes(UTF_8), false);
+
+        // grab the saved doc and try saving it again, there should be no changes
+        var updatedDoc = entityStore.getEntityDocById(initialVersion.id(), initialVersion.updatedAt()).orElseThrow();
+        entityFoo = parseYaml(new String(updatedDoc, UTF_8));
+        var updatedVersion = controller.createOrUpdate(session, entityFoo, updatedDoc, false);
+        assertEquals(initialVersion, updatedVersion);
+
+        // modify the saved doc and try saving it, there should be a new version
+        var updatedDoc2 = new String(updatedDoc, UTF_8).replace("hello!", "bye!");
+        entityFoo = parseYaml(updatedDoc2);
+        assertEquals("bye!\n", entityFoo.data().get("data").asText());
+        var updatedVersion2 = controller.createOrUpdate(session, entityFoo, updatedDoc2.getBytes(UTF_8), false);
+        assertNotEquals(initialVersion, updatedVersion2);
+        assertEquals(initialVersion.id(), updatedVersion2.id());
+    }
+
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {
         try {
             return yamlMapper.readValue(yaml, PartialEntity.class);
