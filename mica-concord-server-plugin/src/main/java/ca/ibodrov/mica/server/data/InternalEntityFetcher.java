@@ -23,15 +23,13 @@ public class InternalEntityFetcher implements EntityFetcher {
         this.objectMapper = requireNonNull(objectMapper);
     }
 
-    // TODO move into a separate class?
+    @Override
+    public boolean isSupported(URI uri) {
+        return "mica".equals(uri.getScheme()) && "internal".equals(uri.getHost());
+    }
+
     @Override
     public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
-        assert uri != null;
-
-        if (!"mica".equals(uri.getScheme()) || !"internal".equals(uri.getHost())) {
-            return List.of();
-        }
-
         var step = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,

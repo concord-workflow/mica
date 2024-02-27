@@ -38,6 +38,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     private static final Duration GIT_OPERATION_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration GIT_FETCH_TIMEOUT = Duration.ofSeconds(15);
 
+    private static final String URI_SCHEME = "concord+git";
     private static final String DEFAULT_REF = "main";
     private static final Set<FileFormat> DEFAULT_ALLOWED_FORMATS = Set.of(FileFormat.YAML);
     private static final String DEFAULT_YAML_FILE_PATTERN = ".*\\.ya?ml";
@@ -78,7 +79,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                 .build();
         this.repositoryProviders = new RepositoryProviders(List.of(new GitCliRepositoryProvider(gitCliCfg)));
 
-        // use separate repository cache
+        // use separate repository cache from Concord's
         try {
             var cacheDir = mkdirs(repoCfg.getCacheDir(), "_micaCache");
             var cacheInfoDir = mkdirs(repoCfg.getCacheInfoDir(), "_micaInfoCache");
@@ -94,29 +95,13 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         }
     }
 
-    private static Path mkdirs(Path dir, String name) {
-        var path = dir.resolve(name);
-        if (Files.exists(path)) {
-            if (!Files.isDirectory(path)) {
-                throw new RuntimeException("Expected a directory: " + path);
-            }
-            return path;
-        }
-        try {
-            Files.createDirectories(path);
-        } catch (IOException e) {
-            throw new RuntimeException("Error while creating directories: " + path);
-        }
-        return path;
+    @Override
+    public boolean isSupported(URI uri) {
+        return URI_SCHEME.equals(uri.getScheme());
     }
 
     @Override
     public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
-        // TODO replace with a separate method
-        if (!"concord+git".equals(uri.getScheme())) {
-            return List.of();
-        }
-
         var query = Query.parseWithKind(uri, kind);
         return getAllByKind(query);
     }
@@ -179,6 +164,22 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         } catch (RepositoryException e) {
             throw new StoreException("Error while fetching entities. " + e.getMessage(), e);
         }
+    }
+
+    private static Path mkdirs(Path dir, String name) {
+        var path = dir.resolve(name);
+        if (Files.exists(path)) {
+            if (!Files.isDirectory(path)) {
+                throw new RuntimeException("Expected a directory: " + path);
+            }
+            return path;
+        }
+        try {
+            Files.createDirectories(path);
+        } catch (IOException e) {
+            throw new RuntimeException("Error while creating directories: " + path);
+        }
+        return path;
     }
 
     private static Set<FileFormat> parseAllowedFormats(Map<String, List<String>> queryParams) {
@@ -322,13 +323,17 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             int limit) {
 
         static Query parseWithKind(URI uri, String kind) {
+            if (!URI_SCHEME.equals(uri.getScheme())) {
+                throw new StoreException("Unsupported URI scheme: " + uri.getScheme());
+            }
+
             if (uri.getPath() == null) {
-                throw new StoreException("Invalid URI: " + uri);
+                throw new StoreException("Missing URI path: " + uri);
             }
 
             var pathElements = uri.getPath().split("/");
             if (pathElements.length != 3) {
-                throw new StoreException("Invalid URI: " + uri);
+                throw new StoreException("Invalid URI path, expected /{orgName}/{projectName}/{repoName}: " + uri);
             }
 
             var orgName = uri.getHost();

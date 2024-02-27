@@ -222,15 +222,16 @@ public class ViewResource implements Resource {
         return result;
     }
 
-    private Stream<EntityLike> fetchIncludeUri(URI include, String entityKind, int limit) {
-        // TODO parallel?
-        return includeFetchers.stream().flatMap(fetcher -> {
-            try {
-                return fetcher.getAllByKind(include, entityKind, limit).stream();
-            } catch (StoreException e) {
-                throw ApiException.internalError(e.getMessage());
-            }
-        });
+    private Stream<EntityLike> fetchIncludeUri(URI uri, String entityKind, int limit) {
+        return includeFetchers.stream()
+                .filter(fetcher -> fetcher.isSupported(uri))
+                .flatMap(fetcher -> {
+                    try {
+                        return fetcher.getAllByKind(uri, entityKind, limit).stream();
+                    } catch (StoreException e) {
+                        throw ApiException.internalError(e.getMessage());
+                    }
+                });
     }
 
     private Optional<JsonNode> validate(ViewLike view, RenderedView renderedView) {
