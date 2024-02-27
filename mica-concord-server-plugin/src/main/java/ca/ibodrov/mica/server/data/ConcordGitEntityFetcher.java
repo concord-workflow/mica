@@ -101,12 +101,12 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     @Override
-    public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
+    public Cursor getAllByKind(URI uri, String kind, int limit) {
         var query = Query.parseWithKind(uri, kind);
         return getAllByKind(query);
     }
 
-    private List<EntityLike> getAllByKind(Query query) {
+    private Cursor getAllByKind(Query query) {
         return fetch(query, repository -> {
             try {
                 return walkAndParse(
@@ -123,7 +123,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         });
     }
 
-    private List<EntityLike> fetch(Query query, Function<Repository, Stream<EntityLike>> fetcher) {
+    private Cursor fetch(Query query, Function<Repository, Stream<EntityLike>> fetcher) {
         try {
             var org = orgManager.assertAccess(query.orgName, false);
             var repoEntry = projectRepositoryManager.get(org.getId(), query.projectName, query.repoName);
@@ -135,7 +135,9 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                 if (query.limit > 0) {
                     data = data.limit(query.limit);
                 }
-                return data.toList();
+
+                var cursor = data;
+                return () -> cursor;
             });
         } catch (StoreException e) {
             throw e;

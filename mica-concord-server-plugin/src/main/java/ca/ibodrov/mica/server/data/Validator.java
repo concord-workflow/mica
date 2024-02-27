@@ -28,8 +28,8 @@ public class Validator {
                 .objectMapper(objectMapper)
                 .defaultMetaSchemaURI(JsonMetaSchema.getV202012().getUri())
                 .addMetaSchema(JsonMetaSchema.getV202012())
-                .uriFactory(new InternalURIFactory(), ALL_MICA_SCHEMES)
-                .uriFetcher(new InternalURIFetcher(schemaFetcher), ALL_MICA_SCHEMES)
+                .uriFactory(new URIFactoryImpl(), ALL_MICA_SCHEMES)
+                .uriFetcher(new URIFetcherImpl(schemaFetcher), ALL_MICA_SCHEMES)
                 .build());
     }
 
@@ -50,7 +50,7 @@ public class Validator {
         return new ValidatedInput(messages);
     }
 
-    private static class InternalURIFactory implements URIFactory {
+    private static class URIFactoryImpl implements URIFactory {
 
         @Override
         public URI create(String uri) {
@@ -101,11 +101,11 @@ public class Validator {
         }
     }
 
-    private static class InternalURIFetcher implements URIFetcher {
+    private static class URIFetcherImpl implements URIFetcher {
 
         private final SchemaFetcher schemaFetcher;
 
-        private InternalURIFetcher(SchemaFetcher schemaFetcher) {
+        private URIFetcherImpl(SchemaFetcher schemaFetcher) {
             this.schemaFetcher = requireNonNull(schemaFetcher);
         }
 

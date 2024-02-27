@@ -80,7 +80,7 @@ public class ViewResource implements Resource {
     public PartialEntity render(@Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = fetch(view, request.limit());
+        var entities = select(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
         return toEntity(view.name(),
@@ -98,7 +98,7 @@ public class ViewResource implements Resource {
     public String renderProperties(@Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = fetch(view, request.limit());
+        var entities = select(view, request.limit());
 
         var renderedView = viewRenderer.render(view, RenderOverrides.merged(), entities);
         if (renderedView.data().size() != 1) {
@@ -137,7 +137,7 @@ public class ViewResource implements Resource {
     public PartialEntity preview(@Valid PreviewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(request.view(), parameters);
-        var entities = fetch(view, request.limit());
+        var entities = select(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         var validation = validate(view, renderedView);
         return toEntity(view.name(),
@@ -154,7 +154,7 @@ public class ViewResource implements Resource {
     public PartialEntity materialize(@Context UserPrincipal session, @Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = fetch(view, request.limit());
+        var entities = select(view, request.limit());
         var renderedView = viewRenderer.render(view, entities);
         // TODO validation
         // TODO optimistic locking
@@ -177,14 +177,19 @@ public class ViewResource implements Resource {
         return viewInterpolator.interpolate(view, parameters);
     }
 
-    private Stream<? extends EntityLike> fetch(ViewLike view, int limit) {
+    /**
+     * Applies the view's {@code selector} by fetching entities from the specified
+     * includes, filtering them by the entity kind and name patterns, and returning
+     * the result.
+     */
+    private Stream<? extends EntityLike> select(ViewLike view, int limit) {
         var includes = view.selector().includes().orElse(List.of(INTERNAL_ENTITY_STORE_URI));
 
         // grab all entities matching the selector's entity kind
         var entities = includes.stream()
                 .filter(include -> include != null && !include.isBlank())
                 .map(ViewResource::parseUri)
-                .flatMap(include -> fetchIncludeUri(include, view.selector().entityKind(), -1))
+                .flatMap(uri -> fetch(uri, view.selector().entityKind()))
                 .toList();
 
         // TODO filter out invalid entities?
@@ -210,7 +215,7 @@ public class ViewResource implements Resource {
                 }
 
                 result = Stream.concat(result, entities.stream()
-                        .filter(e -> e.name() != null) // TODO validate the whole entity instead?
+                        .filter(e -> e.name() != null)
                         .filter(e -> pattern.matcher(e.name()).matches()));
             }
         }
@@ -222,12 +227,12 @@ public class ViewResource implements Resource {
         return result;
     }
 
-    private Stream<EntityLike> fetchIncludeUri(URI uri, String entityKind, int limit) {
+    private Stream<EntityLike> fetch(URI uri, String entityKind) {
         return includeFetchers.stream()
                 .filter(fetcher -> fetcher.isSupported(uri))
                 .flatMap(fetcher -> {
                     try {
-                        return fetcher.getAllByKind(uri, entityKind, limit).stream();
+                        return fetcher.getAllByKind(uri, entityKind, -1).stream();
                     } catch (StoreException e) {
                         throw ApiException.internalError(e.getMessage());
                     }

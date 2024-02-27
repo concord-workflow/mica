@@ -7,7 +7,6 @@ import org.jooq.DSLContext;
 
 import javax.inject.Inject;
 import java.net.URI;
-import java.util.List;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static java.util.Objects.requireNonNull;
@@ -29,7 +28,7 @@ public class InternalEntityFetcher implements EntityFetcher {
     }
 
     @Override
-    public List<EntityLike> getAllByKind(URI uri, String kind, int limit) {
+    public Cursor getAllByKind(URI uri, String kind, int limit) {
         var step = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -43,6 +42,7 @@ public class InternalEntityFetcher implements EntityFetcher {
             step.limit(limit);
         }
 
-        return step.fetch(r -> EntityStore.toEntity(objectMapper, r));
+        var cursor = step.fetch(r -> (EntityLike) EntityStore.toEntity(objectMapper, r)).stream();
+        return () -> cursor;
     }
 }

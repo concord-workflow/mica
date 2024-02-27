@@ -7,6 +7,8 @@ import com.walmartlabs.concord.server.sdk.validation.ValidationErrorsException;
 
 import java.util.Set;
 
+import static java.util.Comparator.comparing;
+
 public record ValidatedInput(Set<ValidationMessage> messages) {
 
     @JsonIgnore
@@ -20,9 +22,10 @@ public record ValidatedInput(Set<ValidationMessage> messages) {
             throw new IllegalStateException("Input is valid");
         }
 
-        // TODO better error messages, sort by path
         return new ValidationErrorsException()
-                .withErrors(messages.stream().map(m -> new ValidationErrorXO(m.getMessage()))
+                .withErrors(messages.stream()
+                        .sorted(comparing(ValidationMessage::getPath).thenComparing(ValidationMessage::getMessage))
+                        .map(m -> new ValidationErrorXO(m.getMessage()))
                         .toList());
     }
 }
