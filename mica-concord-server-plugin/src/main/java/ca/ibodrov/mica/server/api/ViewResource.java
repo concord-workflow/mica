@@ -80,13 +80,7 @@ public class ViewResource implements Resource {
     public PartialEntity render(@Valid RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = select(view, request.limit());
-        var renderedView = viewRenderer.render(view, entities);
-        var validation = validate(view, renderedView);
-        return toEntity(view.name(),
-                objectMapper.convertValue(renderedView.data(), JsonNode.class),
-                objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
-                validation);
+        return renderViewAsEntity(view, request.limit());
     }
 
     @POST
@@ -137,13 +131,7 @@ public class ViewResource implements Resource {
     public PartialEntity preview(@Valid PreviewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(request.view(), parameters);
-        var entities = select(view, request.limit());
-        var renderedView = viewRenderer.render(view, entities);
-        var validation = validate(view, renderedView);
-        return toEntity(view.name(),
-                objectMapper.convertValue(renderedView.data(), JsonNode.class),
-                objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
-                validation);
+        return renderViewAsEntity(view, request.limit());
     }
 
     @POST
@@ -165,7 +153,7 @@ public class ViewResource implements Resource {
                         .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
                 return entity.withVersion(version);
             });
-            return toEntity(view.name(),
+            return buildEntity(view.name(),
                     objectMapper.convertValue(data, JsonNode.class),
                     objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
                     Optional.empty());
@@ -175,6 +163,16 @@ public class ViewResource implements Resource {
     private ViewLike interpolateView(EntityLike viewEntity, JsonNode parameters) {
         var view = BuiltinSchemas.asViewLike(objectMapper, viewEntity);
         return viewInterpolator.interpolate(view, parameters);
+    }
+
+    private PartialEntity renderViewAsEntity(ViewLike view, int limit) {
+        var entities = select(view, limit);
+        var renderedView = viewRenderer.render(view, entities);
+        var validation = validate(view, renderedView);
+        return buildEntity(view.name(),
+                objectMapper.convertValue(renderedView.data(), JsonNode.class),
+                objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
+                validation);
     }
 
     /**
@@ -265,10 +263,10 @@ public class ViewResource implements Resource {
         throw ApiException.badRequest("viewId or viewName is required");
     }
 
-    private static PartialEntity toEntity(String name,
-                                          JsonNode data,
-                                          JsonNode entityNames,
-                                          Optional<JsonNode> validation) {
+    private static PartialEntity buildEntity(String name,
+                                             JsonNode data,
+                                             JsonNode entityNames,
+                                             Optional<JsonNode> validation) {
         var entityData = ImmutableMap.<String, JsonNode>builder();
         entityData.put("data", data);
         entityData.put("length", IntNode.valueOf(data.size()));

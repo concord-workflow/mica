@@ -40,7 +40,7 @@ import static com.walmartlabs.concord.server.Utils.bindServletFilter;
 @Named
 public class MicaModule implements Module {
 
-    private Config config;
+    private final Config config;
 
     public MicaModule() {
         this(loadDefaultConfig());
