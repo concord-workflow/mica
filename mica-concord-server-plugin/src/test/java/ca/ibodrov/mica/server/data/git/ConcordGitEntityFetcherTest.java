@@ -1,6 +1,9 @@
-package ca.ibodrov.mica.server.data;
+package ca.ibodrov.mica.server.data.git;
 
 import ca.ibodrov.mica.server.YamlMapper;
+import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
+import ca.ibodrov.mica.server.data.git.FileFormat;
+import ca.ibodrov.mica.server.data.git.FileFormatOptions;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -10,7 +13,7 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Map;
 
-import static ca.ibodrov.mica.server.data.ConcordGitEntityFetcher.DEFAULT_FILE_FORMAT_OPTIONS;
+import static ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher.DEFAULT_FILE_FORMAT_OPTIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConcordGitEntityFetcherTest {

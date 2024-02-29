@@ -1,7 +1,8 @@
-package ca.ibodrov.mica.server.data;
+package ca.ibodrov.mica.server.data.git;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.server.YamlMapper;
+import ca.ibodrov.mica.server.data.EntityFetcher;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -28,7 +29,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ca.ibodrov.mica.server.data.EntityFile.PROPERTIES_KIND;
+import static ca.ibodrov.mica.server.data.git.EntityFile.PROPERTIES_KIND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.*;

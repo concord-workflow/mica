@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server;
 import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
+import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;

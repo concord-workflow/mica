@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.data;
+package ca.ibodrov.mica.server.data.git;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;

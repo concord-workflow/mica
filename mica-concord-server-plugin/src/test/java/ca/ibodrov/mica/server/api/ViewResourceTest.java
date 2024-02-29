@@ -51,7 +51,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     @Test
     public void entityOrderMustBePreservedWhenUsingNamePatterns() {
         // create entity kind
-        entityStore.upsert(session, new MicaKindV1.Builder()
+        upsert(new MicaKindV1.Builder()
                 .name("/test-record-kind")
                 .schema(parseObject("""
                         properties:
@@ -62,21 +62,15 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // create test records, 2 for each name pattern
-        entityStore.upsert(session,
-                PartialEntity.create("/first-1", "/test-record-kind", Map.of("value", IntNode.valueOf(1))));
-        entityStore.upsert(session,
-                PartialEntity.create("/first-2", "/test-record-kind", Map.of("value", IntNode.valueOf(2))));
-        entityStore.upsert(session,
-                PartialEntity.create("/second-1", "/test-record-kind", Map.of("value", IntNode.valueOf(3))));
-        entityStore.upsert(session,
-                PartialEntity.create("/second-2", "/test-record-kind", Map.of("value", IntNode.valueOf(4))));
-        entityStore.upsert(session,
-                PartialEntity.create("/third-1", "/test-record-kind", Map.of("value", IntNode.valueOf(5))));
-        entityStore.upsert(session,
-                PartialEntity.create("/third-2", "/test-record-kind", Map.of("value", IntNode.valueOf(6))));
+        upsert(PartialEntity.create("/first-1", "/test-record-kind", Map.of("value", IntNode.valueOf(1))));
+        upsert(PartialEntity.create("/first-2", "/test-record-kind", Map.of("value", IntNode.valueOf(2))));
+        upsert(PartialEntity.create("/second-1", "/test-record-kind", Map.of("value", IntNode.valueOf(3))));
+        upsert(PartialEntity.create("/second-2", "/test-record-kind", Map.of("value", IntNode.valueOf(4))));
+        upsert(PartialEntity.create("/third-1", "/test-record-kind", Map.of("value", IntNode.valueOf(5))));
+        upsert(PartialEntity.create("/third-2", "/test-record-kind", Map.of("value", IntNode.valueOf(6))));
 
         // create view
-        entityStore.upsert(session, new MicaViewV1.Builder()
+        upsert(new MicaViewV1.Builder()
                 .name("/test-name-patterns")
                 .selector(byEntityKind("/test-record-kind")
                         .withNamePatterns(List.of(
@@ -109,18 +103,15 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                             type: integer
                         """))
                 .build()
-                .toPartialEntity(objectMapper));
+                .toPartialEntity(objectMapper), null);
 
         // create test records
-        entityStore.upsert(session,
-                PartialEntity.create("/first/record", recordKind, Map.of("value", IntNode.valueOf(1))));
-        entityStore.upsert(session,
-                PartialEntity.create("/second/record", recordKind, Map.of("value", IntNode.valueOf(2))));
-        entityStore.upsert(session,
-                PartialEntity.create("/third/record", recordKind, Map.of("value", IntNode.valueOf(3))));
+        upsert(PartialEntity.create("/first/record", recordKind, Map.of("value", IntNode.valueOf(1))));
+        upsert(PartialEntity.create("/second/record", recordKind, Map.of("value", IntNode.valueOf(2))));
+        upsert(PartialEntity.create("/third/record", recordKind, Map.of("value", IntNode.valueOf(3))));
 
         // create view
-        entityStore.upsert(session, new MicaViewV1.Builder()
+        upsert(new MicaViewV1.Builder()
                 .name("/test-name-pattern-substitution")
                 .parameters(parseObject("""
                         properties:
@@ -147,7 +138,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     public void viewDataCanBeValidated() {
         // create v1 of the schema
         var recordKindV1 = "/test-kind-v1-" + System.currentTimeMillis();
-        entityStore.upsert(session, new MicaKindV1.Builder()
+        upsert(new MicaKindV1.Builder()
                 .name(recordKindV1)
                 .schema(parseObject("""
                         properties:
@@ -160,7 +151,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
 
         // create v2 of the schema in which we replace the "foo" property with "bar"
         var recordKindV2 = "/test-kind-v2-" + System.currentTimeMillis();
-        entityStore.upsert(session, new MicaKindV1.Builder()
+        upsert(new MicaKindV1.Builder()
                 .name(recordKindV2)
                 .schema(parseObject("""
                         properties:
@@ -172,13 +163,13 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // create test records
-        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
+        upsert(PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
                 Map.of("foo", TextNode.valueOf("1"))));
-        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
+        upsert(PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
                 Map.of("foo", TextNode.valueOf("2"))));
 
         // create view
-        entityStore.upsert(session, new MicaViewV1.Builder()
+        upsert(new MicaViewV1.Builder()
                 .name("/test-view-validation")
                 .parameters(parseObject("""
                         properties:
@@ -203,7 +194,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
     public void viewsCanBeRenderedAsPropertiesFile() throws Exception {
         // create kind
         var recordKindV1 = "/test-kind-v1-" + System.currentTimeMillis();
-        entityStore.upsert(session, new MicaKindV1.Builder()
+        upsert(new MicaKindV1.Builder()
                 .name(recordKindV1)
                 .schema(parseObject("""
                         properties:
@@ -215,13 +206,13 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // create test records
-        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
+        upsert(PartialEntity.create(randomPathPrefix() + "/first/record", recordKindV1,
                 Map.of("data", objectMapper.readTree("""
                         {
                             "x.y": false
                         }
                         """))));
-        entityStore.upsert(session, PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
+        upsert(PartialEntity.create(randomPathPrefix() + "/second/record", recordKindV1,
                 Map.of("data", objectMapper.readTree("""
                         {
                             "x.y": true
@@ -229,7 +220,7 @@ public class ViewResourceTest extends AbstractDatabaseTest {
                         """))));
 
         // create view
-        entityStore.upsert(session, new MicaViewV1.Builder()
+        upsert(new MicaViewV1.Builder()
                 .name("/test-properties")
                 .selector(byEntityKind(recordKindV1))
                 .data(jsonPath("$.data"))
@@ -239,6 +230,10 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // we expect entities to be flattened into a .properties format
         var result = viewResource.renderProperties(RenderRequest.of("/test-properties", 10));
         assertEquals("x.y=true\n", result);
+    }
+
+    private static void upsert(PartialEntity entity) {
+        entityStore.upsert(session, entity, null).orElseThrow();
     }
 
     private static String randomPathPrefix() {

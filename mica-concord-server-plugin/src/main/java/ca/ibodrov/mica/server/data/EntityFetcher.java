@@ -9,6 +9,9 @@ public interface EntityFetcher {
 
     boolean isSupported(URI uri);
 
+    /**
+     * TODO re-implement as Cursor query(URI uri, Query query)
+     */
     Cursor getAllByKind(URI uri, String kind, int limit);
 
     interface Cursor {

@@ -40,21 +40,21 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
                 name: /foo
                 data: "foo!"
                 """);
-        var fooVersion1 = entityStore.upsert(session, fooEntity).orElseThrow();
+        var fooVersion1 = entityStore.upsert(session, fooEntity, null).orElseThrow();
 
         var barEntity = parseYaml("""
                 kind: /mica/record/v1
                 name: /bar
                 data: "bar!"
                 """);
-        var barVersion1 = entityStore.upsert(session, barEntity).orElseThrow();
+        var barVersion1 = entityStore.upsert(session, barEntity, null).orElseThrow();
 
         var bazEntity = parseYaml("""
                 kind: /mica/record/v1
                 name: /baz
                 data: "baz!"
                 """);
-        var bazVersion1 = entityStore.upsert(session, bazEntity).orElseThrow();
+        var bazVersion1 = entityStore.upsert(session, bazEntity, null).orElseThrow();
 
         // delete "/foo" and "/bar", but not "/baz"
         var result = batchOperationResource.apply(deleteByNamePatterns(List.of("/foo", "/bar")));
@@ -73,8 +73,8 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
         assertTrue(entityStore.getById(bazVersion1.id()).isPresent());
 
         // add "/foo" and "/bar" back
-        var fooVersion2 = entityStore.upsert(session, fooEntity).orElseThrow();
-        var barVersion2 = entityStore.upsert(session, barEntity).orElseThrow();
+        var fooVersion2 = entityStore.upsert(session, fooEntity, null).orElseThrow();
+        var barVersion2 = entityStore.upsert(session, barEntity, null).orElseThrow();
 
         // delete all "/ba.*" entities
         result = batchOperationResource.apply(deleteByNamePatterns(List.of("/ba.*")));

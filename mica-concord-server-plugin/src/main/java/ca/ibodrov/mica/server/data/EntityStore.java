@@ -215,10 +215,6 @@ public class EntityStore {
         return dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName).and(MICA_ENTITIES.KIND.eq(entityKind)));
     }
 
-    public Optional<EntityVersion> upsert(UserPrincipal session, PartialEntity entity) {
-        return dsl.transactionResult(tx -> upsert(tx.dsl(), entity, session.getUsername(), null));
-    }
-
     public Optional<EntityVersion> upsert(UserPrincipal session, PartialEntity entity, @Nullable byte[] doc) {
         return dsl.transactionResult(tx -> upsert(tx.dsl(), entity, session.getUsername(), doc));
     }
@@ -227,7 +223,7 @@ public class EntityStore {
         return upsert(tx, entity, session.getUsername(), null);
     }
 
-    private Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, String author, @Nullable byte[] doc) {
+    public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, String author, @Nullable byte[] doc) {
         var name = normalizeName(entity.name());
 
         if (isNameUsedAsPathElsewhere(tx, name)) {

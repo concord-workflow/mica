@@ -38,28 +38,7 @@ public class ViewRenderer {
         this.parseContext = JsonPath.using(Configuration.builder()
                 .options(Option.DEFAULT_PATH_LEAF_TO_NULL)
                 // a custom JsonProvider that supports both JsonNode and Map
-                .jsonProvider(new JacksonJsonNodeJsonProvider(objectMapper) {
-                    @Override
-                    public boolean isMap(Object obj) {
-                        return super.isMap(obj) || obj instanceof Map;
-                    }
-
-                    @Override
-                    public Object getMapValue(Object obj, String key) {
-                        if (obj instanceof ObjectNode) {
-                            return super.getMapValue(obj, key);
-                        }
-                        if (obj instanceof Map) {
-                            return ((Map<?, ?>) obj).get(key);
-                        }
-                        throw new ViewProcessorException("Expected a Map, got: " + obj.getClass());
-                    }
-
-                    @Override
-                    public String toString() {
-                        return "mica-json-provider";
-                    }
-                })
+                .jsonProvider(new MicaJsonProvider(objectMapper))
                 .build());
     }
 
@@ -116,20 +95,7 @@ public class ViewRenderer {
             }
 
             data = data.stream()
-                    .map(node -> {
-                        if (!node.isContainerNode()) {
-                            throw new ViewProcessorException(
-                                    "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of %ss"
-                                            .formatted(node.getNodeType()));
-                        }
-
-                        try {
-                            return JsonPatch.apply(patchData, node);
-                        } catch (JsonPatchApplicationException e) {
-                            throw new ViewProcessorException(
-                                    "Error while applying data.jsonPatch: " + e.getMessage());
-                        }
-                    })
+                    .map(node -> applyJsonPatch(node, patchData))
                     .toList();
         }
 
@@ -170,6 +136,21 @@ public class ViewRenderer {
         return Optional.of((JsonNode) result);
     }
 
+    private JsonNode applyJsonPatch(JsonNode node, JsonNode patchData) {
+        if (!node.isContainerNode()) {
+            throw new ViewProcessorException(
+                    "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of %ss"
+                            .formatted(node.getNodeType()));
+        }
+
+        try {
+            return JsonPatch.apply(patchData, node);
+        } catch (JsonPatchApplicationException e) {
+            throw new ViewProcessorException(
+                    "Error while applying data.jsonPatch: " + e.getMessage());
+        }
+    }
+
     private ObjectNode deepMerge(ObjectNode left, ObjectNode right) {
         var mapper = objectMapper.copy();
 
@@ -191,6 +172,34 @@ public class ViewRenderer {
 
         public static RenderOverrides merged() {
             return new RenderOverrides(true);
+        }
+    }
+
+    private static class MicaJsonProvider extends JacksonJsonNodeJsonProvider {
+
+        public MicaJsonProvider(ObjectMapper objectMapper) {
+            super(objectMapper);
+        }
+
+        @Override
+        public boolean isMap(Object obj) {
+            return super.isMap(obj) || obj instanceof Map;
+        }
+
+        @Override
+        public Object getMapValue(Object obj, String key) {
+            if (obj instanceof ObjectNode) {
+                return super.getMapValue(obj, key);
+            }
+            if (obj instanceof Map) {
+                return ((Map<?, ?>) obj).get(key);
+            }
+            throw new ViewProcessorException("Expected a Map, got: " + obj.getClass());
+        }
+
+        @Override
+        public String toString() {
+            return "mica-json-provider";
         }
     }
 }

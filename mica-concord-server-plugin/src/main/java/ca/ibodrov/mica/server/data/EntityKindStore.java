@@ -16,6 +16,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * @implNote entity kinds are regular entities with {@code kind=/mica/kind/v1}.
+ *           TODO re-implement using EntityFetcher
  */
 public class EntityKindStore {
 
