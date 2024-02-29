@@ -17,7 +17,10 @@ import com.google.common.collect.ImmutableList;
 import com.jayway.jsonpath.*;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Spliterator;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -131,7 +134,7 @@ public class ViewRenderer {
         }
 
         // drop properties if requested
-        var dropProperties = view.data().dropProperties().orElse(Set.of());
+        var dropProperties = view.data().dropProperties().orElse(List.of());
         if (!dropProperties.isEmpty()) {
             data.forEach(node -> {
                 if (!node.isObject()) {

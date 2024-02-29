@@ -116,6 +116,26 @@ public class ViewInterpolatorTest {
         assertNotNull(error.getValidationErrors().get(0)); // TODO check the error
     }
 
+    @Test
+    public void dropPropertiesAreInterpolated() {
+        var view = new MicaViewV1.Builder()
+                .name("test")
+                .selector(byEntityKind("test"))
+                .data(jsonPath("jsonPath")
+                        .withDropProperties(List.of("${parameters.drop}", "foobar")))
+                .parameters(parseObject("""
+                        properties:
+                          drop:
+                            type: string
+                        """))
+                .build();
+
+        var input = objectMapper.convertValue(Map.of("drop", "x"), JsonNode.class);
+        var interpolatedView = interpolator.interpolate(view, input);
+        assertEquals("x", interpolatedView.data().dropProperties().get().get(0));
+        assertEquals("foobar", interpolatedView.data().dropProperties().get().get(1));
+    }
+
     private static ObjectNode parseObject(@Language("yaml") String s) {
         try {
             return objectMapper.copyWith(new YAMLFactory()).readValue(s, ObjectNode.class);

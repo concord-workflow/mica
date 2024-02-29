@@ -14,7 +14,6 @@ import org.intellij.lang.annotations.Language;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 
 import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
@@ -30,8 +29,6 @@ public final class BuiltinSchemas {
     public static final String JSON_SCHEMA_REF = "classpath:///draft/2020-12/schema";
 
     private static final TypeReference<List<String>> LIST_OF_STRINGS = new TypeReference<>() {
-    };
-    private static final TypeReference<Set<String>> SET_OF_STRINGS = new TypeReference<>() {
     };
 
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
@@ -237,7 +234,7 @@ public final class BuiltinSchemas {
         var jsonPatch = select(entity, "data", "jsonPatch", Function.identity());
 
         var dropProperties = select(entity, "data", "dropProperties",
-                n -> objectMapper.convertValue(n, SET_OF_STRINGS));
+                n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
 
         return new ViewLike.Data() {
             @Override
@@ -261,7 +258,7 @@ public final class BuiltinSchemas {
             }
 
             @Override
-            public Optional<Set<String>> dropProperties() {
+            public Optional<List<String>> dropProperties() {
                 return dropProperties;
             }
         };

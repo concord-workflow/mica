@@ -10,7 +10,6 @@ import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -55,7 +54,7 @@ public record MicaViewV1(@ValidName String name,
             Optional<JsonNode> jsonPatch,
             Optional<Boolean> flatten,
             Optional<Boolean> merge,
-            Optional<Set<String>> dropProperties) implements ViewLike.Data {
+            Optional<List<String>> dropProperties) implements ViewLike.Data {
 
         public static Data jsonPath(String jsonPath) {
             return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
@@ -63,6 +62,10 @@ public record MicaViewV1(@ValidName String name,
 
         public Data withMerge() {
             return new Data(this.jsonPath, this.jsonPatch, this.flatten, Optional.of(true), Optional.empty());
+        }
+
+        public Data withDropProperties(List<String> dropProperties) {
+            return new Data(this.jsonPath, this.jsonPatch, this.flatten, this.merge, Optional.of(dropProperties));
         }
     }
 

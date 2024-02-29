@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public class ViewInterpolator {
 
@@ -39,6 +38,8 @@ public class ViewInterpolator {
         var selectorEntityKind = interpolate(view.selector().entityKind(), input);
         var selectorNamePatterns = view.selector().namePatterns().map(namePatterns -> interpolate(namePatterns, input));
         var dataJsonPath = interpolate(view.data().jsonPath(), input);
+        var dropProperties = view.data().dropProperties()
+                .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
         var validationAsEntityKind = view.validation()
                 .flatMap(v -> Optional.ofNullable(interpolate(v.asEntityKind(), input)));
 
@@ -92,8 +93,8 @@ public class ViewInterpolator {
                     }
 
                     @Override
-                    public Optional<Set<String>> dropProperties() {
-                        return view.data().dropProperties();
+                    public Optional<List<String>> dropProperties() {
+                        return dropProperties;
                     }
                 };
             }
