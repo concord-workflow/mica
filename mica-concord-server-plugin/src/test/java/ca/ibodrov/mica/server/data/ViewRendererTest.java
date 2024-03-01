@@ -15,12 +15,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.asViewLike;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewRendererTest {
 
@@ -372,6 +372,37 @@ public class ViewRendererTest {
         assertEquals(2, result.data().get(0).size());
         assertEquals(1, result.data().get(0).get("x").asInt());
         assertEquals(2, result.data().get(0).get("y").asInt());
+    }
+
+    @Test
+    public void jsonPathCanAccessStandardProperties() {
+        var fooId = UUID.randomUUID().toString();
+        var foo = parseYaml("""
+                id: %s
+                kind: /testKind
+                name: /foo
+                """.formatted(fooId));
+
+        var barId = UUID.randomUUID().toString();
+        var bar = parseYaml("""
+                id: %s
+                kind: /testKind
+                name: /bar
+                """.formatted(barId));
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: /testKind
+                data:
+                  jsonPath: $.['id', 'name']
+                """);
+
+        var result = renderer.render(view, Stream.of(foo, bar));
+        var ids = result.data().stream().map(n -> n.get("id").asText()).toList();
+        assertTrue(ids.contains(fooId));
+        assertTrue(ids.contains(barId));
     }
 
     @Test
