@@ -15,7 +15,7 @@ const RowMenu = ({ children }: { children?: React.ReactNode }) => {
 
     return (
         <>
-            <IconButton onClick={handleClick}>
+            <IconButton onClick={handleClick} size="small">
                 <MoreVertIcon />
             </IconButton>
             <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>

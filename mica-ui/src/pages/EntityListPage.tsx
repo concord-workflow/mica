@@ -90,14 +90,16 @@ const EntityTableRow = ({
                 )}
             </TableCell>
             <TableCell align="right">
-                <RowMenu>
-                    <MenuItem onClick={() => handleDelete(row)}>
-                        <ListItemIcon>
-                            <DeleteIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText>Delete</ListItemText>
-                    </MenuItem>
-                </RowMenu>
+                {row.type === EntryType.FILE && (
+                    <RowMenu>
+                        <MenuItem onClick={() => handleDelete(row)}>
+                            <ListItemIcon>
+                                <DeleteIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Delete</ListItemText>
+                        </MenuItem>
+                    </RowMenu>
+                )}
             </TableCell>
         </TableRow>
     );
