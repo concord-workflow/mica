@@ -104,6 +104,10 @@ public final class BuiltinSchemas {
                         type: boolean
                       merge:
                         type: boolean
+                      dropProperties:
+                        type: array
+                        items:
+                          type: string
                     required: [ "jsonPath" ]
                   validation:
                     properties:

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BuiltinSchemasTest {
@@ -65,6 +66,41 @@ public class BuiltinSchemasTest {
         assertTrue(oldResult.isValid());
         var newResult = validator.validateObject(newSchema, input);
         assertTrue(newResult.isValid());
+    }
+
+    @Test
+    public void dropPropertiesAreValidated() {
+        var invalidView = parseEntityYaml("""
+                kind: /mica/view/v1
+                name: /foobar
+                selector:
+                  entityKind: .*
+                data:
+                  jsonPath: $.
+                  dropProperties: 123 # should be an array
+                """);
+
+        var result = validator.validateObject(builtinSchemas.getMicaViewV1Schema(),
+                yamlMapper.convertValue(invalidView, JsonNode.class));
+        assertFalse(result.isValid());
+        assertTrue(result.messages().stream()
+                .anyMatch(m -> m.getMessage().contains("dropProperties: integer found, array expected")));
+
+        var validView = parseEntityYaml("""
+                kind: /mica/view/v1
+                name: /foobar
+                selector:
+                  entityKind: .*
+                data:
+                  jsonPath: $.
+                  dropProperties:
+                    - foo
+                    - bar
+                """);
+
+        result = validator.validateObject(builtinSchemas.getMicaViewV1Schema(),
+                yamlMapper.convertValue(validView, JsonNode.class));
+        assertTrue(result.isValid());
     }
 
     private static PartialEntity parseEntityYaml(@Language("yaml") String yaml) {
