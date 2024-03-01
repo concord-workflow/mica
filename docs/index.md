@@ -18,7 +18,7 @@
 ## Core Model
 
 The primary concept is `Entity` -- a JSON object which shape depends on its
-`kind`.
+`kind`. Any entity contains the following fields:
 
 ```text
 Entity
@@ -39,7 +39,7 @@ the schema. For example, a `/schemas/AcmeClient` entity may look like this:
 name: /clients/AcmeCorp
 kind: /schemas/AcmeClient
 details:
-  id: acme
+  clientId: acme
   validationUrl: https://acme.example.com/validate
 ```
 
@@ -50,7 +50,7 @@ name: /schemas/AcmeClient
 kind: /mica/kind/v1
 schema:
   properties:
-    id:
+    clientId:
       type: string
     status:
       type: string
@@ -92,13 +92,13 @@ For example, given a couple of entities like so:
 name: /clients/20240101
 kind: /schemas/AcmeClientList
 clients:
-  - id: foo
+  - clientId: foo
     status: active
     validationUrl: "http://foo.example.org"
-  - id: bar
+  - clientId: bar
     status: retired
     validationUrl: "http://bar.example.org"
-  - id: baz
+  - clientId: baz
     status: active
     validationUrl: "http://baz.example.org"
 ```
@@ -107,13 +107,13 @@ clients:
 name: /clients/20230101
 kind: /schemas/AcmeClientList
 clients:
-  - id: qux
+  - clientId: qux
     status: active
     validationUrl: "http://qux.example.org"
-  - id: eek
+  - clientId: eek
     status: retired
     validationUrl: "http://eek.example.org"
-  - id: ack
+  - clientId: ack
     status: retired
     validationUrl: "http://ack.example.org"
 ```
@@ -129,7 +129,7 @@ schema:
       type: array
       items:
         properties:
-          id:
+          clientId:
             type: string
           status:
             type: string
@@ -147,7 +147,7 @@ name: /views/ActiveClients
 selector:
   entityKind: /schemas/AcmeClientList
 data:
-  jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
+  jsonPath: $.clients[?(@.status=='active')].["clientId", "validationUrl"]
 ```
 
 Equals:
@@ -161,17 +161,17 @@ curl 'http://localhost:8080/api/mica/v1/view/render/ActiveClients'
     "data": [
         [
             {
-                "id": "foo",
+                "clientId": "foo",
                 "validationUrl": "http://foo.example.org"
             },
             {
-                "id": "baz",
+                "clientId": "baz",
                 "validationUrl": "http://baz.example.org"
             }
         ],
         [
             {
-                "id": "qux",
+                "clientId": "qux",
                 "validationUrl": "http://qux.example.org"
             }
         ]
@@ -214,7 +214,7 @@ name: /views/ActiveClients
 selector:
   entityKind: /schemas/AcmeClientList
 data:
-  jsonPath: $.clients[?(@.status=='active')].["id", "validationUrl"]
+  jsonPath: $.clients[?(@.status=='active')].["clientId", "validationUrl"]
   flatten: true
 ```
 
@@ -224,15 +224,15 @@ Using the example data from the previous section, the result is:
 {
     "data": [
         {
-            "id": "foo",
+            "clientId": "foo",
             "validationUrl": "http://foo.example.org"
         },
         {
-            "id": "baz",
+            "clientId": "baz",
             "validationUrl": "http://baz.example.org"
         },
         {
-            "id": "qux",
+            "clientId": "qux",
             "validationUrl": "http://qux.example.org"
         }
     ]
@@ -322,17 +322,17 @@ Given entities from [the example above](#views), the result is:
 {
     "data": [
         {
-            "id": "foo",
+            "clientId": "foo",
             "validationUrl": "http://foo.example.org",
             "status": "valid"
         },
         {
-            "id": "baz",
+            "clientId": "baz",
             "validationUrl": "http://baz.example.org",
             "status": "valid"
         },
         {
-            "id": "qux",
+            "clientId": "qux",
             "validationUrl": "http://qux.example.org",
             "status": "valid"
         }
