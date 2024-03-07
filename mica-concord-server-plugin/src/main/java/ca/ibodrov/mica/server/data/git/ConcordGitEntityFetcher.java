@@ -92,7 +92,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                     repoCfg.getLockCount(),
                     objectMapper);
         } catch (IOException e) {
-            throw new RuntimeException("Error initializing the repository cache");
+            throw new RuntimeException("Repository cache initialization error: " + e.getMessage(), e);
         }
     }
 
