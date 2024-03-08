@@ -93,6 +93,14 @@ public final class BuiltinSchemas {
                     properties:
                       entityKind:
                         type: string
+                      includes:
+                        type: array
+                        items:
+                          type: string
+                      namePatterns:
+                        type: array
+                        items:
+                          type: string
                     required: [ "entityKind" ]
                   data:
                     properties:

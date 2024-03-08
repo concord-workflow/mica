@@ -100,7 +100,7 @@ public class ViewResource implements Resource {
                     + renderedView.data().size() + " entities");
         }
 
-        var validation = validate(view, renderedView);
+        var validation = validateRenderedView(view, renderedView);
         if (validation.isPresent() && !validation.get().isEmpty()) {
             throw ApiException.badRequest("Validation failed: " + validation.get());
         }
@@ -130,7 +130,8 @@ public class ViewResource implements Resource {
     @Validate
     public PartialEntity preview(@Valid PreviewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
-        var view = interpolateView(request.view(), parameters);
+        var viewEntity = validate(request.view());
+        var view = interpolateView(viewEntity, parameters);
         return renderViewAsEntity(view, request.limit());
     }
 
@@ -160,6 +161,18 @@ public class ViewResource implements Resource {
         });
     }
 
+    private PartialEntity validate(PartialEntity entity) {
+        var schema = entityKindStore.getSchemaForKind(entity.kind())
+                .orElseThrow(() -> ApiException
+                        .badRequest("Can't validate the entity, schema not found: " + entity.kind()));
+        var input = objectMapper.convertValue(entity, JsonNode.class);
+        var validatedInput = validator.validateObject(schema, input);
+        if (!validatedInput.isValid()) {
+            throw validatedInput.toException();
+        }
+        return entity;
+    }
+
     private ViewLike interpolateView(EntityLike viewEntity, JsonNode parameters) {
         var view = BuiltinSchemas.asViewLike(objectMapper, viewEntity);
         return viewInterpolator.interpolate(view, parameters);
@@ -168,7 +181,7 @@ public class ViewResource implements Resource {
     private PartialEntity renderViewAsEntity(ViewLike view, int limit) {
         var entities = select(view, limit);
         var renderedView = viewRenderer.render(view, entities);
-        var validation = validate(view, renderedView);
+        var validation = validateRenderedView(view, renderedView);
         return buildEntity(view.name(),
                 objectMapper.convertValue(renderedView.data(), JsonNode.class),
                 objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
@@ -237,7 +250,7 @@ public class ViewResource implements Resource {
                 });
     }
 
-    private Optional<JsonNode> validate(ViewLike view, RenderedView renderedView) {
+    private Optional<JsonNode> validateRenderedView(ViewLike view, RenderedView renderedView) {
         return view.validation().map(v -> {
             var schema = entityKindStore.getSchemaForKind(v.asEntityKind())
                     .orElseThrow(() -> ApiException
