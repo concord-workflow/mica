@@ -155,8 +155,8 @@ const PreviewView = ({ data, onClose }: Props) => {
     const validationErrors = parseValidationErrors(lastGoodData);
 
     return (
-        <Grid container>
-            <Grid xs={4}>
+        <Grid container height="100%">
+            <Grid xs={3}>
                 <Box>
                     {apiError && (
                         <Alert color="error" sx={{ m: 1 }}>
@@ -184,8 +184,8 @@ const PreviewView = ({ data, onClose }: Props) => {
                     />
                 </Box>
             </Grid>
-            <Grid xs={8}>
-                <Box position="fixed" right={0}>
+            <Grid xs={9}>
+                <Box position="fixed" right={(theme) => theme.spacing(2)} zIndex={100}>
                     <ShowRenderedViewDetailsToggle
                         checked={showDetails}
                         onChange={handleDetailsToggle}

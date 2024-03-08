@@ -1,17 +1,31 @@
-import { Box } from '@mui/material';
+import { MONACO_OPTIONS } from '../editor/options.ts';
+import { editor } from 'monaco-editor';
 
-import JsonView from 'react18-json-view';
-import 'react18-json-view/src/style.css';
+import Editor from '@monaco-editor/react';
+import React from 'react';
 
 interface Props {
     data: unknown;
 }
 
+const VIEW_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
+    ...MONACO_OPTIONS,
+    renderValidationDecorations: 'off',
+    readOnly: true,
+    domReadOnly: true,
+    lineNumbers: 'off',
+};
+
 const DataView = ({ data }: Props) => {
+    const value = React.useMemo(() => JSON.stringify(data, null, 2), [data]);
     return (
-        <Box margin={1} fontSize="large">
-            <JsonView src={data} />
-        </Box>
+        <Editor
+            width="100%"
+            height="100%"
+            defaultLanguage="yaml"
+            options={VIEW_OPTIONS}
+            value={value}
+        />
     );
 };
 
