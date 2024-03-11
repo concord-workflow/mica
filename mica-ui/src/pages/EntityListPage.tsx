@@ -48,7 +48,7 @@ const HELP: React.ReactNode = (
     </>
 );
 
-const DEFAULT_ROW_LIMIT = 1000;
+const SEARCH_LIMIT = 100;
 
 const EntityTableRow = ({
     row,
@@ -118,8 +118,8 @@ const EntityListPage = () => {
         searchParams.get('kind') ?? undefined,
     );
     const { data, isFetching } = useQuery(
-        ['entity', 'list', selectedPath, selectedKind],
-        () => list(selectedPath, selectedKind),
+        ['entity', 'list', selectedPath, selectedKind, search],
+        () => list(selectedPath, selectedKind, search),
         {
             keepPreviousData: true,
             select: ({ data }) => data,
@@ -212,24 +212,19 @@ const EntityListPage = () => {
                     <TableBody>
                         {data &&
                             data.length > 0 &&
-                            data
-                                .filter((row) =>
-                                    row.name.toLowerCase().includes(search.toLowerCase()),
-                                )
-                                .map((row) => (
-                                    <EntityTableRow
-                                        key={row.name}
-                                        row={row}
-                                        search={search}
-                                        handleDelete={handleDelete}
-                                        selectedPath={selectedPath}
-                                    />
-                                ))}
-                        {data && data.length >= DEFAULT_ROW_LIMIT && (
+                            data.map((row) => (
+                                <EntityTableRow
+                                    key={row.name}
+                                    row={row}
+                                    search={search}
+                                    handleDelete={handleDelete}
+                                    selectedPath={selectedPath}
+                                />
+                            ))}
+                        {data && search !== '' && data.length >= SEARCH_LIMIT && (
                             <TableRow>
                                 <TableCell colSpan={3} align="center">
-                                    More than {DEFAULT_ROW_LIMIT} results, please refine your
-                                    search.
+                                    More than {SEARCH_LIMIT} results, please refine your search.
                                 </TableCell>
                             </TableRow>
                         )}

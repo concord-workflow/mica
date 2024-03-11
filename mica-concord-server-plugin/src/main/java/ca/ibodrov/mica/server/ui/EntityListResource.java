@@ -5,7 +5,9 @@ import ca.ibodrov.mica.db.MicaDB;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Record3;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -14,10 +16,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static ca.ibodrov.mica.server.api.ApiUtils.nonBlank;
@@ -29,6 +28,8 @@ import static org.jooq.impl.DSL.noCondition;
 @Produces(APPLICATION_JSON)
 public class EntityListResource implements Resource {
 
+    private static final int SEARCH_LIMIT = 100;
+
     private final DSLContext dsl;
 
     @Inject
@@ -38,30 +39,33 @@ public class EntityListResource implements Resource {
 
     @GET
     public ListResponse list(@NotEmpty @QueryParam("path") String path,
-                             @Nullable @QueryParam("entityKind") String entityKind) {
+                             @Nullable @QueryParam("entityKind") String entityKind,
+                             @Nullable @QueryParam("search") String search) {
 
         assert path != null;
 
         var namePrefix = path.endsWith("/") ? path : path + "/";
+
         var entityKindCondition = Optional.ofNullable(nonBlank(entityKind))
                 .map(MICA_ENTITIES.KIND::eq).orElse(noCondition());
 
-        // TODO select one row per group
+        var applySearch = search != null && !search.isBlank();
+        var searchCondition = Optional.ofNullable(nonBlank(search))
+                .map(s -> (Condition) MICA_ENTITIES.NAME.likeIgnoreCase("%" + s + "%")).orElse(noCondition());
+
         var result = new HashMap<String, Entry>();
         dsl.select(MICA_ENTITIES.ID, MICA_ENTITIES.NAME, MICA_ENTITIES.KIND).from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.NAME.like(namePrefix + "%")
-                        .and(entityKindCondition))
+                        .and(entityKindCondition)
+                        .and(searchCondition))
+                .limit(applySearch ? SEARCH_LIMIT : null)
                 .forEach(record -> {
-                    var relativePath = record.value2().substring(namePrefix.length());
-                    if (relativePath.contains("/")) {
-                        var name = relativePath.split("/")[0];
-                        result.put(name, new Entry(Type.FOLDER, Optional.empty(), name, Optional.empty()));
+                    if (applySearch) {
+                        var entry = asSearchResult(record);
+                        result.put(entry.getKey(), entry.getValue());
                     } else {
-                        result.put(relativePath,
-                                new Entry(Type.FILE,
-                                        Optional.of(new EntityId(record.value1())),
-                                        relativePath,
-                                        Optional.of(record.value3())));
+                        var entry = asTreeEntry(record, namePrefix);
+                        result.put(entry.getKey(), entry.getValue());
                     }
                 });
 
@@ -85,6 +89,28 @@ public class EntityListResource implements Resource {
 
         // sort by name
         return e1.name().compareTo(e2.name());
+    }
+
+    private static Map.Entry<String, Entry> asTreeEntry(Record3<UUID, String, String> record, String namePrefix) {
+        var relativePath = record.value2().substring(namePrefix.length());
+        if (relativePath.contains("/")) {
+            var name = relativePath.split("/")[0];
+            return Map.entry(name, new Entry(Type.FOLDER, Optional.empty(), name, Optional.empty()));
+        } else {
+            return Map.entry(relativePath,
+                    new Entry(Type.FILE,
+                            Optional.of(new EntityId(record.value1())),
+                            relativePath,
+                            Optional.of(record.value3())));
+        }
+    }
+
+    private static Map.Entry<String, Entry> asSearchResult(Record3<UUID, String, String> record) {
+        return Map.entry(record.value2(),
+                new Entry(Type.FILE,
+                        Optional.of(new EntityId(record.value1())),
+                        record.value2(),
+                        Optional.of(record.value3())));
     }
 
     public enum Type {

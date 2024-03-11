@@ -16,9 +16,9 @@ export interface ListResponse {
     data: Array<Entry>;
 }
 
-export const list = (path: string, entityKind?: string): Promise<ListResponse> =>
+export const list = (path: string, entityKind?: string, search?: string): Promise<ListResponse> =>
     doFetch(
         `/api/mica/ui/entityList?path=${encodeURIComponent(path)}&entityKind=${
             entityKind ? encodeURIComponent(entityKind) : ''
-        }`,
+        }&search=${search ? encodeURIComponent(search) : ''}`,
     ).then(handleJsonResponse<ListResponse>);

@@ -13,18 +13,26 @@ public class EntityListResourceTest extends AbstractDatabaseTest {
 
     @Test
     public void examplesMustBePresent() {
-        var result = resource.list("/", null);
+        var result = resource.list("/", null, null);
         assertEntry(result, "examples", Type.FOLDER);
 
-        result = resource.list("/examples", null);
+        result = resource.list("/examples", null, null);
         assertEntry(result, "simple", Type.FOLDER);
         assertEntry(result, "hello", Type.FILE);
 
-        result = resource.list("/examples/simple", null);
+        result = resource.list("/examples/simple", null, null);
         assertEntry(result, "example-view", Type.FILE);
 
-        result = resource.list("/examples/config", "/mica/view/v1");
+        result = resource.list("/examples/config", "/mica/view/v1", null);
         assertEntry(result, "effective-config-view", Type.FILE);
+    }
+
+    @Test
+    public void searchMustReturnStuff() {
+        var result = resource.list("/", null, "parametrized");
+        assertEntry(result, "/examples/parametrized/example-kind", Type.FILE);
+        assertEntry(result, "/examples/parametrized/example-record", Type.FILE);
+        assertEntry(result, "/examples/parametrized/example-view", Type.FILE);
     }
 
     private static void assertEntry(ListResponse response, String name, Type type) {
