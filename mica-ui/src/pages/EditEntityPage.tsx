@@ -287,10 +287,12 @@ const EditEntityPage = () => {
                                 />
                             </FormControl>
                         )}
-                        <ResetButton
-                            disabled={isFetching || isSaving || !dirty}
-                            onConfirm={handleReset}
-                        />
+                        {selectedId !== undefined && selectedId !== '_new' && (
+                            <ResetButton
+                                disabled={isFetching || isSaving || !dirty}
+                                onConfirm={handleReset}
+                            />
+                        )}
                         <Button
                             disabled={isFetching || isSaving || !dirty}
                             startIcon={<SaveIcon />}
