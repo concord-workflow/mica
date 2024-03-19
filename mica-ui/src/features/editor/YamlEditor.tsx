@@ -1,5 +1,7 @@
 import { MONACO_OPTIONS } from './options.ts';
+import { Alert } from '@mui/material';
 import { useDebounce } from '@uidotdev/usehooks';
+import { editor } from 'monaco-editor';
 import { MonacoYaml, configureMonacoYaml } from 'monaco-yaml';
 
 import Editor, { useMonaco } from '@monaco-editor/react';
@@ -25,6 +27,14 @@ window.MonacoEnvironment = {
     },
 };
 
+const MarkerAlert = ({ marker }: { marker: editor.IMarker }) => {
+    return (
+        <Alert color="warning">
+            Line: {marker.startLineNumber} Column: {marker.startColumn} &mdash; {marker.message}
+        </Alert>
+    );
+};
+
 interface Props {
     isLoading: boolean;
     isFetching: boolean;
@@ -39,6 +49,8 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
 
     const monaco = useMonaco();
     const monacoYaml = React.useRef<MonacoYaml>();
+
+    const [markers, setMarkers] = React.useState<editor.IMarker[]>([]);
 
     React.useEffect(() => {
         if (!monaco) {
@@ -72,6 +84,8 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
 
     return (
         <ErrorBoundary fallback={<b>Something went wrong while trying to render the editor.</b>}>
+            {markers.length > 0 &&
+                markers.map((marker, idx) => <MarkerAlert marker={marker} key={idx} />)}
             <Editor
                 loading={isLoading || isFetching || isSaving}
                 height="100%"
@@ -79,6 +93,7 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
                 options={MONACO_OPTIONS}
                 value={value}
                 onChange={onChange}
+                onValidate={setMarkers}
             />
         </ErrorBoundary>
     );
