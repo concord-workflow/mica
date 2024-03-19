@@ -7,6 +7,6 @@ public class ValidNameValidator implements ConstraintValidator<ValidName, String
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        return !value.contains("//");
+        return value != null && !value.contains("//");
     }
 }

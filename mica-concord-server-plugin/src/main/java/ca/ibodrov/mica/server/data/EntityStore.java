@@ -272,6 +272,7 @@ public class EntityStore {
                 .fetchOptional()
                 .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt()));
 
+        // TODO move into the controller
         historyController.addEntry(tx, new EntityHistoryEntry(new EntityId(id), updatedAt, UPDATE, author), doc);
 
         return version;

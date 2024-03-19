@@ -2,7 +2,6 @@ package ca.ibodrov.mica.api.validation;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -11,7 +10,6 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@NotEmpty
 @Pattern(regexp = ValidName.NAME_PATTERN, message = ValidName.MESSAGE)
 @Retention(RUNTIME)
 @Target({ FIELD, TYPE_USE })
