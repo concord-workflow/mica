@@ -7,8 +7,7 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
-import com.walmartlabs.concord.repository.*;
-import com.walmartlabs.concord.repository.FetchRequest.Version;
+import com.walmartlabs.concord.repository.Repository;
 import com.walmartlabs.concord.sdk.Secret;
 import com.walmartlabs.concord.server.cfg.GitConfiguration;
 import com.walmartlabs.concord.server.cfg.RepositoryConfiguration;
@@ -23,7 +22,6 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 import java.util.function.Function;
@@ -35,9 +33,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.*;
 
 public class ConcordGitEntityFetcher implements EntityFetcher {
-
-    private static final Duration GIT_OPERATION_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration GIT_FETCH_TIMEOUT = Duration.ofSeconds(15);
 
     private static final String URI_SCHEME = "concord+git";
     private static final String DEFAULT_REF = "main";
@@ -54,8 +49,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     private final ProjectRepositoryManager projectRepositoryManager;
     private final SecretManager secretManager;
     private final YamlMapper yamlMapper;
-    private final RepositoryProviders repositoryProviders;
-    private final RepositoryCache repositoryCache;
+    private final GitUrlFetcher gitUrlFetcher;
 
     @Inject
     public ConcordGitEntityFetcher(OrganizationManager orgManager,
@@ -69,31 +63,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);
         this.secretManager = requireNonNull(secretManager);
         this.yamlMapper = new YamlMapper(objectMapper);
-
-        // use shorter timeouts than Concord's default provider
-        var gitCliCfg = GitClientConfiguration.builder()
-                .oauthToken(gitCfg.getOauthToken())
-                .defaultOperationTimeout(GIT_OPERATION_TIMEOUT)
-                .fetchTimeout(GIT_FETCH_TIMEOUT)
-                .sshTimeout(GIT_OPERATION_TIMEOUT)
-                .sshTimeoutRetryCount(gitCfg.getSshTimeoutRetryCount())
-                .build();
-        this.repositoryProviders = new RepositoryProviders(List.of(new GitCliRepositoryProvider(gitCliCfg)));
-
-        // use separate repository cache from Concord's
-        try {
-            var cacheDir = mkdirs(repoCfg.getCacheDir(), "_micaCache");
-            var cacheInfoDir = mkdirs(repoCfg.getCacheInfoDir(), "_micaInfoCache");
-            var lockTimeout = GIT_OPERATION_TIMEOUT.multipliedBy(2);
-            this.repositoryCache = new RepositoryCache(cacheDir,
-                    cacheInfoDir,
-                    lockTimeout,
-                    repoCfg.getMaxAge(),
-                    repoCfg.getLockCount(),
-                    objectMapper);
-        } catch (IOException e) {
-            throw new RuntimeException("Repository cache initialization error: " + e.getMessage(), e);
-        }
+        this.gitUrlFetcher = new GitUrlFetcher(gitCfg, repoCfg, objectMapper);
     }
 
     @Override
@@ -130,16 +100,13 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             var repoEntry = projectRepositoryManager.get(org.getId(), query.projectName, query.repoName);
             var secret = Optional.ofNullable(repoEntry.getSecretName())
                     .map(secretName -> getSecret(org.getId(), secretName));
-            return repositoryCache.withLock(repoEntry.getUrl(), () -> {
-                var repository = fetch(repoEntry.getUrl(), query.ref, query.pathInRepo, secret.orElse(null));
-                var data = fetcher.apply(repository);
-                if (query.limit > 0) {
-                    data = data.limit(query.limit);
-                }
-
-                var cursor = data;
-                return () -> cursor;
-            });
+            var data = gitUrlFetcher.fetch(repoEntry.getUrl(), query.ref, query.pathInRepo, secret.orElse(null),
+                    fetcher);
+            if (query.limit > 0) {
+                data = data.limit(query.limit);
+            }
+            var finalData = data;
+            return () -> finalData;
         } catch (StoreException e) {
             throw e;
         } catch (RuntimeException e) {
@@ -151,38 +118,6 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         return Optional.ofNullable(secretManager.getSecret(AccessScope.internal(), orgId, secretName, null, null))
                 .orElseThrow(() -> new StoreException("Secret not found: " + secretName))
                 .getSecret();
-    }
-
-    private Repository fetch(String url, String ref, String pathInRepo, Secret secret) {
-        var dest = repositoryCache.getPath(url);
-        try {
-            return repositoryProviders.fetch(FetchRequest.builder()
-                    .url(url)
-                    .shallow(true)
-                    .checkAlreadyFetched(true)
-                    .version(Version.from(ref))
-                    .secret(secret)
-                    .destination(dest)
-                    .build(), pathInRepo);
-        } catch (RepositoryException e) {
-            throw new StoreException("Error while fetching entities. " + e.getMessage(), e);
-        }
-    }
-
-    private static Path mkdirs(Path dir, String name) {
-        var path = dir.resolve(name);
-        if (Files.exists(path)) {
-            if (!Files.isDirectory(path)) {
-                throw new RuntimeException("Expected a directory: " + path);
-            }
-            return path;
-        }
-        try {
-            Files.createDirectories(path);
-        } catch (IOException e) {
-            throw new RuntimeException("Error while creating directories: " + path);
-        }
-        return path;
     }
 
     private static Set<FileFormat> parseAllowedFormats(Map<String, List<String>> queryParams) {
