@@ -83,7 +83,7 @@ public class EntityResource implements Resource {
         var entity = getEntityById(entityId, updatedAt);
         try {
             var string = yamlMapper.prettyPrint(entity);
-            return Response.ok(string, "text/yaml").build();
+            return Response.ok(string, "line/yaml").build();
         } catch (IOException e) {
             log.warn("YAML serialization error: {}", e.getMessage(), e);
             throw ApiException.internalError(e.getMessage());
