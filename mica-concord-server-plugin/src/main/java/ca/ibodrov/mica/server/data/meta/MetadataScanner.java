@@ -98,77 +98,79 @@ public class MetadataScanner {
 
             line = line.substring(minIndent);
 
-            switch (state) {
+            state = switch (state) {
                 case START -> {
                     if (line.equals("flows:")) {
-                        state = State.FLOWS_SECTION;
+                        yield State.FLOWS_SECTION;
                     }
+                    yield state;
                 }
                 case FLOWS_SECTION -> {
                     var l = line.stripLeading();
                     if (l.startsWith("##")) {
-                        state = State.PARAMS_START;
                         sectionIndent = line.length() - l.length();
+                        yield State.PARAMS_START;
                     }
+                    yield state;
                 }
                 case PARAMS_START -> {
                     if (line.length() < sectionIndent) {
-                        state = State.PARAMS_END;
                         warnings.add(new ScannerWarning("Invalid indent", lineNum, line));
-                        break;
+                        yield State.PARAMS_END;
                     }
 
                     var l = line.substring(sectionIndent);
 
                     if (l.startsWith("#  in:")) {
-                        state = State.IN_PARAMS;
+                        yield State.IN_PARAMS;
                     } else if (l.startsWith("#  out:")) {
-                        state = State.OUT_PARAMS;
+                        yield State.OUT_PARAMS;
                     } else if (l.startsWith("##")) {
-                        state = State.PARAMS_END;
+                        yield State.PARAMS_END;
                     }
+
+                    yield state;
                 }
                 case IN_PARAMS -> {
                     var l = line.substring(sectionIndent);
                     if (l.startsWith("##")) {
-                        state = State.PARAMS_END;
-                        break;
+                        yield State.PARAMS_END;
                     } else if (l.startsWith("#  out:")) {
-                        state = State.OUT_PARAMS;
-                        break;
+                        yield State.OUT_PARAMS;
                     }
 
                     var result = parseParameter(line, lineNum);
                     warnings.addAll(result.warnings());
                     inParameters.addAll(result.items());
+
+                    yield state;
                 }
                 case OUT_PARAMS -> {
                     var l = line.substring(sectionIndent);
                     if (l.startsWith("##")) {
-                        state = State.PARAMS_END;
-                        break;
+                        yield State.PARAMS_END;
                     }
 
                     var result = parseParameter(line, lineNum);
                     warnings.addAll(result.warnings());
                     outParameters.addAll(result.items());
+
+                    yield state;
                 }
                 case PARAMS_END -> {
                     if (line.isBlank() || !line.endsWith(":") || line.length() < sectionIndent) {
                         warnings.add(new ScannerWarning("Expected a flow name", lineNum, line));
-                        state = State.FLOWS_SECTION;
-                        break;
+                        yield State.FLOWS_SECTION;
                     }
 
                     var n = line.substring(sectionIndent).stripTrailing();
                     if (!n.endsWith(":")) {
                         warnings.add(new ScannerWarning("Expected a flow name", lineNum, line));
-                        state = State.FLOWS_SECTION;
-                        break;
+                        yield State.FLOWS_SECTION;
                     }
 
                     flowName = n.substring(0, n.length() - 1);
-                    state = State.FLOW;
+                    yield State.FLOW;
                 }
                 case FLOW -> {
                     flows.add(new FlowMetadata(flowName, inParameters, outParameters));
@@ -177,9 +179,9 @@ public class MetadataScanner {
                     inParameters = new ArrayList<>();
                     outParameters = new ArrayList<>();
                     warnings = new ArrayList<>();
-                    state = State.FLOWS_SECTION;
+                    yield State.FLOWS_SECTION;
                 }
-            }
+            };
         }
 
         return new ParseResult<>(flows, warnings);
