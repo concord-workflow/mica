@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.meta.ParseResult.items;
@@ -64,10 +66,14 @@ public class MetadataScanner {
             FLOW,
         }
 
-        var flows = new ArrayList<FlowMetadata>();
-        var flowName = (String) null;
-        var inParameters = new ArrayList<FlowParameter>();
-        var outParameters = new ArrayList<FlowParameter>();
+        class PartialFlowMetadata {
+            Optional<String> flowName = Optional.empty();
+            List<FlowParameter> inParameters = new ArrayList<>();
+            List<FlowParameter> outParameters = new ArrayList<>();
+        }
+
+        var partialFlows = new ArrayList<PartialFlowMetadata>();
+        var flow = new PartialFlowMetadata();
         var warnings = new ArrayList<ScannerWarning>();
         var state = State.START;
         var lineNum = -1;
@@ -141,7 +147,7 @@ public class MetadataScanner {
 
                     var result = parseParameter(line, lineNum);
                     warnings.addAll(result.warnings());
-                    inParameters.addAll(result.items());
+                    flow.inParameters.addAll(result.items());
 
                     yield state;
                 }
@@ -153,7 +159,7 @@ public class MetadataScanner {
 
                     var result = parseParameter(line, lineNum);
                     warnings.addAll(result.warnings());
-                    outParameters.addAll(result.items());
+                    flow.outParameters.addAll(result.items());
 
                     yield state;
                 }
@@ -169,21 +175,24 @@ public class MetadataScanner {
                         yield State.FLOWS_SECTION;
                     }
 
-                    flowName = n.substring(0, n.length() - 1);
+                    flow.flowName = Optional.of(n.substring(0, n.length() - 1));
                     yield State.FLOW;
                 }
                 case FLOW -> {
-                    flows.add(new FlowMetadata(flowName, inParameters, outParameters));
+                    // TODO validate optional fields
+                    partialFlows.add(flow);
 
-                    flowName = null;
-                    inParameters = new ArrayList<>();
-                    outParameters = new ArrayList<>();
+                    flow = new PartialFlowMetadata();
                     warnings = new ArrayList<>();
                     yield State.FLOWS_SECTION;
                 }
             };
         }
 
+        var flows = partialFlows.stream()
+                .map(p -> new FlowMetadata(p.flowName.orElseThrow(), List.copyOf(p.inParameters),
+                        List.copyOf(p.outParameters)))
+                .toList();
         return new ParseResult<>(flows, warnings);
     }
 
