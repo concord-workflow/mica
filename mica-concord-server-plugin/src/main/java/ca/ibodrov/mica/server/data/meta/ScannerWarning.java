@@ -1,4 +1,6 @@
 package ca.ibodrov.mica.server.data.meta;
 
-public record ScannerWarning(String message, int lineNum, String line) {
+import javax.annotation.Nullable;
+
+public record ScannerWarning(String message, int lineNum, @Nullable String line) {
 }

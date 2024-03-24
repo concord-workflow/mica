@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.server.data.meta;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -74,7 +75,7 @@ public class MetadataScanner {
 
         var partialFlows = new ArrayList<PartialFlowMetadata>();
         var flow = new PartialFlowMetadata();
-        var warnings = new ArrayList<ScannerWarning>();
+        var partialWarnings = new ArrayList<ScannerWarning>();
         var state = State.START;
         var lineNum = -1;
         var minIndent = (Integer) null;
@@ -93,7 +94,7 @@ public class MetadataScanner {
             } else {
                 // sanity check
                 if (minIndent > line.length() - strippedLeadingPartLine.length()) {
-                    warnings.add(new ScannerWarning("Invalid indent", lineNum, line));
+                    partialWarnings.add(new ScannerWarning("Invalid indent", lineNum, line));
                     break;
                 }
             }
@@ -117,11 +118,15 @@ public class MetadataScanner {
                         sectionIndent = line.length() - l.length();
                         yield State.PARAMS_START;
                     }
+                    if (l.stripTrailing().endsWith(":")) {
+                        flow.flowName = Optional.of(l.substring(0, l.length() - 1));
+                        yield State.FLOW;
+                    }
                     yield state;
                 }
                 case PARAMS_START -> {
                     if (line.length() < sectionIndent) {
-                        warnings.add(new ScannerWarning("Invalid indent", lineNum, line));
+                        partialWarnings.add(new ScannerWarning("Invalid indent", lineNum, line));
                         yield State.PARAMS_END;
                     }
 
@@ -146,7 +151,7 @@ public class MetadataScanner {
                     }
 
                     var result = parseParameter(line, lineNum);
-                    warnings.addAll(result.warnings());
+                    partialWarnings.addAll(result.warnings());
                     flow.inParameters.addAll(result.items());
 
                     yield state;
@@ -158,20 +163,22 @@ public class MetadataScanner {
                     }
 
                     var result = parseParameter(line, lineNum);
-                    warnings.addAll(result.warnings());
+                    partialWarnings.addAll(result.warnings());
                     flow.outParameters.addAll(result.items());
 
                     yield state;
                 }
                 case PARAMS_END -> {
+                    // we expect a flow marker here
+
                     if (line.isBlank() || !line.endsWith(":") || line.length() < sectionIndent) {
-                        warnings.add(new ScannerWarning("Expected a flow name", lineNum, line));
+                        partialWarnings.add(new ScannerWarning("Expected a flow name", lineNum, line));
                         yield State.FLOWS_SECTION;
                     }
 
                     var n = line.substring(sectionIndent).stripTrailing();
                     if (!n.endsWith(":")) {
-                        warnings.add(new ScannerWarning("Expected a flow name", lineNum, line));
+                        partialWarnings.add(new ScannerWarning("Expected a flow name", lineNum, line));
                         yield State.FLOWS_SECTION;
                     }
 
@@ -183,16 +190,26 @@ public class MetadataScanner {
                     partialFlows.add(flow);
 
                     flow = new PartialFlowMetadata();
-                    warnings = new ArrayList<>();
+                    partialWarnings = new ArrayList<>();
                     yield State.FLOWS_SECTION;
                 }
             };
         }
 
         var flows = partialFlows.stream()
-                .map(p -> new FlowMetadata(p.flowName.orElseThrow(), List.copyOf(p.inParameters),
+                .map(p -> new FlowMetadata(p.flowName.orElseThrow(),
+                        List.copyOf(p.inParameters),
                         List.copyOf(p.outParameters)))
                 .toList();
+
+        var warnings = List.copyOf(partialWarnings);
+        if (flows.isEmpty()) {
+            warnings = ImmutableList.<ScannerWarning>builder()
+                    .addAll(warnings)
+                    .add(new ScannerWarning("No flows found", 0, null))
+                    .build();
+        }
+
         return new ParseResult<>(flows, warnings);
     }
 
