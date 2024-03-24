@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static ca.ibodrov.mica.server.data.meta.ParseResult.items;
-import static ca.ibodrov.mica.server.data.meta.ParseResult.warnings;
+import static ca.ibodrov.mica.server.data.meta.OperationResult.items;
+import static ca.ibodrov.mica.server.data.meta.OperationResult.warnings;
 
 public class MetadataScanner {
 
@@ -21,12 +21,10 @@ public class MetadataScanner {
             var files = paths.filter(this::isConcordYamlFile)
                     .map(p -> {
                         var relativePath = rootPath.relativize(p).toString();
-                        var flows = parseConcordYamlFile(p);
-//                        return new ConcordFileMetadata(relativePath, flows);
-                        return null;
+                        var result = parseConcordYamlFile(p);
+                        return new ConcordFileMetadata(relativePath, result.items(), result.warnings());
                     }).toList();
-//            return new Metadata(files);
-            return null;
+            return new Metadata(files);
         } catch (IOException e) {
             throw new MetadataScannerException("Error scanning " + rootPath + ": " + e.getMessage(), e);
         }
@@ -37,7 +35,7 @@ public class MetadataScanner {
         return n.endsWith(".concord.yml") || n.endsWith(".concord.yaml");
     }
 
-    static private ParseResult<FlowMetadata, ScannerWarning> parseConcordYamlFile(Path path) {
+    static private OperationResult<FlowMetadata, ScannerWarning> parseConcordYamlFile(Path path) {
         try (var lines = Files.lines(path)) {
             return parseConcordYaml(lines);
         } catch (IOException e) {
@@ -46,7 +44,7 @@ public class MetadataScanner {
     }
 
     @VisibleForTesting
-    static ParseResult<FlowMetadata, ScannerWarning> parseConcordYaml(Stream<String> lines) {
+    static OperationResult<FlowMetadata, ScannerWarning> parseConcordYaml(Stream<String> lines) {
         // we are looking for specially-formatted comments here
         // therefore we have to parse the file manually
 
@@ -210,10 +208,10 @@ public class MetadataScanner {
                     .build();
         }
 
-        return new ParseResult<>(flows, warnings);
+        return new OperationResult<>(flows, warnings);
     }
 
-    private static ParseResult<FlowParameter, ScannerWarning> parseParameter(String line, int lineNum) {
+    private static OperationResult<FlowParameter, ScannerWarning> parseParameter(String line, int lineNum) {
         var i = line.indexOf("# ");
         if (i < 0 || i + 1 >= line.length()) {
             return warnings(new ScannerWarning("Expected a parameter", lineNum, line));

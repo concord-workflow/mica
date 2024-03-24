@@ -74,17 +74,17 @@ public class MetadataScannerTest {
 
     @Test
     public void parseSlightlyWeirdIndentation() {
-//        var result = MetadataScanner.parseConcordYaml("""
-//                flows:
-//                 default:
-//                       - log: "Hello, ${name}"
-//                """.lines());
-//
-//        assertEquals(0, result.warnings().size());
-//        assertEquals(1, result.items().size());
-//        assertEquals("default", result.items().get(0).name());
-
         var result = MetadataScanner.parseConcordYaml("""
+                flows:
+                 default:
+                       - log: "Hello, ${name}"
+                """.lines());
+
+        assertEquals(0, result.warnings().size());
+        assertEquals(1, result.items().size());
+        assertEquals("default", result.items().get(0).name());
+
+        result = MetadataScanner.parseConcordYaml("""
                 flows:
                  ##
                  #  in:
@@ -99,6 +99,25 @@ public class MetadataScannerTest {
         assertEquals("default", result.items().get(0).name());
         assertEquals("name", result.items().get(0).inParameters().get(0).name());
         assertEquals("the name", result.items().get(0).inParameters().get(0).description());
+
+        result = MetadataScanner.parseConcordYaml("""
+                flows:
+                 ##
+                 #  in:
+                 #     name: string, mandatory, the name
+                 #   age: int, optional, the age
+                 ##
+                 default:
+                       - log: "Hello, ${name}"
+                """.lines());
+
+        assertEquals(0, result.warnings().size());
+        assertEquals(1, result.items().size());
+        assertEquals("default", result.items().get(0).name());
+        assertEquals("name", result.items().get(0).inParameters().get(0).name());
+        assertEquals("the name", result.items().get(0).inParameters().get(0).description());
+        assertEquals("age", result.items().get(0).inParameters().get(1).name());
+        assertEquals("the age", result.items().get(0).inParameters().get(1).description());
     }
 
     @Test
