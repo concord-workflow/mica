@@ -27,10 +27,32 @@ window.MonacoEnvironment = {
     },
 };
 
-const MarkerAlert = ({ marker }: { marker: editor.IMarker }) => {
+const byLineAndColumn = (a: editor.IMarker, b: editor.IMarker) => {
+    if (a.startLineNumber === b.startLineNumber) {
+        return a.startColumn - b.startColumn;
+    }
+    return a.startLineNumber - b.startLineNumber;
+};
+
+const MAX_MARKERS = 5;
+
+const Markers = ({ markers }: { markers: editor.IMarker[] }) => {
+    if (!markers || markers.length === 0) {
+        return <></>;
+    }
+
     return (
         <Alert color="warning">
-            Line: {marker.startLineNumber} Column: {marker.startColumn} &mdash; {marker.message}
+            {markers
+                .sort(byLineAndColumn)
+                .slice(0, Math.min(MAX_MARKERS, markers.length) - 1)
+                .map((marker, idx) => (
+                    <div key={idx}>
+                        Line: {marker.startLineNumber} Col: {marker.startColumn} &mdash;{' '}
+                        {marker.message}
+                    </div>
+                ))}
+            {markers.length >= MAX_MARKERS && <div>...and other warning(s)</div>}
         </Alert>
     );
 };
@@ -84,8 +106,7 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
 
     return (
         <ErrorBoundary fallback={<b>Something went wrong while trying to render the editor.</b>}>
-            {markers.length > 0 &&
-                markers.map((marker, idx) => <MarkerAlert marker={marker} key={idx} />)}
+            <Markers markers={markers} />
             <Editor
                 loading={isLoading || isFetching || isSaving}
                 height="100%"
