@@ -1,29 +1,33 @@
 import Version from '../features/Version.tsx';
 import ProfileToolbarButton from './ProfileToolbarButton.tsx';
-import ApiIcon from '@mui/icons-material/Api';
-import { AppBar, Box, Button, Tab, Tabs, Toolbar, Typography, styled } from '@mui/material';
+import { AppBar, Box, Tab, Tabs, Toolbar, Typography, styled } from '@mui/material';
 
 import { PropsWithChildren } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-type TabKey = 'entity' | 'library';
+const important = <T,>(value: T): T => (value + ' !important') as never;
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
-    '& .MuiTab-root': { color: 'inherit' },
+    '& .MuiTab-root': {
+        color: important(theme.palette.getContrastText(theme.palette.primary.main)),
+    },
     '& .Mui-selected': {
-        color: theme.palette.getContrastText(theme.palette.primary.main),
+        color: important(theme.palette.getContrastText(theme.palette.primary.main)),
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
     },
 }));
 
-const pathnameToTab = (pathname: string): TabKey => {
+const pathnameToTabIndex = (pathname: string): number => {
     if (pathname.startsWith('/entity')) {
-        return 'entity';
+        return 0;
     }
     if (pathname.startsWith('/library')) {
-        return 'library';
+        return 1;
     }
-    return 'entity';
+    if (pathname.startsWith('/api')) {
+        return 2;
+    }
+    return 0;
 };
 
 const MainLayout = ({ children }: PropsWithChildren) => {
@@ -38,36 +42,17 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                         variant="h6"
                         color="inherit"
                         noWrap
-                        sx={{ textDecoration: 'none', pr: 6 }}>
+                        sx={{ textDecoration: 'none', pr: 16 }}>
                         Mica
                     </Typography>
                     <StyledTabs
                         TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
-                        value={pathnameToTab(location.pathname)}>
-                        <Tab
-                            tabIndex={0}
-                            value="entity"
-                            label="Entities"
-                            component={Link}
-                            to={'/entity'}
-                        />
-                        <Tab
-                            tabIndex={1}
-                            value="library"
-                            label="Libraries"
-                            component={Link}
-                            to={'/library'}
-                        />
+                        value={pathnameToTabIndex(location.pathname)}>
+                        <Tab tabIndex={0} label="Entities" component={Link} to={'/entity'} />
+                        <Tab tabIndex={1} label="Libraries" component={Link} to={'/library'} />
+                        <Tab tabIndex={2} label="API" component={Link} to={'/api'} />
                     </StyledTabs>
                     <Box flexGrow={1} />
-                    <Button
-                        component={Link}
-                        to="/api"
-                        variant="outlined"
-                        color="inherit"
-                        startIcon={<ApiIcon />}>
-                        API
-                    </Button>
                     <Typography variant="caption" sx={{ ml: 2, mr: 2 }}>
                         <Version />
                     </Typography>
