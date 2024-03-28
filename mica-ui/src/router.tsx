@@ -4,6 +4,7 @@ import EditEntityPage from './pages/EditEntityPage.tsx';
 import EntityDetailsPage from './pages/EntityDetailsPage.tsx';
 import EntityListPage from './pages/EntityListPage.tsx';
 import RedirectPage from './pages/RedirectPage.tsx';
+import TodoPage from './pages/TodoPage.tsx';
 
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 
@@ -37,6 +38,10 @@ export const createRouter = () =>
                     {
                         path: 'entity/:entityId/edit',
                         element: <EditEntityPage />,
+                    },
+                    {
+                        path: 'library',
+                        element: <TodoPage />,
                     },
                 ],
             },

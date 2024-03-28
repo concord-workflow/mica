@@ -1,6 +1,9 @@
 import { useCurrentUser } from '../UserContext.tsx';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { Button, Menu, MenuItem } from '@mui/material';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 
 import React, { useState } from 'react';
 
@@ -33,7 +36,12 @@ const ProfileToolbarButton = () => {
                 {currentUser.username}
             </Button>
             <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                <MenuItem onClick={handleLogout}>
+                    <ListItemIcon>
+                        <LogoutIcon />
+                    </ListItemIcon>
+                    <ListItemText>Logout</ListItemText>
+                </MenuItem>
             </Menu>
         </>
     );
