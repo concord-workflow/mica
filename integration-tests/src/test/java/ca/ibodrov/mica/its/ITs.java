@@ -20,6 +20,9 @@ import com.walmartlabs.concord.client2.ProcessEntry;
 import com.walmartlabs.concord.client2.StartProcessResponse;
 import com.walmartlabs.concord.server.org.OrganizationEntry;
 import com.walmartlabs.concord.server.org.OrganizationManager;
+import com.walmartlabs.concord.server.org.jsonstore.JsonStoreDataManager;
+import com.walmartlabs.concord.server.org.jsonstore.JsonStoreManager;
+import com.walmartlabs.concord.server.org.jsonstore.JsonStoreRequest;
 import com.walmartlabs.concord.server.org.project.ProjectEntry;
 import com.walmartlabs.concord.server.org.project.ProjectManager;
 import com.walmartlabs.concord.server.org.project.RepositoryEntry;
@@ -59,16 +62,29 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ITs extends TestResources {
 
     private static final UserPrincipal session = new UserPrincipal("test", user("test"));
+
+    private static OrganizationManager orgManager;
+    private static ProjectManager projectManager;
+    private static ProcessSecurityContext securityContext;
     private static EntityStore entityStore;
     private static ViewResource viewResource;
     private static ObjectMapper objectMapper;
+    private static UUID adminId;
 
     @BeforeAll
     public static void setUp() {
         var injector = micaServer.getServer().getInjector();
+
+        orgManager = injector.getInstance(OrganizationManager.class);
+        projectManager = injector.getInstance(ProjectManager.class);
+        securityContext = injector.getInstance(ProcessSecurityContext.class);
         entityStore = injector.getInstance(EntityStore.class);
         viewResource = injector.getInstance(ViewResource.class);
         objectMapper = injector.getInstance(ObjectMapper.class);
+
+        adminId = injector.getInstance(UserManager.class)
+                .getId("admin", null, UserType.LOCAL)
+                .orElseThrow();
     }
 
     /**
@@ -306,19 +322,12 @@ public class ITs extends TestResources {
 
         // create Concord org, project and repo
 
-        var adminId = micaServer.getServer().getInjector().getInstance(UserManager.class)
-                .getId("admin", null, UserType.LOCAL)
-                .orElseThrow();
-
-        var securityContext = micaServer.getServer().getInjector().getInstance(ProcessSecurityContext.class);
         var includeUri = securityContext.runAs(adminId, () -> {
             var orgName = "org-" + UUID.randomUUID();
-            var orgManager = micaServer.getServer().getInjector().getInstance(OrganizationManager.class);
             orgManager.createOrUpdate(new OrganizationEntry(orgName));
 
             var projectName = "project-" + UUID.randomUUID();
             var repoName = "repo-" + UUID.randomUUID();
-            var projectManager = micaServer.getServer().getInjector().getInstance(ProjectManager.class);
             projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
                     Map.of(repoName,
                             new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
@@ -610,7 +619,30 @@ public class ITs extends TestResources {
 
     @Test
     public void viewsCanUseJsonStoreEntities() throws Exception {
-        var includeUri = "concord+jsonstore://acme/test";
+        var orgName = "testOrg_" + System.currentTimeMillis();
+        var storeName = "testStore_" + System.currentTimeMillis();
+        var itemPath = "testItem_" + System.currentTimeMillis();
+
+        securityContext.runAs(adminId, () -> {
+            orgManager.createOrGet(orgName);
+
+            var injector = micaServer.getServer().getInjector();
+            var storeManager = injector.getInstance(JsonStoreManager.class);
+            storeManager.createOrUpdate(orgName, JsonStoreRequest.builder()
+                    .name(storeName)
+                    .build());
+
+            var dataManager = injector.getInstance(JsonStoreDataManager.class);
+            dataManager.createOrUpdate(orgName, storeName, itemPath, parseMap("""
+                    {
+                        "items": ["foo", "bar", "baz"]
+                    }
+                    """));
+
+            return null;
+        });
+
+        var includeUri = "concord+jsonstore://%s/%s".formatted(orgName, storeName);
 
         upsert(new MicaViewV1.Builder()
                 .name("/acme/views/json-store-demo")
@@ -621,12 +653,17 @@ public class ITs extends TestResources {
                         """))
                 .selector(byEntityKind("/acme/kinds/json-store-entity")
                         .withIncludes(List.of(includeUri)))
-                .data(jsonPath("$.data"))
+                .data(jsonPath("$"))
                 .build()
                 .toPartialEntity(objectMapper));
 
-        var result = viewResource.render(RenderRequest.of("/acme/views/json-store-demo", 10));
-        assertEquals(1, result.data().size());
+        var result = securityContext.runAs(adminId,
+                () -> viewResource.render(RenderRequest.of("/acme/views/json-store-demo", 10)));
+        var data = result.data().get("data");
+        assertEquals(1, data.size());
+        var item = data.get(0);
+        assertEquals(itemPath, item.get("name").asText());
+        assertEquals("foo", item.get("items").get(0).asText());
     }
 
     private static void upsert(PartialEntity entity) {
@@ -659,6 +696,15 @@ public class ITs extends TestResources {
     private static ObjectNode parseObject(@Language("yaml") String s) {
         try {
             return objectMapper.copyWith(new YAMLFactory()).readValue(s, ObjectNode.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Map<String, Object> parseMap(@Language("yaml") String s) {
+        try {
+            var jsonLikeMap = objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
+            return objectMapper.readValue(s, jsonLikeMap);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

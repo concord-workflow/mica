@@ -4,14 +4,16 @@
 
 - [Core Model](#core-model)
 - [Views](#views)
-  - [View Flattening](#view-flattening)
-  - [Merge Results](#merge-results)
-  - [JSON Patch Support](#json-patch-support)
-  - [Parametrized Views](#parametrized-views)
-  - [View Includes](#view-includes)
-  - [Property Files Support](#property-files-support)
-  - [Materialize View Data As Entities](#materialize-view-data-as-entities)
-  - [Validate View Entities](#validate-view-entities)
+    - [View Flattening](#view-flattening)
+    - [Merge Results](#merge-results)
+    - [JSON Patch Support](#json-patch-support)
+    - [Parametrized Views](#parametrized-views)
+    - [View Includes](#view-includes)
+    - [Git Repository Support](#git-repository-support)
+    - [Concord JSON Store Support](#concord-json-store-support)
+    - [Property Files Support](#property-files-support)
+    - [Materialize View Data As Entities](#materialize-view-data-as-entities)
+    - [Validate View Entities](#validate-view-entities)
 - [Supported JSON Schema Features](#supported-json-schema-features)
 - [Database Design](#database-design)
 
@@ -401,29 +403,12 @@ data:
   jsonPath: $
 ```
 
-Only `mica` and `concord+git` URL schemes are supported at the moment.
+Supported schemes:
 
-The `concord+git` URL must point at existing Concord project `projectName`
-with the repository `repoName`. When rendering the view, Mica will fetch
-the contents of the repository at the given `commitId` and look for YAML files
-in the given `path`. YAML files with the `kind` field set to
-`selector.entityKind` will be considered for further processing, the rest will
-be ignored.
-
-Supported parameters:
-
-- `path` -- optional, path inside the repository to look for YAML files. Default
-  is the repository root;
-- `ref` -- optional, commit ID or branch name to fetch the data from;
-- `useFileNames` -- optional, if `true`, use file names as entity names (even if
-  `name` present in the file). Default is `false`;
-- `namePrefix` -- optional, if specified, prepend the given string to each
-  entity name. Default is empty string;
-- `allowedFormats` -- optional, a comma-separated list of file types to look for. 
-  Default is `yaml`. See [Property Files Support](#property-files-support) for details;
-- `{format}.filePattern` -- optional, a regular expression to match file names. 
-  Default is `.*\\.ya?ml` for YAML files and `.*\\.properties` for Java
-  `.properties` files.
+- `mica://internal` -- fetch data from the internal entity store (DB);
+- `concord+git://` -- fetch data from a Git repository. The repository must be
+  added to a Concord project first;
+- `concord+jsonstore://` -- fetch data from a Concord JSON store.
 
 By default, `includes` contain the URL of the internal entity store:
 
@@ -441,7 +426,54 @@ syntax:
 selector:
   includes:
     - mica://internal
-    - concord+git://myConcordOrg/myConcordProject/myFavoriteGitRepo?path=/stuff/configs&ref=main
+    - concord+git://...
+```
+
+See below for the parameters that can be used with different schemes.
+
+### Git Repository Support
+
+Data can be fetched from a Git repository using the `concord+git` scheme:
+
+```yaml
+selector:
+  entityKind: /some/kind/v1
+  includes:
+    - concord+git://orgName/projectName/repositoryName?path=/stuff/configs&ref=main
+```
+
+The `concord+git` URL must point at existing Concord organization `orgName`
+containing project `projectName` with the repository `repositoryName`. When
+rendering the view, Mica will fetch the contents of the repository at the given
+`ref` (commit ID, tag or a branch name) and look for YAML files in the given
+`path`. YAML files with the `kind` field set to `selector.entityKind` are
+considered for further processing, the rest is ignored.
+
+Supported parameters:
+
+- `path` -- optional, path inside the repository to look for YAML files. Default
+  is the repository root;
+- `ref` -- optional, commit ID or branch name to fetch the data from;
+- `useFileNames` -- optional, if `true`, use file names as entity names (even if
+  `name` present in the file). Default is `false`;
+- `namePrefix` -- optional, if specified, prepend the given string to each
+  entity name. Default is empty string;
+- `allowedFormats` -- optional, a comma-separated list of file types to look for.
+  Default is `yaml`. See [Property Files Support](#property-files-support) for details;
+- `{format}.filePattern` -- optional, a regular expression to match file names.
+  Default is `.*\\.ya?ml` for YAML files and `.*\\.properties` for Java
+  `.properties` files.
+
+### Concord JSON Store Support
+
+Data can be fetched from a Concord JSON store using the `concord+jsonstore`
+scheme:
+
+```yaml
+selector:
+  entityKind: /some/kind/v1
+  includes:
+    - concord+jsonstore://orgName/jsonStoreName
 ```
 
 ### Property Files Support

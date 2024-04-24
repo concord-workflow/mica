@@ -19,6 +19,8 @@ import com.walmartlabs.concord.server.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -43,7 +45,9 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 @Produces(APPLICATION_JSON)
 public class ViewResource implements Resource {
 
-    private static final String RESULT_ENTITY_KIND = "/mica/materializedView/v1";
+    private static final Logger log = LoggerFactory.getLogger(ViewResource.class);
+
+    private static final String RESULT_ENTITY_KIND = "/mica/rendered-view/v1";
 
     private final DSLContext dsl;
     private final EntityStore entityStore;
@@ -247,6 +251,7 @@ public class ViewResource implements Resource {
         try {
             return fetcher.getAllByKind(uri, entityKind, -1).stream();
         } catch (StoreException e) {
+            log.warn("Error while fetching {} entities: {}", uri.getScheme(), e.getMessage());
             throw ApiException.internalError(e.getMessage());
         }
     }

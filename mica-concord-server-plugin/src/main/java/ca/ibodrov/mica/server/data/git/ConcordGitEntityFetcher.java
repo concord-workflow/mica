@@ -274,7 +274,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                 throw new StoreException("Invalid URI path, expected /{orgName}/{projectName}/{repoName}: " + uri);
             }
 
-            var orgName = uri.getHost();
+            var orgName = uri.getAuthority();
             var projectName = pathElements[1];
             var repoName = pathElements[2];
             var queryParams = parseQueryParameters(uri.getQuery());
