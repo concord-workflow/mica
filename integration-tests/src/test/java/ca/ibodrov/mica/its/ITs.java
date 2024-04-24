@@ -608,6 +608,27 @@ public class ITs extends TestResources {
         assertTrue(log.contains("baz=world"));
     }
 
+    @Test
+    public void viewsCanUseJsonStoreEntities() throws Exception {
+        var includeUri = "concord+jsonstore://acme/test";
+
+        upsert(new MicaViewV1.Builder()
+                .name("/acme/views/json-store-demo")
+                .parameters(parseObject("""
+                        properties:
+                          env:
+                            type: string
+                        """))
+                .selector(byEntityKind("/acme/kinds/json-store-entity")
+                        .withIncludes(List.of(includeUri)))
+                .data(jsonPath("$.data"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        var result = viewResource.render(RenderRequest.of("/acme/views/json-store-demo", 10));
+        assertEquals(1, result.data().size());
+    }
+
     private static void upsert(PartialEntity entity) {
         entityStore.upsert(session, entity, null).orElseThrow();
     }

@@ -2,11 +2,13 @@ package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
+import ca.ibodrov.mica.api.model.ApiError;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.RenderRequest;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.data.*;
+import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
@@ -28,8 +30,8 @@ import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
 import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static javax.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewResourceTest extends AbstractDatabaseTest {
 
@@ -230,6 +232,23 @@ public class ViewResourceTest extends AbstractDatabaseTest {
         // we expect entities to be flattened into a .properties format
         var result = viewResource.renderProperties(RenderRequest.of("/test-properties", 10));
         assertEquals("x.y=true\n", result);
+    }
+
+    @Test
+    public void renderingViewsWithUnknownIncludesThrowsError() {
+        upsert(new MicaViewV1.Builder()
+                .name("/unknown-include")
+                .selector(byEntityKind("/acme/foo")
+                        .withIncludes(List.of("unknown+what://is/this")))
+                .data(jsonPath("$.data"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        var error = assertThrows(ApiException.class,
+                () -> viewResource.render(RenderRequest.of("/unknown-include", 10)));
+        assertEquals(CLIENT_ERROR, error.getStatus().getFamily());
+        var entity = assertInstanceOf(ApiError.class, error.getResponse().getEntity());
+        assertTrue(entity.message().contains("Unsupported URI"));
     }
 
     private static void upsert(PartialEntity entity) {

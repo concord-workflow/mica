@@ -239,15 +239,16 @@ public class ViewResource implements Resource {
     }
 
     private Stream<EntityLike> fetch(URI uri, String entityKind) {
-        return includeFetchers.stream()
-                .filter(fetcher -> fetcher.isSupported(uri))
-                .flatMap(fetcher -> {
-                    try {
-                        return fetcher.getAllByKind(uri, entityKind, -1).stream();
-                    } catch (StoreException e) {
-                        throw ApiException.internalError(e.getMessage());
-                    }
-                });
+        var fetcher = includeFetchers.stream()
+                .filter(f -> f.isSupported(uri))
+                .findAny()
+                .orElseThrow(() -> ApiException.badRequest("Unsupported URI in \"includes\": " + uri));
+
+        try {
+            return fetcher.getAllByKind(uri, entityKind, -1).stream();
+        } catch (StoreException e) {
+            throw ApiException.internalError(e.getMessage());
+        }
     }
 
     private Optional<JsonNode> validateRenderedView(ViewLike view, RenderedView renderedView) {
