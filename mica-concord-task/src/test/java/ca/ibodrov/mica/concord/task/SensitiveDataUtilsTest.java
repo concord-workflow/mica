@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static ca.ibodrov.mica.concord.task.SensitiveDataUtils.hideSensitiveData;
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,5 +69,16 @@ public class SensitiveDataUtilsTest {
         }
         assertEquals("...to deep", result.get(0));
         assertEquals("...to deep", result.get(1));
+    }
+
+    @Test
+    public void exclusionsMustBeRespected() {
+        var holder = SensitiveDataHolder.getInstance();
+        holder.addAll(List.of("foo", "bar"));
+        var aMap = Map.of("foo", "Hello, bar!");
+        var result = hideSensitiveData(aMap, Set.of("foo"));
+        assertEquals("Hello, ******!", result.get("foo"));
+        result = hideSensitiveData(aMap, Set.of("bar"));
+        assertEquals("Hello, bar!", result.get("******"));
     }
 }

@@ -3,10 +3,7 @@ package ca.ibodrov.mica.concord.task;
 import com.google.common.annotations.VisibleForTesting;
 import com.walmartlabs.concord.runtime.v2.runner.SensitiveDataHolder;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
@@ -16,14 +13,20 @@ public final class SensitiveDataUtils {
     @VisibleForTesting
     static final int MAX_DEPTH = 32;
 
-    @SuppressWarnings("unchecked")
     public static <T> T hideSensitiveData(T value) {
+        return hideSensitiveData(value, Set.of());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T hideSensitiveData(T value, Set<String> exclusions) {
         var holder = SensitiveDataHolder.getInstance();
         var sensitiveData = holder.get();
         if (sensitiveData.isEmpty()) {
             return value;
         }
-        return (T) hideSensitiveData(sensitiveData, value, 0);
+        var effectiveSensitiveData = new HashSet<>(sensitiveData);
+        effectiveSensitiveData.removeAll(exclusions);
+        return (T) hideSensitiveData(effectiveSensitiveData, value, 0);
     }
 
     private static Object hideSensitiveData(Set<String> sensitiveData, Object value, int depth) {
