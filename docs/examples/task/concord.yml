@@ -1,7 +1,7 @@
 configuration:
   runtime: "concord-v2"
   dependencies:
-    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.17
+    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.19-SNAPSHOT
 
 flows:
   default:
@@ -12,3 +12,15 @@ flows:
         search: foo
       out: result
     - log: ${result.data}
+
+    - task: mica
+      in:
+        apiKey: mica
+        action: upsert
+        kind: /mica/record/v1
+        name: /test
+        entity:
+          data:
+            xyz:
+              mySecret: ${crypto.exportAsString('Default', 'test', null)} # will be masked before uploading
+            foo: bar

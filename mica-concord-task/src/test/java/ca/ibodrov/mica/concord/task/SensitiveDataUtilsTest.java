@@ -1,0 +1,72 @@
+package ca.ibodrov.mica.concord.task;
+
+import com.walmartlabs.concord.runtime.v2.runner.SensitiveDataHolder;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static ca.ibodrov.mica.concord.task.SensitiveDataUtils.hideSensitiveData;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class SensitiveDataUtilsTest {
+
+    @Test
+    public void validate() {
+        var holder = SensitiveDataHolder.getInstance();
+        holder.addAll(List.of("foo", "bar"));
+
+        var aString = "Hello, foo!";
+        assertEquals("Hello, ******!", hideSensitiveData(aString));
+
+        var aMap = Map.of("key", "Hello, foo!");
+        assertEquals("Hello, ******!", hideSensitiveData(aMap).get("key"));
+
+        var aMap2 = Map.of("foo!", "!bar!");
+        var resultMap = hideSensitiveData(aMap2);
+        assertEquals("!******!", resultMap.get("******!"));
+        assertFalse(resultMap.containsKey("foo!"));
+
+        var aList = List.of("Hello, foo!", "Bye, bar!");
+        var resultList = hideSensitiveData(aList);
+        assertEquals("Hello, ******!", resultList.get(0));
+        assertEquals("Bye, ******!", resultList.get(1));
+
+        var complex = List.of(
+                Map.of("foo", List.of("bar_1", "bar_2", "baz")),
+                Map.of("qux", List.of(1, 2, 3, "foo")));
+        var resultComplex = hideSensitiveData(complex);
+        assertEquals("******_1", resultComplex.get(0).get("******").get(0));
+        assertEquals("******_2", resultComplex.get(0).get("******").get(1));
+        assertEquals("baz", resultComplex.get(0).get("******").get(2));
+        assertEquals(1, resultComplex.get(1).get("qux").get(0));
+        assertEquals("******", resultComplex.get(1).get("qux").get(3));
+    }
+
+    @Test
+    public void tooDeep() {
+        var holder = SensitiveDataHolder.getInstance();
+        holder.addAll(List.of("foo", "bar"));
+
+        var depth = SensitiveDataUtils.MAX_DEPTH + 1;
+
+        var data = new ArrayList<Object>(List.of("foo_1", "bar_2"));
+        var pointer = data;
+        for (int i = 0; i < depth - 1; i++) {
+            var next = new ArrayList<Object>(List.of("foo_1", "bar_2"));
+            pointer.add(next);
+            pointer = next;
+        }
+
+        var result = (List<Object>) hideSensitiveData(data);
+        for (int i = 0; i < SensitiveDataUtils.MAX_DEPTH; i++) {
+            assertEquals("******_1", result.get(0));
+            assertEquals("******_2", result.get(1));
+            assertTrue(result.get(2) instanceof List<?>);
+            result = (List<Object>) result.get(2);
+        }
+        assertEquals("...to deep", result.get(0));
+        assertEquals("...to deep", result.get(1));
+    }
+}
