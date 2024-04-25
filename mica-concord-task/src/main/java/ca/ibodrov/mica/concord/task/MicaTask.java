@@ -31,6 +31,7 @@ import java.util.Optional;
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpRequest.BodyPublishers.ofFile;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
 @Named("mica")
 public class MicaTask implements Task {
@@ -141,6 +142,8 @@ public class MicaTask implements Task {
         var body = input.assertVariable("entity", Object.class);
         var merge = input.getBoolean("merge", false);
         var hideSensitiveData = input.getBoolean("hideSensitiveData", true);
+        var sensitiveDataExclusions = input.getList("sensitiveDataExclusions", List.of())
+                .stream().map(Object::toString).collect(toSet());
 
         if (merge) {
             var meta = findEntityByName(input, name);
@@ -156,7 +159,7 @@ public class MicaTask implements Task {
         }
 
         if (hideSensitiveData) {
-            body = SensitiveDataUtils.hideSensitiveData(body);
+            body = SensitiveDataUtils.hideSensitiveData(body, sensitiveDataExclusions);
         }
 
         byte[] requestBody;

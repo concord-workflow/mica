@@ -675,6 +675,8 @@ public class ITs extends TestResources {
         var orgName = "testOrg_" + System.currentTimeMillis();
         var secretName = "testSecret_" + System.currentTimeMillis();
         var secretString = "f00!";
+        var otherSecretName = "otherTestSecret_" + System.currentTimeMillis();
+        var otherSecretString = "b4r!";
 
         securityContext.runAs(adminId, () -> {
             var orgId = orgManager.createOrGet(orgName).orgId();
@@ -683,13 +685,18 @@ public class ITs extends TestResources {
             var secretManager = injector.getInstance(SecretManager.class);
             secretManager.createBinaryData(orgId, Set.of(), secretName, null,
                     new ByteArrayInputStream(secretString.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
+            secretManager.createBinaryData(orgId, Set.of(), otherSecretName, null,
+                    new ByteArrayInputStream(otherSecretString.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
             return null;
         });
 
         var ciProcess = startConcordProcess(Map.of(
                 "arguments.orgName", orgName,
                 "arguments.secretName", secretName,
-                "concord.yml", """
+                "arguments.otherSecretName", otherSecretName,
+                "arguments.otherSecretString", otherSecretString,
+                "concord.yml",
+                """
                         configuration:
                           runtime: "concord-v2"
                         flows:
@@ -699,15 +706,21 @@ public class ITs extends TestResources {
                                 action: upsert
                                 name: /masked-data
                                 kind: /mica/record/v1
+                                sensitiveDataExclusions:
+                                  - ${otherSecretString}
                                 entity:
                                   data:
                                     xyz:
                                       mySecret: "${crypto.exportAsString(orgName, secretName, null)}_should_be_masked"
-                        """.strip().getBytes()));
+                                      someOtherStuff: "${crypto.exportAsString(orgName, otherSecretName, null)}_should_not_be_masked"
+                        """
+                        .strip().getBytes()));
         assertFinished(ciProcess);
 
         var entity = entityStore.getByName("/masked-data").orElseThrow();
         assertEquals("******_should_be_masked", entity.data().get("data").get("xyz").get("mySecret").asText());
+        assertEquals(otherSecretString + "_should_not_be_masked",
+                entity.data().get("data").get("xyz").get("someOtherStuff").asText());
     }
 
     private static void upsert(PartialEntity entity) {
