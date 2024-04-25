@@ -140,6 +140,7 @@ public class MicaTask implements Task {
         var name = input.assertString("name");
         var body = input.assertVariable("entity", Object.class);
         var merge = input.getBoolean("merge", false);
+        var hideSensitiveData = input.getBoolean("hideSensitiveData", true);
 
         if (merge) {
             var meta = findEntityByName(input, name);
@@ -152,6 +153,10 @@ public class MicaTask implements Task {
                 var b = objectMapper.convertValue(body, Map.class);
                 body = ConfigurationUtils.deepMerge(a, b);
             }
+        }
+
+        if (hideSensitiveData) {
+            body = SensitiveDataUtils.hideSensitiveData(body);
         }
 
         byte[] requestBody;

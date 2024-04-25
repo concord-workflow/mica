@@ -26,6 +26,8 @@ import com.walmartlabs.concord.server.org.jsonstore.JsonStoreRequest;
 import com.walmartlabs.concord.server.org.project.ProjectEntry;
 import com.walmartlabs.concord.server.org.project.ProjectManager;
 import com.walmartlabs.concord.server.org.project.RepositoryEntry;
+import com.walmartlabs.concord.server.org.secret.SecretManager;
+import com.walmartlabs.concord.server.org.secret.SecretVisibility;
 import com.walmartlabs.concord.server.process.ProcessSecurityContext;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import com.walmartlabs.concord.server.user.UserManager;
@@ -36,11 +38,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import javax.validation.ConstraintViolationException;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
@@ -664,6 +668,46 @@ public class ITs extends TestResources {
         var item = data.get(0);
         assertEquals(itemPath, item.get("name").asText());
         assertEquals("foo", item.get("items").get(0).asText());
+    }
+
+    @Test
+    public void sensitiveDataMustBeMasked() throws Exception {
+        var orgName = "testOrg_" + System.currentTimeMillis();
+        var secretName = "testSecret_" + System.currentTimeMillis();
+        var secretString = "f00!";
+
+        securityContext.runAs(adminId, () -> {
+            var orgId = orgManager.createOrGet(orgName).orgId();
+
+            var injector = micaServer.getServer().getInjector();
+            var secretManager = injector.getInstance(SecretManager.class);
+            secretManager.createBinaryData(orgId, Set.of(), secretName, null,
+                    new ByteArrayInputStream(secretString.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
+            return null;
+        });
+
+        var ciProcess = startConcordProcess(Map.of(
+                "arguments.orgName", orgName,
+                "arguments.secretName", secretName,
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upsert
+                                name: /masked-data
+                                kind: /mica/record/v1
+                                entity:
+                                  data:
+                                    xyz:
+                                      mySecret: "${crypto.exportAsString(orgName, secretName, null)}_should_be_masked"
+                        """.strip().getBytes()));
+        assertFinished(ciProcess);
+
+        var entity = entityStore.getByName("/masked-data").orElseThrow();
+        assertEquals("******_should_be_masked", entity.data().get("data").get("xyz").get("mySecret").asText());
     }
 
     private static void upsert(PartialEntity entity) {
