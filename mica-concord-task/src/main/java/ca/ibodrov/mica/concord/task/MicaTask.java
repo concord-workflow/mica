@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.Optional;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpRequest.BodyPublishers.ofFile;
+import static java.net.http.HttpRequest.BodyPublishers.ofString;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -124,12 +126,19 @@ public class MicaTask implements Task {
         return TaskResult.success().value("data", rendered);
     }
 
-    private TaskResult upload(Variables input) throws FileNotFoundException {
+    private TaskResult upload(Variables input) throws IOException {
         var kind = input.assertString("kind");
         var src = input.assertString("src");
         var name = input.assertString("name");
+        var hideSensitiveData = input.getBoolean("hideSensitiveData", true);
+        var sensitiveDataExclusions = input.getList("sensitiveDataExclusions", List.of())
+                .stream().map(Object::toString).collect(toSet());
+        var body = Files.readString(Path.of(src));
+        if (hideSensitiveData) {
+            body = SensitiveDataUtils.hideSensitiveData(body, sensitiveDataExclusions);
+        }
         var response = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
-                .uploadPartialYaml(kind, name, true, ofFile(Path.of(src)));
+                .uploadPartialYaml(kind, name, true, ofString(body));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(response, Map.class));
     }

@@ -693,6 +693,7 @@ public class ITs extends TestResources {
         var ciProcess = startConcordProcess(Map.of(
                 "arguments.orgName", orgName,
                 "arguments.secretName", secretName,
+                "arguments.secretString", secretString,
                 "arguments.otherSecretName", otherSecretName,
                 "arguments.otherSecretString", otherSecretString,
                 "concord.yml",
@@ -701,6 +702,7 @@ public class ITs extends TestResources {
                           runtime: "concord-v2"
                         flows:
                           default:
+                            # test "upsert"
                             - task: mica
                               in:
                                 action: upsert
@@ -710,17 +712,37 @@ public class ITs extends TestResources {
                                   - ${otherSecretString}
                                 entity:
                                   data:
-                                    xyz:
-                                      mySecret: "${crypto.exportAsString(orgName, secretName, null)}_should_be_masked"
-                                      someOtherStuff: "${crypto.exportAsString(orgName, otherSecretName, null)}_should_not_be_masked"
+                                    x: "${crypto.exportAsString(orgName, secretName, null)}_should_be_masked"
+                                    y: "${crypto.exportAsString(orgName, otherSecretName, null)}_should_not_be_masked"
+                            # test "upload"
+                            - set:
+                                testEntity:
+                                  data:
+                                    x: "${crypto.exportAsString(orgName, secretName, null)}_should_not_be_masked"
+                                    y: "${crypto.exportAsString(orgName, otherSecretName, null)}_should_be_masked"
+                                testFile: ${resource.writeAsYaml(testEntity)}
+                            - task: mica
+                              in:
+                                action: upload
+                                kind: /mica/record/v1
+                                name: /masked-data-from-file
+                                src: ${testFile}
+                                sensitiveDataExclusions:
+                                  - ${secretString}
                         """
                         .strip().getBytes()));
         assertFinished(ciProcess);
 
         var entity = entityStore.getByName("/masked-data").orElseThrow();
-        assertEquals("******_should_be_masked", entity.data().get("data").get("xyz").get("mySecret").asText());
+        assertEquals("******_should_be_masked", entity.data().get("data").get("x").asText());
         assertEquals(otherSecretString + "_should_not_be_masked",
-                entity.data().get("data").get("xyz").get("someOtherStuff").asText());
+                entity.data().get("data").get("y").asText());
+
+        var entityFromFile = entityStore.getByName("/masked-data-from-file").orElseThrow();
+        assertEquals(secretString + "_should_not_be_masked",
+                entityFromFile.data().get("data").get("x").asText());
+        assertEquals("******_should_be_masked",
+                entityFromFile.data().get("data").get("y").asText());
     }
 
     private static void upsert(PartialEntity entity) {
