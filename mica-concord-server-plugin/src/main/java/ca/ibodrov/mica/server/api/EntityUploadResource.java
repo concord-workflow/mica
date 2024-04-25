@@ -88,18 +88,16 @@ public class EntityUploadResource implements Resource {
         } catch (IOException e) {
             throw ApiException.badRequest("Error parsing YAML: " + e.getMessage());
         }
-        assertValid(entity);
+
+        var violations = validator.validate(entity);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException("Invalid entity", violations);
+        }
+
         // TODO single transaction
         if (replace) {
             controller.deleteIfExists(session, entity.name());
         }
         return controller.createOrUpdate(session, entity, doc, overwrite);
-    }
-
-    private void assertValid(PartialEntity entity) {
-        var violations = validator.validate(entity);
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(violations);
-        }
     }
 }
