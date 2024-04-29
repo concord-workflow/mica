@@ -36,6 +36,3 @@ export const render = (request: RenderRequest): Promise<PartialEntity> =>
         },
         body: JSON.stringify(request),
     }).then(handleJsonResponse<PartialEntity>);
-
-export const useRender = (options?: UseMutationOptions<PartialEntity, ApiError, RenderRequest>) =>
-    useMutation<PartialEntity, ApiError, RenderRequest>(render, options);

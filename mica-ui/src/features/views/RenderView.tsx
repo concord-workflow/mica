@@ -1,10 +1,13 @@
-import { RenderRequest, useRender } from '../../api/view.ts';
+import { PartialEntity } from '../../api/entity.ts';
+import { ApiError } from '../../api/error.ts';
+import { RenderRequest, render } from '../../api/view.ts';
 import ReadableApiError from '../../components/ReadableApiError.tsx';
 import DataView from './DataView.tsx';
 import ShowRenderedViewDetailsToggle from './ShowRenderedViewDetailsToggle.tsx';
 import { Alert, Box, CircularProgress, styled } from '@mui/material';
 
 import React from 'react';
+import { useQuery } from 'react-query';
 
 interface Props {
     request: RenderRequest;
@@ -13,13 +16,14 @@ interface Props {
 const FloatingBox = styled(Box)(() => ({ float: 'right' }));
 
 const RenderView = ({ request }: Props) => {
-    const { mutateAsync, data, isLoading, error } = useRender({
-        retry: false,
-    });
-
-    React.useEffect(() => {
-        mutateAsync(request);
-    }, [mutateAsync, request]);
+    const { data, isLoading, error } = useQuery<PartialEntity, ApiError>(
+        ['render', request],
+        () => render(request),
+        {
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+        },
+    );
 
     const [showDetails, setShowDetails] = React.useState(false);
     const handleDetailsToggle = React.useCallback((value: boolean) => {
