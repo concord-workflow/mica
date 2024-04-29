@@ -1,4 +1,5 @@
 import { useCurrentUser } from '../UserContext.tsx';
+import { redirectToLogout } from '../api/common.ts';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { Button, Menu, MenuItem } from '@mui/material';
 
@@ -12,10 +13,6 @@ const ProfileToolbarButton = () => {
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
-    };
-
-    const handleLogout = () => {
-        window.location.pathname = '/api/mica/oidc/logout';
     };
 
     const handleClose = () => {
@@ -33,7 +30,7 @@ const ProfileToolbarButton = () => {
                 {currentUser.username}
             </Button>
             <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                <MenuItem onClick={redirectToLogout}>Logout</MenuItem>
             </Menu>
         </>
     );

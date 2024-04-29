@@ -12,10 +12,26 @@ const addUiHeader = (init?: RequestInit): RequestInit => {
     return { ...init, headers };
 };
 
+export const redirectToLogin = () => {
+    const url = new URL(window.location.href);
+    url.pathname = `/api/service/oidc/auth`; //
+    url.search = `?from=${encodeURIComponent(window.location.href)}`;
+    console.log('Redirecting to login: ' + url.toString());
+    window.location.assign(url);
+};
+
+export const redirectToLogout = () => {
+    const url = new URL(window.location.href);
+    url.pathname = `/api/mica/oidc/logout`;
+    url.search = `?from=${encodeURIComponent(window.location.href)}`;
+    console.log('Redirecting to logout: ' + url.toString());
+    window.location.assign(url);
+};
+
 export const handleErrors = async (resp: Response) => {
     if (!resp.ok) {
         if (resp.status == 401) {
-            window.location.pathname = '/api/mica/oidc/login';
+            redirectToLogin();
         }
 
         throw await parseError(resp);

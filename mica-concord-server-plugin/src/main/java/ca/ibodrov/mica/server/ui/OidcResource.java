@@ -8,11 +8,14 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+import java.util.Optional;
 
+import static ca.ibodrov.mica.server.api.ApiUtils.nonBlank;
 import static java.util.Objects.requireNonNull;
 
 @Path("/api/mica/oidc")
@@ -26,25 +29,24 @@ public class OidcResource implements Resource {
     }
 
     @GET
-    @Path("/login")
-    public Response login(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
-        var from = UriBuilder.fromUri(uriInfo.getBaseUri()).path("/mica/").build();
-        var redirectUri = UriBuilder.fromUri(uriInfo.getBaseUri())
-                .path("/api/service/oidc/auth")
-                .queryParam("from", from)
-                .build();
-        return Response.temporaryRedirect(redirectUri).build();
-    }
-
-    @GET
     @Path("/logout")
     // TODO support OIDC SLO with id_token_hint
-    public Response logout(@Context HttpServletRequest request, @Context UriInfo uriInfo) {
-        SecurityUtils.getSubject().logout();
-        var from = UriBuilder.fromUri(uriInfo.getBaseUri()).path("/mica/").build();
-        var logoutUri = UriBuilder.fromUri(logoutEndpoint)
-                .queryParam("fromURI", from)
+    public Response logout(@Context HttpServletRequest request,
+                           @QueryParam("from") String from,
+                           @Context UriInfo uriInfo) {
+
+        var effectiveFrom = Optional.ofNullable(nonBlank(from))
+                .orElseGet(() -> UriBuilder.fromUri(uriInfo.getBaseUri())
+                        .path("/mica/")
+                        .build()
+                        .toASCIIString());
+
+        var redirectUri = UriBuilder.fromUri(logoutEndpoint)
+                .queryParam("from", effectiveFrom)
                 .build();
-        return Response.temporaryRedirect(logoutUri).build();
+
+        SecurityUtils.getSubject().logout();
+
+        return Response.temporaryRedirect(redirectUri).build();
     }
 }

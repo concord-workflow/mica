@@ -1,4 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
+import { redirectToLogin } from './api/common.ts';
+
 import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 
 interface CurrentUser {
@@ -21,7 +23,7 @@ export const WithUserContext = ({ children }: PropsWithChildren) => {
                 const json = await response.json();
                 setCurrentUser({ username: json.username });
             } catch (e) {
-                window.location.pathname = `/api/mica/oidc/login`;
+                redirectToLogin();
             }
         };
 
