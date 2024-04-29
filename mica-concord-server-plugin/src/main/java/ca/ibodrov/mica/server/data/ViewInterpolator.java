@@ -139,11 +139,7 @@ public class ViewInterpolator {
                 var value = field.getValue();
                 assert value != null;
 
-                if (value.isTextual() || value.isNumber() || value.isBoolean()) {
-                    s = s.replace(key, value.asText());
-                } else {
-                    s = s.replace(key, value.asText("unknown"));
-                }
+                s = s.replace(key, value.asText());
             }
         }
 
