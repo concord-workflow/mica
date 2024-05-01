@@ -19,30 +19,30 @@ public class SensitiveDataUtilsTest {
         holder.addAll(List.of("foo", "bar"));
 
         var aString = "Hello, foo!";
-        assertEquals("Hello, ******!", hideSensitiveData(aString));
+        assertEquals("Hello, _*****!", hideSensitiveData(aString));
 
         var aMap = Map.of("key", "Hello, foo!");
-        assertEquals("Hello, ******!", hideSensitiveData(aMap).get("key"));
+        assertEquals("Hello, _*****!", hideSensitiveData(aMap).get("key"));
 
         var aMap2 = Map.of("foo!", "!bar!");
         var resultMap = hideSensitiveData(aMap2);
-        assertEquals("!******!", resultMap.get("******!"));
+        assertEquals("!_*****!", resultMap.get("_*****!"));
         assertFalse(resultMap.containsKey("foo!"));
 
         var aList = List.of("Hello, foo!", "Bye, bar!");
         var resultList = hideSensitiveData(aList);
-        assertEquals("Hello, ******!", resultList.get(0));
-        assertEquals("Bye, ******!", resultList.get(1));
+        assertEquals("Hello, _*****!", resultList.get(0));
+        assertEquals("Bye, _*****!", resultList.get(1));
 
         var complex = List.of(
                 Map.of("foo", List.of("bar_1", "bar_2", "baz")),
                 Map.of("qux", List.of(1, 2, 3, "foo")));
         var resultComplex = hideSensitiveData(complex);
-        assertEquals("******_1", resultComplex.get(0).get("******").get(0));
-        assertEquals("******_2", resultComplex.get(0).get("******").get(1));
-        assertEquals("baz", resultComplex.get(0).get("******").get(2));
+        assertEquals("_*****_1", resultComplex.get(0).get("_*****").get(0));
+        assertEquals("_*****_2", resultComplex.get(0).get("_*****").get(1));
+        assertEquals("baz", resultComplex.get(0).get("_*****").get(2));
         assertEquals(1, resultComplex.get(1).get("qux").get(0));
-        assertEquals("******", resultComplex.get(1).get("qux").get(3));
+        assertEquals("_*****", resultComplex.get(1).get("qux").get(3));
     }
 
     @Test
@@ -62,8 +62,8 @@ public class SensitiveDataUtilsTest {
 
         var result = (List<Object>) hideSensitiveData(data);
         for (int i = 0; i < SensitiveDataUtils.MAX_DEPTH; i++) {
-            assertEquals("******_1", result.get(0));
-            assertEquals("******_2", result.get(1));
+            assertEquals("_*****_1", result.get(0));
+            assertEquals("_*****_2", result.get(1));
             assertTrue(result.get(2) instanceof List<?>);
             result = (List<Object>) result.get(2);
         }
@@ -77,8 +77,8 @@ public class SensitiveDataUtilsTest {
         holder.addAll(List.of("foo", "bar"));
         var aMap = Map.of("foo", "Hello, bar!");
         var result = hideSensitiveData(aMap, Set.of("foo"));
-        assertEquals("Hello, ******!", result.get("foo"));
+        assertEquals("Hello, _*****!", result.get("foo"));
         result = hideSensitiveData(aMap, Set.of("bar"));
-        assertEquals("Hello, bar!", result.get("******"));
+        assertEquals("Hello, bar!", result.get("_*****"));
     }
 }
