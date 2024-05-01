@@ -677,6 +677,8 @@ public class ITs extends TestResources {
         var secretString = "f00!";
         var otherSecretName = "otherTestSecret_" + System.currentTimeMillis();
         var otherSecretString = "b4r!";
+        var secretKey = "k3y";
+        var secretKeyName = "testSecretKey_" + System.currentTimeMillis();
 
         securityContext.runAs(adminId, () -> {
             var orgId = orgManager.createOrGet(orgName).orgId();
@@ -687,6 +689,8 @@ public class ITs extends TestResources {
                     new ByteArrayInputStream(secretString.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
             secretManager.createBinaryData(orgId, Set.of(), otherSecretName, null,
                     new ByteArrayInputStream(otherSecretString.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
+            secretManager.createBinaryData(orgId, Set.of(), secretKeyName, null,
+                    new ByteArrayInputStream(secretKey.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
             return null;
         });
 
@@ -696,6 +700,8 @@ public class ITs extends TestResources {
                 "arguments.secretString", secretString,
                 "arguments.otherSecretName", otherSecretName,
                 "arguments.otherSecretString", otherSecretString,
+                "arguments.secretKey", secretKey,
+                "arguments.secretKeyName", secretKeyName,
                 "concord.yml",
                 """
                         configuration:
@@ -714,12 +720,14 @@ public class ITs extends TestResources {
                                   data:
                                     x: "${crypto.exportAsString(orgName, secretName, null)}_should_be_masked"
                                     y: "${crypto.exportAsString(orgName, otherSecretName, null)}_should_not_be_masked"
+                                    k3y_should_be_masked_too: "${crypto.exportAsString(orgName, secretKeyName, null)}"
                             # test "upload"
                             - set:
                                 testEntity:
                                   data:
                                     x: "${crypto.exportAsString(orgName, secretName, null)}_should_not_be_masked"
                                     y: "${crypto.exportAsString(orgName, otherSecretName, null)}_should_be_masked"
+                                    k3y_should_be_masked_too: "${crypto.exportAsString(orgName, secretKeyName, null)}"
                                 testFile: ${resource.writeAsYaml(testEntity)}
                             - task: mica
                               in:
@@ -734,15 +742,17 @@ public class ITs extends TestResources {
         assertFinished(ciProcess);
 
         var entity = entityStore.getByName("/masked-data").orElseThrow();
-        assertEquals("******_should_be_masked", entity.data().get("data").get("x").asText());
+        assertEquals("_*****_should_be_masked", entity.data().get("data").get("x").asText());
         assertEquals(otherSecretString + "_should_not_be_masked",
                 entity.data().get("data").get("y").asText());
+        assertEquals("_*****", entity.data().get("data").get("_*****_should_be_masked_too").asText());
 
         var entityFromFile = entityStore.getByName("/masked-data-from-file").orElseThrow();
         assertEquals(secretString + "_should_not_be_masked",
                 entityFromFile.data().get("data").get("x").asText());
-        assertEquals("******_should_be_masked",
+        assertEquals("_*****_should_be_masked",
                 entityFromFile.data().get("data").get("y").asText());
+        assertEquals("_*****", entityFromFile.data().get("data").get("_*****_should_be_masked_too").asText());
     }
 
     private static void upsert(PartialEntity entity) {

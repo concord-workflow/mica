@@ -16,7 +16,6 @@ import com.walmartlabs.concord.sdk.MapUtils;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -30,7 +29,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
-import static java.net.http.HttpRequest.BodyPublishers.ofFile;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
@@ -130,13 +128,8 @@ public class MicaTask implements Task {
         var kind = input.assertString("kind");
         var src = input.assertString("src");
         var name = input.assertString("name");
-        var hideSensitiveData = input.getBoolean("hideSensitiveData", true);
-        var sensitiveDataExclusions = input.getList("sensitiveDataExclusions", List.of())
-                .stream().map(Object::toString).collect(toSet());
         var body = Files.readString(Path.of(src));
-        if (hideSensitiveData) {
-            body = SensitiveDataUtils.hideSensitiveData(body, sensitiveDataExclusions);
-        }
+        body = hideSensitiveData(input, body);
         var response = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
                 .uploadPartialYaml(kind, name, true, ofString(body));
         return TaskResult.success()
@@ -150,9 +143,6 @@ public class MicaTask implements Task {
         var name = input.assertString("name");
         var body = input.assertVariable("entity", Object.class);
         var merge = input.getBoolean("merge", false);
-        var hideSensitiveData = input.getBoolean("hideSensitiveData", true);
-        var sensitiveDataExclusions = input.getList("sensitiveDataExclusions", List.of())
-                .stream().map(Object::toString).collect(toSet());
 
         if (merge) {
             var meta = findEntityByName(input, name);
@@ -163,13 +153,12 @@ public class MicaTask implements Task {
 
                 var a = objectMapper.convertValue(entity, Map.class);
                 var b = objectMapper.convertValue(body, Map.class);
+                // noinspection unchecked
                 body = ConfigurationUtils.deepMerge(a, b);
             }
         }
 
-        if (hideSensitiveData) {
-            body = SensitiveDataUtils.hideSensitiveData(body, sensitiveDataExclusions);
-        }
+        body = hideSensitiveData(input, body);
 
         byte[] requestBody;
         try {
@@ -220,5 +209,17 @@ public class MicaTask implements Task {
         // remove all "null" values
         params.values().removeIf(Objects::isNull);
         return params;
+    }
+
+    private static <T> T hideSensitiveData(Variables input, T body) {
+        var hideSensitiveData = input.getBoolean("hideSensitiveData", true);
+        if (hideSensitiveData) {
+            var sensitiveDataExclusions = input.getList("sensitiveDataExclusions", List.of())
+                    .stream()
+                    .map(Object::toString)
+                    .collect(toSet());
+            return SensitiveDataUtils.hideSensitiveData(body, sensitiveDataExclusions);
+        }
+        return body;
     }
 }

@@ -36,7 +36,7 @@ public final class SensitiveDataUtils {
 
         if (value instanceof String v) {
             for (String s : sensitiveData) {
-                v = v.replace(s, "******");
+                v = v.replace(s, "_*****");
             }
             return v;
         }
