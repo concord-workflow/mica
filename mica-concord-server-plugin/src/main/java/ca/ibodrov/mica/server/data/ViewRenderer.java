@@ -119,6 +119,8 @@ public class ViewRenderer {
         Object result;
         try {
             result = parseContext.parse(data).read(jsonPath);
+        } catch (PathNotFoundException e) {
+            return Optional.empty();
         } catch (IllegalArgumentException | JsonPathException e) {
             throw ApiException.badRequest(
                     "Error while processing entity '%s'. %s (%s)".formatted(entityName, e.getMessage(), jsonPath));

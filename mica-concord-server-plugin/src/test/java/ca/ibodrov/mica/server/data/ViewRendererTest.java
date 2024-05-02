@@ -12,10 +12,7 @@ import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -436,6 +433,42 @@ public class ViewRendererTest {
                 """);
         var result = renderer.render(view, entities.stream());
         assertEquals(500, result.data().size());
+    }
+
+    @Test
+    public void unknownNestedPropertiesAreAllowed() {
+        var fooId = UUID.randomUUID().toString();
+        var foo = parseYaml("""
+                id: %s
+                kind: /nestedPropertyTest
+                name: /foo
+                data:
+                  foo: 456
+                """.formatted(fooId));
+
+        var barId = UUID.randomUUID().toString();
+        var bar = parseYaml("""
+                id: %s
+                kind: /nestedPropertyTest
+                name: /bar
+                data:
+                  bar: 678
+                """.formatted(barId));
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: /test
+                selector:
+                  entityKind: /nestedPropertyTest
+                data:
+                  jsonPath: $.data.foo # only exists in one of the entities
+                """);
+
+        var result = renderer.render(view, Stream.of(foo, bar));
+        assertEquals(1, result.data().size());
+        assertEquals(456, result.data().get(0).asInt());
+        assertEquals(2, result.entityNames().size());
+        assertTrue(result.entityNames().containsAll(Set.of("/foo", "/bar")));
     }
 
     private static ViewLike parseView(@Language("yaml") String yaml) {
