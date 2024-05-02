@@ -19,5 +19,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: mica-ui/package-lock.json
+
       - run: |
           ./mvnw --batch-mode --update-snapshots install -DskipITs=false
