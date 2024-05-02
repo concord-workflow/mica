@@ -9,7 +9,7 @@ public final class UserEntryUtils {
     }
 
     public static UserEntry user(String username) {
-        return new UserEntry(null, username, null, null, null, null, null, null, false, null);
+        return new UserEntry(null, username, null, null, null, null, null, null, false, null, false);
     }
 
     private UserEntryUtils() {
