@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -45,6 +47,7 @@ public class ViewInterpolator {
         var dataJsonPath = interpolate(objectMapper, view.data().jsonPath(), input);
         var dropProperties = view.data().dropProperties()
                 .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
+        var dataMap = view.data().map().map(map -> interpolate(objectMapper, map, input));
         var validationAsEntityKind = view.validation()
                 .flatMap(v -> Optional.ofNullable(interpolate(v.asEntityKind(), input)));
 
@@ -100,6 +103,11 @@ public class ViewInterpolator {
                     @Override
                     public Optional<List<String>> dropProperties() {
                         return dropProperties;
+                    }
+
+                    @Override
+                    public Optional<Map<String, JsonNode>> map() {
+                        return dataMap;
                     }
                 };
             }
@@ -166,5 +174,15 @@ public class ViewInterpolator {
         } else {
             return s;
         }
+    }
+
+    private static Map<String, JsonNode> interpolate(ObjectMapper objectMapper,
+                                                     Map<String, JsonNode> s,
+                                                     JsonNode input) {
+        var m = new HashMap<String, JsonNode>(s.size());
+        for (var entry : s.entrySet()) {
+            m.put(entry.getKey(), interpolate(objectMapper, entry.getValue(), input));
+        }
+        return m;
     }
 }

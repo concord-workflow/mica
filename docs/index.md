@@ -14,6 +14,7 @@
     - [Property Files Support](#property-files-support)
     - [Materialize View Data As Entities](#materialize-view-data-as-entities)
     - [Validate View Entities](#validate-view-entities)
+    - [Field Mapping](#field-mapping)
 - [Supported JSON Schema Features](#supported-json-schema-features)
 - [Database Design](#database-design)
 
@@ -791,6 +792,50 @@ results are returned in a separate field:
 In this example, we changed /examples/materialize/v1-to-v2 to disallow any
 extra properties (by adding `additionalProperties: false`). As the result, the
 validation fails for both entities.
+
+### Field Mapping
+
+The `jsonPath` operation is limited to selecting individual fields from
+the source. While the JSON path implementation supports multiple field selectors,
+they are limited to the fields at the same level. To select multiple fields,
+possibly at different levels in the JSON data Mica provides the `map` operation:
+
+```yaml
+name: /examples/field-mapping
+kind: /mica/view/v1
+selector:
+  entityKind: /mica/record/v1
+data:
+  jsonPath: $
+  map:
+    foo: $.foo.value
+    bar: $.foo.nested.bar
+```
+
+Now, given the following entity:
+
+```yaml
+name: /examples/data
+kind: /mica/record/v1
+data:
+  foo:
+    value: 123
+    nested:
+      bar: 345
+```
+
+The rendered view will contain:
+
+```json
+{
+    "data": [
+        {
+            "foo": 123,
+            "bar": 345
+        }
+    ]
+}
+```
 
 ## Supported JSON Schema Features
 

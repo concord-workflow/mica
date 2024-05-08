@@ -13,6 +13,7 @@ import org.intellij.lang.annotations.Language;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -30,6 +31,8 @@ public final class BuiltinSchemas {
     public static final String JSON_SCHEMA_REF = "classpath:///draft/2020-12/schema";
 
     private static final TypeReference<List<String>> LIST_OF_STRINGS = new TypeReference<>() {
+    };
+    private static final TypeReference<Map<String, JsonNode>> MAP_OF_JSON_NODES = new TypeReference<>() {
     };
 
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
@@ -249,6 +252,9 @@ public final class BuiltinSchemas {
         var dropProperties = select(entity, "data", "dropProperties",
                 n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
 
+        var map = select(entity, "data", "map",
+                n -> objectMapper.convertValue(n, MAP_OF_JSON_NODES));
+
         return new ViewLike.Data() {
             @Override
             public JsonNode jsonPath() {
@@ -273,6 +279,11 @@ public final class BuiltinSchemas {
             @Override
             public Optional<List<String>> dropProperties() {
                 return dropProperties;
+            }
+
+            @Override
+            public Optional<Map<String, JsonNode>> map() {
+                return map;
             }
         };
     }

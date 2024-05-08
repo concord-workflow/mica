@@ -506,6 +506,45 @@ public class ViewRendererTest {
         assertEquals(3, result.data().get(1).asInt());
     }
 
+    @Test
+    public void mapWorksAsIntended() {
+        var entityA = parseYaml("""
+                kind: /test
+                name: /a
+                foo:
+                  value: 123
+                  nested:
+                    bar: 345
+                """);
+
+        var entityB = parseYaml("""
+                kind: /test
+                name: /b
+                foo:
+                  value: 678
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: /test
+                selector:
+                  entityKind: /test
+                data:
+                  jsonPath: $
+                  map:
+                    x:
+                      - $.foo
+                      - $.value
+                    y: $.foo.nested.bar
+                """);
+
+        var result = renderer.render(view, Stream.of(entityA, entityB));
+        assertEquals(2, result.data().size());
+        assertEquals(123, result.data().get(0).get("x").asInt());
+        assertEquals(345, result.data().get(0).get("y").asInt());
+        assertEquals(678, result.data().get(1).get("x").asInt());
+    }
+
     private static ViewLike parseView(@Language("yaml") String yaml) {
         return asViewLike(objectMapper, parseYaml(yaml));
     }

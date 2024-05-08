@@ -112,6 +112,25 @@ public class ViewRenderer {
             });
         }
 
+        var map = view.data().map();
+        if (map.isPresent()) {
+            data = data.stream()
+                    .map(node -> {
+                        if (!node.isObject()) {
+                            throw new ViewProcessorException(
+                                    "map can only be applied to arrays of objects. The data is an array of %ss"
+                                            .formatted(node.getNodeType()));
+                        }
+                        var result = objectMapper.createObjectNode();
+                        map.get().forEach((key, value) -> {
+                            var output = applyAllJsonPaths(entityNames.build().toString(), node, value);
+                            output.ifPresent(jsonNode -> result.set(key, jsonNode));
+                        });
+                        return (JsonNode) result;
+                    })
+                    .toList();
+        }
+
         return new RenderedView(view, data, entityNames.build());
     }
 
