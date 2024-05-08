@@ -28,7 +28,7 @@ public interface ViewLike {
 
     interface Data {
 
-        String jsonPath();
+        JsonNode jsonPath();
 
         Optional<Boolean> flatten();
 

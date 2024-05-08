@@ -58,7 +58,7 @@ public class ViewRenderer {
         // apply JSON path
         var data = entities
                 .peek(entity -> entityNames.add(entity.name()))
-                .map(row -> applyJsonPath(row.name(), objectMapper.convertValue(row, JsonNode.class), jsonPath))
+                .map(row -> applyAllJsonPaths(row.name(), objectMapper.convertValue(row, JsonNode.class), jsonPath))
                 .flatMap(Optional::stream)
                 .toList();
 
@@ -113,6 +113,26 @@ public class ViewRenderer {
         }
 
         return new RenderedView(view, data, entityNames.build());
+    }
+
+    private Optional<JsonNode> applyAllJsonPaths(String entityName, JsonNode data, JsonNode jsonPath) {
+        if (jsonPath.isTextual()) {
+            return applyJsonPath(entityName, data, jsonPath.asText());
+        } else if (jsonPath.isArray()) {
+            var result = data;
+            for (int i = 0; i < jsonPath.size(); i++) {
+                var node = jsonPath.get(i);
+                var output = applyJsonPath(entityName, result, node.asText());
+                if (output.isEmpty()) {
+                    return Optional.empty();
+                }
+                result = output.get();
+            }
+            return Optional.of(result);
+        } else {
+            throw new ViewProcessorException(
+                    "Expected a string or an array of strings as JSON path, got a " + jsonPath.getNodeType());
+        }
     }
 
     private Optional<JsonNode> applyJsonPath(String entityName, JsonNode data, String jsonPath) {

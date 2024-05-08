@@ -19,6 +19,7 @@ import java.util.function.Function;
 import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+import static java.util.function.Function.identity;
 
 public final class BuiltinSchemas {
 
@@ -105,7 +106,7 @@ public final class BuiltinSchemas {
                   data:
                     properties:
                       jsonPath:
-                        type: string
+                        type: [array, string]
                       jsonPatch:
                         type: array
                       flatten:
@@ -236,21 +237,21 @@ public final class BuiltinSchemas {
     }
 
     private static ViewLike.Data asViewLikeData(ObjectMapper objectMapper, EntityLike entity) {
-        var jsonPath = select(entity, "data", "jsonPath", JsonNode::asText)
+        var jsonPath = select(entity, "data", "jsonPath", identity())
                 .orElseThrow(() -> ApiException.badRequest("View is missing data.jsonPath"));
 
         var flatten = select(entity, "data", "flatten", JsonNode::asBoolean);
 
         var merge = select(entity, "data", "merge", JsonNode::asBoolean);
 
-        var jsonPatch = select(entity, "data", "jsonPatch", Function.identity());
+        var jsonPatch = select(entity, "data", "jsonPatch", identity());
 
         var dropProperties = select(entity, "data", "dropProperties",
                 n -> objectMapper.convertValue(n, LIST_OF_STRINGS));
 
         return new ViewLike.Data() {
             @Override
-            public String jsonPath() {
+            public JsonNode jsonPath() {
                 return jsonPath;
             }
 

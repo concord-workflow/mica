@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
+import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPaths;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
 import static org.junit.Assert.*;
@@ -53,7 +54,7 @@ public class ViewInterpolatorTest {
         assertEquals("\\$\\{parameters.kind}", interpolatedView.selector().entityKind());
         assertEquals("\\$\\{parameters.include}", interpolatedView.selector().includes().get().get(0));
         assertEquals("\\$\\{parameters.name}", interpolatedView.selector().namePatterns().get().get(0));
-        assertEquals("\\$\\{parameters.jsonPath}", interpolatedView.data().jsonPath());
+        assertEquals("\\$\\{parameters.jsonPath}", interpolatedView.data().jsonPath().textValue());
         assertEquals("\\$\\{parameters.validationKind}", interpolatedView.validation().get().asEntityKind());
     }
 
@@ -92,7 +93,7 @@ public class ViewInterpolatorTest {
         assertEquals("kind1", interpolatedView.selector().entityKind());
         assertEquals("include1", interpolatedView.selector().includes().get().get(0));
         assertEquals("name1", interpolatedView.selector().namePatterns().get().get(0));
-        assertEquals("jsonPath1", interpolatedView.data().jsonPath());
+        assertEquals("jsonPath1", interpolatedView.data().jsonPath().textValue());
         assertEquals("validationKind1", interpolatedView.validation().get().asEntityKind());
     }
 
@@ -134,6 +135,27 @@ public class ViewInterpolatorTest {
         var interpolatedView = interpolator.interpolate(view, input);
         assertEquals("x", interpolatedView.data().dropProperties().get().get(0));
         assertEquals("foobar", interpolatedView.data().dropProperties().get().get(1));
+    }
+
+    @Test
+    public void jsonPathsAreInterpolated() {
+        var view = new MicaViewV1.Builder()
+                .name("test")
+                .selector(byEntityKind("test"))
+                .data(jsonPaths(objectMapper, "${parameters.foo}", "_${parameters.bar}_"))
+                .parameters(parseObject("""
+                        properties:
+                          foo:
+                            type: string
+                          bar:
+                            type: string
+                        """))
+                .build();
+
+        var input = objectMapper.convertValue(Map.of("foo", "x", "bar", "y"), JsonNode.class);
+        var interpolatedView = interpolator.interpolate(view, input);
+        assertEquals("x", interpolatedView.data().jsonPath().get(0).asText());
+        assertEquals("_y_", interpolatedView.data().jsonPath().get(1).asText());
     }
 
     private static ObjectNode parseObject(@Language("yaml") String s) {

@@ -205,6 +205,33 @@ steps (in the order in which they are applied):
 - `jsonPatch` -- applies a JSON Patch to each object;
 - `dropProperties` -- removes specified properties from each object.
 
+### JSON Path in Views
+
+Mica views can use JSON Path expressions to select fields from entities. The
+`jsonPath` field in the view definition specifies a single expression:
+
+```yaml
+kind: /mica/view/v1
+name: /views/my-view
+selector:
+  ...
+data:
+  jsonPath: $.value
+```
+
+Or a list of expressions that are applied in the order they are specified:
+
+```yaml
+kind: /mica/view/v1
+name: /views/my-view
+selector:
+  ...
+data:
+  jsonPath:
+    - $.someObject # applied first
+    - $.someNestedProperty # applied to the result of the previous expression
+```
+
 ### View Flattening
 
 When returning multiple fields per entity, normally the result is a JSON array

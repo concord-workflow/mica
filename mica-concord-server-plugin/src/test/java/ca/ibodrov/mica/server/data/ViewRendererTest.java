@@ -471,6 +471,41 @@ public class ViewRendererTest {
         assertTrue(result.entityNames().containsAll(Set.of("/foo", "/bar")));
     }
 
+    @Test
+    public void multipleJsonPathsCanBeUsed() {
+        var foo = parseYaml("""
+                kind: /test
+                name: /foo
+                a: 0
+                x: 1
+                y:
+                  z: 2
+                """);
+
+        var bar = parseYaml("""
+                kind: /test
+                name: /bar
+                a: 0
+                x: 3
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: /test
+                data:
+                  jsonPath:
+                    - $.['x', 'y']
+                    - $.x
+                """);
+
+        var result = renderer.render(view, Stream.of(foo, bar));
+        assertEquals(2, result.data().size());
+        assertEquals(1, result.data().get(0).asInt());
+        assertEquals(3, result.data().get(1).asInt());
+    }
+
     private static ViewLike parseView(@Language("yaml") String yaml) {
         return asViewLike(objectMapper, parseYaml(yaml));
     }

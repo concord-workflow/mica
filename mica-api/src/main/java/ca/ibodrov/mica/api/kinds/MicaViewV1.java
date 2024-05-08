@@ -5,6 +5,8 @@ import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.api.validation.ValidName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import javax.validation.constraints.NotNull;
 import java.util.HashMap;
@@ -50,13 +52,19 @@ public record MicaViewV1(@ValidName String name,
         }
     }
 
-    public record Data(String jsonPath,
+    public record Data(JsonNode jsonPath,
             Optional<JsonNode> jsonPatch,
             Optional<Boolean> flatten,
             Optional<Boolean> merge,
             Optional<List<String>> dropProperties) implements ViewLike.Data {
 
         public static Data jsonPath(String jsonPath) {
+            return new Data(TextNode.valueOf(jsonPath), Optional.empty(), Optional.empty(), Optional.empty(),
+                    Optional.empty());
+        }
+
+        public static Data jsonPaths(ObjectMapper objectMapper, String... jsonPaths) {
+            var jsonPath = objectMapper.convertValue(requireNonNull(jsonPaths), ArrayNode.class);
             return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         }
 

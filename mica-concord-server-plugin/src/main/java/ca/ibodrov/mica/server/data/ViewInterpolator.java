@@ -4,16 +4,21 @@ import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.server.data.Validator.SchemaFetcher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.requireNonNull;
+
 public class ViewInterpolator {
 
+    private final ObjectMapper objectMapper;
     private final Validator validator;
 
     public ViewInterpolator(ObjectMapper objectMapper, SchemaFetcher schemaFetcher) {
-        this.validator = Validator.getDefault(objectMapper, schemaFetcher);
+        this.objectMapper = requireNonNull(objectMapper);
+        this.validator = Validator.getDefault(objectMapper, requireNonNull(schemaFetcher));
     }
 
     public ViewLike interpolate(ViewLike view, JsonNode input) {
@@ -37,7 +42,7 @@ public class ViewInterpolator {
         var selectorIncludes = view.selector().includes().map(includes -> interpolate(includes, input));
         var selectorEntityKind = interpolate(view.selector().entityKind(), input);
         var selectorNamePatterns = view.selector().namePatterns().map(namePatterns -> interpolate(namePatterns, input));
-        var dataJsonPath = interpolate(view.data().jsonPath(), input);
+        var dataJsonPath = interpolate(objectMapper, view.data().jsonPath(), input);
         var dropProperties = view.data().dropProperties()
                 .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
         var validationAsEntityKind = view.validation()
@@ -73,7 +78,7 @@ public class ViewInterpolator {
             public Data data() {
                 return new Data() {
                     @Override
-                    public String jsonPath() {
+                    public JsonNode jsonPath() {
                         return dataJsonPath;
                     }
 
@@ -147,5 +152,19 @@ public class ViewInterpolator {
         // TODO report unresolved parameters
 
         return s.replace("${", "\\$\\{");
+    }
+
+    private static JsonNode interpolate(ObjectMapper objectMapper, JsonNode s, JsonNode input) {
+        if (s.isTextual()) {
+            return TextNode.valueOf(interpolate(s.asText(), input));
+        } else if (s.isArray()) {
+            var l = objectMapper.createArrayNode();
+            for (int i = 0; i < s.size(); i++) {
+                l.add(interpolate(objectMapper, s.get(i), input));
+            }
+            return l;
+        } else {
+            return s;
+        }
     }
 }
