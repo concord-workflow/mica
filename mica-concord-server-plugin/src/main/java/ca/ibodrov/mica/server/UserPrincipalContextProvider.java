@@ -32,7 +32,8 @@ public class UserPrincipalContextProvider extends HttpFilter {
                 .or(() -> tryOidcProfile(req, res));
 
         if (principal.isEmpty()) {
-            res.setStatus(UNAUTHORIZED.getStatusCode());
+            res.sendError(UNAUTHORIZED.getStatusCode());
+            req.getSession(false).invalidate();
             return;
         }
 
