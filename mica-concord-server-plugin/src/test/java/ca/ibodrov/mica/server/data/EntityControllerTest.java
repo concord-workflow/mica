@@ -113,7 +113,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 id: "%s"
                 createdAt: "%s"
                 updatedAt: "%s"
-                kind: /mica/record/v1
+                kind: "/mica/record/v1"
                 name: "%s"
                 data: foo! # inline comment
                 # some other comment
@@ -132,7 +132,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 id: "%s"
                 createdAt: "%s"
                 updatedAt: "%s"
-                kind: /mica/record/v1
+                kind: "/mica/record/v1"
                 name: "%s"
                 data: foo! # inline comment
                 # some other comment
