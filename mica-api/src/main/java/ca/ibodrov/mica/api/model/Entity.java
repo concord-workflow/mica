@@ -40,15 +40,6 @@ public record Entity(@NotNull EntityId id,
         data.put(name, value);
     }
 
-    public EntityLike asEntityLike() {
-        return this;
-    }
-
-    @Override
-    public EntityLike withName(String name) {
-        return new Entity(id, name, kind, createdAt, updatedAt, data);
-    }
-
     @Override
     public Optional<EntityVersionAndName> versionAndName() {
         return Optional.of(new EntityVersionAndName(id, updatedAt, name));

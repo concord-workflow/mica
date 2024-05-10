@@ -755,6 +755,41 @@ public class ITs extends TestResources {
         assertEquals("_*****", entityFromFile.data().get("data").get("_*****_should_be_masked_too").asText());
     }
 
+    @Test
+    public void nameAndKindCanBeReplacedWhenUploading() throws Exception {
+        @Language("yaml")
+        var originalFile = """
+                name: some_existing_name
+                kind: some_kind_but_not_micas
+                data: |
+                  hi!
+                """;
+        var uploadFile = startConcordProcess(Map.of(
+                "arguments.githubPr", "123",
+                "original-file.yml", originalFile.strip().getBytes(),
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upload
+                                kind: /mica/record/v1
+                                src: ${workDir}/original-file.yml
+                                name: /result-file.yaml
+                        """.strip().getBytes()));
+        assertFinished(uploadFile);
+
+        var entity = entityStore.getByName("/result-file.yaml").orElseThrow();
+        assertEquals("/mica/record/v1", entity.kind());
+        var doc = entityStore.getEntityDocById(entity.id(), entity.updatedAt())
+                .map(ab -> new String(ab, UTF_8))
+                .orElseThrow();
+        assertTrue(doc.contains("name: \"/result-file.yaml\""));
+        assertTrue(doc.contains("kind: \"/mica/record/v1\""));
+    }
+
     private static void upsert(PartialEntity entity) {
         entityStore.upsert(session, entity, null).orElseThrow();
     }

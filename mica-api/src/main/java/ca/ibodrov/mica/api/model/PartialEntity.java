@@ -49,8 +49,11 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
                 Optional.of(version.updatedAt()), data());
     }
 
-    @Override
-    public EntityLike withName(String name) {
+    public PartialEntity withName(String name) {
+        return new PartialEntity(id, name, kind, createdAt, updatedAt, data);
+    }
+
+    public PartialEntity withKind(String kind) {
         return new PartialEntity(id, name, kind, createdAt, updatedAt, data);
     }
 

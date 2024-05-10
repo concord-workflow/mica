@@ -232,7 +232,7 @@ public class EntityStore {
 
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
-
+        var kind = entity.kind();
         var updatedAt = getDatabaseInstant();
         var createdAt = entity.createdAt().orElse(updatedAt);
 
@@ -244,6 +244,7 @@ public class EntityStore {
             doc = inplaceUpdate(doc,
                     "id", objectMapper.convertValue(id, String.class),
                     "name", name,
+                    "kind", kind,
                     "createdAt", objectMapper.convertValue(createdAt, String.class),
                     "updatedAt", objectMapper.convertValue(updatedAt, String.class));
         } else {

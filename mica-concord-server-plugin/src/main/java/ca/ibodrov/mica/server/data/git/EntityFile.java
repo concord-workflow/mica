@@ -1,6 +1,5 @@
 package ca.ibodrov.mica.server.data.git;
 
-import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.exceptions.StoreException;
@@ -20,7 +19,7 @@ record EntityFile(FileFormat format, Path path) {
 
     static final String PROPERTIES_KIND = "/mica/java-properties/v1";
 
-    EntityLike parseAsEntity(YamlMapper yamlMapper, Path rootPath) {
+    PartialEntity parseAsEntity(YamlMapper yamlMapper, Path rootPath) {
         try (var reader = Files.newBufferedReader(this.path(), UTF_8)) {
             switch (this.format()) {
                 case YAML -> {
@@ -46,10 +45,10 @@ record EntityFile(FileFormat format, Path path) {
         }
     }
 
-    private static EntityLike parseProperties(YamlMapper yamlMapper,
-                                              Path rootPath,
-                                              EntityFile entityFile,
-                                              Properties props)
+    private static PartialEntity parseProperties(YamlMapper yamlMapper,
+                                                 Path rootPath,
+                                                 EntityFile entityFile,
+                                                 Properties props)
             throws IOException {
 
         var node = yamlMapper.createObjectNode();

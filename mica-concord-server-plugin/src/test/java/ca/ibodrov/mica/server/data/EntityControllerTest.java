@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
@@ -236,6 +237,40 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var updatedVersion2 = controller.createOrUpdate(session, entityFoo, updatedDoc2.getBytes(UTF_8), false);
         assertNotEquals(initialVersion, updatedVersion2);
         assertEquals(initialVersion.id(), updatedVersion2.id());
+    }
+
+    @Test
+    public void nameAndKindAreReplacedInDoc() {
+        entityStore.upsert(session, parseYaml("""
+                name: /replacement/kind
+                kind: /mica/kind/v1
+                schema:
+                  properties:
+                    data:
+                      type: string
+                """), null);
+
+        var doc = """
+                kind: /mica/record/v1
+                name: /original/name
+                data: |
+                  hello!
+                """;
+        var entity = parseYaml(doc)
+                .withName("/replacement/name")
+                .withKind("/replacement/kind");
+        controller.createOrUpdate(session, entity, doc.getBytes(UTF_8), false);
+
+        var updatedEntity = entityStore.getByName("/replacement/name")
+                .orElseThrow();
+        assertEquals("/replacement/name", updatedEntity.name());
+        assertEquals("/replacement/kind", updatedEntity.kind());
+
+        var updatedDoc = entityStore.getEntityDocById(updatedEntity.id(), updatedEntity.updatedAt())
+                .map(ab -> new String(ab, UTF_8))
+                .orElseThrow();
+        assertTrue(updatedDoc.contains("name: \"/replacement/name\""));
+        assertTrue(updatedDoc.contains("kind: \"/replacement/kind\""));
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {
