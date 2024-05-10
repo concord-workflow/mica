@@ -45,7 +45,7 @@ const Markers = ({ markers }: { markers: editor.IMarker[] }) => {
         <Alert color="warning">
             {markers
                 .sort(byLineAndColumn)
-                .slice(0, Math.min(MAX_MARKERS, markers.length) - 1)
+                .slice(0, Math.min(MAX_MARKERS - 1, markers.length))
                 .map((marker, idx) => (
                     <div key={idx}>
                         Line: {marker.startLineNumber} Col: {marker.startColumn} &mdash;{' '}
