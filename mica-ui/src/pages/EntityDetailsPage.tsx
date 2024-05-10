@@ -254,7 +254,7 @@ const EntityDetailsPage = () => {
             )}
             {entityId && showPreview && (
                 <Paper sx={{ p: 2, mb: 2 }}>
-                    <RenderView request={{ viewId: entityId, limit: 10 }} />
+                    <RenderView request={{ viewId: entityId, limit: -1 }} />
                 </Paper>
             )}
             {data && (
