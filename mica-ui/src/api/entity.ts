@@ -8,6 +8,7 @@ import { UseMutationOptions } from 'react-query/types/react/types';
 export const MICA_KIND_KIND = '/mica/kind/v1';
 export const MICA_RECORD_KIND = '/mica/record/v1';
 export const MICA_VIEW_KIND = '/mica/view/v1';
+export const MICA_DASHBOARD_KIND = '/mica/dashboard/v1';
 
 const GENERIC_TEMPLATE = `# new entity
 name: %%NAME%%

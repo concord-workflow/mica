@@ -1,0 +1,14 @@
+# a view that generates effective configuration for a given environment and instance
+name: /examples/dashboard/example-view
+kind: /mica/view/v1
+parameters:
+  properties:
+    account:
+      type: string
+selector:
+  entityKind: /examples/dashboard/example-kind
+  namePatterns:
+    - /examples/dashboard/example-${parameters.account}-data
+data:
+  jsonPath: $.releases
+  flatten: true

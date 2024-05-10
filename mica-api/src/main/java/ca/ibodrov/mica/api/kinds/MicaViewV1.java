@@ -91,8 +91,8 @@ public record MicaViewV1(@ValidName String name,
 
     public PartialEntity toPartialEntity(ObjectMapper objectMapper) {
         var props = new HashMap<String, JsonNode>();
-        this.parameters.ifPresent(stringObjectSchemaNodeMap -> props.put("parameters",
-                objectMapper.convertValue(stringObjectSchemaNodeMap, JsonNode.class)));
+        this.parameters.ifPresent(params -> props.put("parameters",
+                objectMapper.convertValue(params, JsonNode.class)));
         props.put("selector", objectMapper.convertValue(this.selector, JsonNode.class));
         props.put("data", objectMapper.convertValue(this.data, JsonNode.class));
         props.put("validation", objectMapper.convertValue(this.validation, JsonNode.class));
@@ -104,8 +104,8 @@ public record MicaViewV1(@ValidName String name,
         private String name;
         private Selector selector;
         private Data data;
-        private Optional<Validation> validation = Optional.empty();
-        private Optional<JsonNode> parameters = Optional.empty();
+        private Validation validation;
+        private JsonNode parameters;
 
         public Builder name(String name) {
             this.name = name;
@@ -123,17 +123,18 @@ public record MicaViewV1(@ValidName String name,
         }
 
         public Builder validation(Validation validation) {
-            this.validation = Optional.of(validation);
+            this.validation = validation;
             return this;
         }
 
         public Builder parameters(JsonNode parameters) {
-            this.parameters = Optional.of(parameters);
+            this.parameters = parameters;
             return this;
         }
 
         public MicaViewV1 build() {
-            return new MicaViewV1(name, selector, data, validation, parameters);
+            return new MicaViewV1(name, selector, data, Optional.ofNullable(validation),
+                    Optional.ofNullable(parameters));
         }
     }
 }

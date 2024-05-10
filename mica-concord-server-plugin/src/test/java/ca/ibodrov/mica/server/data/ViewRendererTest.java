@@ -178,7 +178,8 @@ public class ViewRendererTest {
                   flatten: true
                 """);
 
-        var interpolatedView = interpolator.interpolate(view, parameters("clientId", TextNode.valueOf("2")));
+        var input = yamlMapper.convertValue(Map.of("clientId", (JsonNode) TextNode.valueOf("2")), JsonNode.class);
+        var interpolatedView = interpolator.interpolate(view, input);
         var result = renderer.render(interpolatedView, Stream.of(entityA, entityB));
         assertNotNull(result);
         assertEquals(1, result.data().size());
@@ -563,9 +564,5 @@ public class ViewRendererTest {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    private static JsonNode parameters(String k1, JsonNode v1) {
-        return yamlMapper.convertValue(Map.of(k1, v1), JsonNode.class);
     }
 }

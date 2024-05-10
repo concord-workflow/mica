@@ -35,6 +35,6 @@ public record RenderRequest(Optional<EntityId> viewId,
     }
 
     public static RenderRequest parameterized(String viewName, JsonNode parameters, int limit) {
-        return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.of(parameters));
+        return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.ofNullable(parameters));
     }
 }

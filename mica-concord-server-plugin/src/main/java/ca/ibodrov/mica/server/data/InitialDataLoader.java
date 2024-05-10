@@ -56,9 +56,15 @@ public class InitialDataLoader {
         createOrReplace(session, schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()), null);
 
         // load example files
+        loadPackage(session, "ca.ibodrov.mica.server.examples");
+        // load other stuff
+        loadPackage(session, "ca.ibodrov.mica.server.entities");
+    }
+
+    private void loadPackage(UserPrincipal session, String packageName) {
         var cl = getClass().getClassLoader();
         var yamlMapper = new YamlMapper(objectMapper);
-        var reflections = new Reflections("ca.ibodrov.mica.server.examples", new ResourcesScanner());
+        var reflections = new Reflections(packageName, new ResourcesScanner());
         reflections.getResources(s -> s.endsWith(".yaml")).forEach(resourceName -> {
             try (var in = cl.getResourceAsStream(resourceName)) {
                 assert in != null;

@@ -15,6 +15,7 @@
     - [Materialize View Data As Entities](#materialize-view-data-as-entities)
     - [Validate View Entities](#validate-view-entities)
     - [Field Mapping](#field-mapping)
+- [Dashboards](#dashboards)
 - [Supported JSON Schema Features](#supported-json-schema-features)
 - [Database Design](#database-design)
 
@@ -835,6 +836,62 @@ The rendered view will contain:
         }
     ]
 }
+```
+
+## Dashboards
+
+View data can be visualized in Mica UI using `/mica/dashboard/v1` entities.
+
+For example, for a hypothetical dashboard that display a table of CI builds
+we can store each "build" as separate entities:
+
+```yaml
+name: /examples/build-pr-443
+kind: /example/build
+version: 1.0.0-SNAPSHOT
+finishedAt: 2024-05-01 15:48:01+0
+visible: true
+```
+
+and
+
+```yaml
+name: /examples/build-main
+kind: /example/build
+version: 1.0.0-SNAPSHOT
+finishedAt: 2024-05-01 16:01:54+0
+visible: true
+```
+
+Then, given the view:
+
+```yaml
+name: /examples/build-view
+kind: /mica/view/v1
+selector:
+  entityKind: /example/build
+data:
+  jsonPath: "[?(@.visible == true)]" # only "visible" builds
+  map: # re-map fields
+    version: $.version
+    releaseDate: $.finishedAt
+```
+
+We can make a dashboard for it:
+
+```yaml
+name: /examples/build-dashboard
+kind: /mica/dashboard/v1
+title: CI Builds
+view:
+  name: /examples/build-view
+layout: table
+table:
+  columns:
+    - title: Version
+      jsonPath: $.version
+    - title: Release Date
+      jsonPath: $.releaseDate
 ```
 
 ## Supported JSON Schema Features

@@ -1,4 +1,9 @@
-import { MICA_VIEW_KIND, getEntityDoc, kindToTemplate } from '../api/entity.ts';
+import {
+    MICA_DASHBOARD_KIND,
+    MICA_VIEW_KIND,
+    getEntityDoc,
+    kindToTemplate,
+} from '../api/entity.ts';
 import { usePutYamlString } from '../api/upload.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
@@ -9,6 +14,7 @@ import Spacer from '../components/Spacer.tsx';
 import ResetButton from '../features/editor/ResetButton.tsx';
 import YamlEditor from '../features/editor/YamlEditor.tsx';
 import PreviewView from '../features/views/PreviewView.tsx';
+import PreviewIcon from '@mui/icons-material/Preview';
 import SaveIcon from '@mui/icons-material/Save';
 import {
     Alert,
@@ -287,6 +293,19 @@ const EditEntityPage = () => {
                                 />
                             </FormControl>
                         )}
+                        {selectedId !== undefined &&
+                            selectedId !== '_new' &&
+                            selectedKind === MICA_DASHBOARD_KIND && (
+                                <FormControl>
+                                    <Button
+                                        startIcon={<PreviewIcon />}
+                                        variant="outlined"
+                                        disabled={isFetching || isSaving || dirty}
+                                        onClick={() => navigate(`/dashboard/${selectedId}`)}>
+                                        View
+                                    </Button>
+                                </FormControl>
+                            )}
                         {selectedId !== undefined && selectedId !== '_new' && (
                             <ResetButton
                                 disabled={isFetching || isSaving || !dirty}

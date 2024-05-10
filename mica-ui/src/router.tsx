@@ -1,5 +1,6 @@
 import App from './App.tsx';
 import ApiPage from './pages/ApiPage.tsx';
+import DashboardPage from './pages/DashboardPage.tsx';
 import EditEntityPage from './pages/EditEntityPage.tsx';
 import EntityDetailsPage from './pages/EntityDetailsPage.tsx';
 import EntityListPage from './pages/EntityListPage.tsx';
@@ -37,6 +38,10 @@ export const createRouter = () =>
                     {
                         path: 'entity/:entityId/edit',
                         element: <EditEntityPage />,
+                    },
+                    {
+                        path: 'dashboard/:entityId',
+                        element: <DashboardPage />,
                     },
                 ],
             },

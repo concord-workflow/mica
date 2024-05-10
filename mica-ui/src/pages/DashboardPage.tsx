@@ -1,0 +1,122 @@
+import { DashboardRenderResponse, Layout, render } from '../api/dashboard.ts';
+import PageTitle from '../components/PageTitle.tsx';
+import EditIcon from '@mui/icons-material/Edit';
+import { AlertTitle } from '@mui/lab';
+import {
+    Alert,
+    Backdrop,
+    Box,
+    Button,
+    CircularProgress,
+    Container,
+    FormControl,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+} from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
+import { JSONPath } from 'jsonpath-plus';
+
+import { useQuery } from 'react-query';
+import { useNavigate, useParams } from 'react-router-dom';
+
+const Error = ({ message }: { message: string }) => {
+    return (
+        <Box m={2}>
+            <Alert color="error">
+                <AlertTitle>Dashboard Error</AlertTitle>
+                {message}
+            </Alert>
+        </Box>
+    );
+};
+
+const DashboardPage = () => {
+    const navigate = useNavigate();
+
+    const { entityId } = useParams();
+
+    const { data, isLoading, error } = useQuery<DashboardRenderResponse, Error>(
+        ['dashboard', entityId],
+        () => render(entityId!),
+        {
+            enabled: entityId !== undefined,
+            retry: false,
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+        },
+    );
+
+    if (error) {
+        return <Error message={error.message} />;
+    }
+
+    if (isLoading || !data) {
+        return (
+            <Backdrop open={true} sx={{ backgroundColor: '#fff' }}>
+                <CircularProgress />
+            </Backdrop>
+        );
+    }
+
+    if (data.dashboard.layout !== Layout.TABLE) {
+        return <Error message={`Unsupported layout: ${data.dashboard.layout}`} />;
+    }
+
+    const columns = data.dashboard.table?.columns;
+    if (!columns) {
+        return (
+            <Error message="Invalid dashboard definition: 'table.columns' parameter is required for 'layout: TABLE' mode" />
+        );
+    }
+
+    const rows = data.data;
+
+    return (
+        <Container sx={{ mt: 2 }} maxWidth="xl">
+            <Grid container>
+                <Grid xs={10}>
+                    <PageTitle>{data.dashboard.title}</PageTitle>
+                </Grid>
+                <Grid xs={2} display="flex" justifyContent="flex-end">
+                    <FormControl>
+                        <Button
+                            startIcon={<EditIcon />}
+                            variant="outlined"
+                            onClick={() => navigate(`/entity/${entityId}/edit`)}>
+                            Edit
+                        </Button>
+                    </FormControl>
+                </Grid>
+            </Grid>
+            <TableContainer sx={{ mt: 1 }} component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            {columns.map((col) => (
+                                <TableCell key={col.title}>{col.title}</TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {rows.map((row, idx) => (
+                            <TableRow key={idx}>
+                                {columns.map((col, idx) => (
+                                    <TableCell key={idx}>
+                                        {JSONPath({ path: col.jsonPath, json: row })}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Container>
+    );
+};
+
+export default DashboardPage;

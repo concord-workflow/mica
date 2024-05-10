@@ -1,4 +1,10 @@
-import { Entity, MICA_VIEW_KIND, STANDARD_ENTITY_PROPERTIES, getEntity } from '../api/entity.ts';
+import {
+    Entity,
+    MICA_DASHBOARD_KIND,
+    MICA_VIEW_KIND,
+    STANDARD_ENTITY_PROPERTIES,
+    getEntity,
+} from '../api/entity.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
@@ -194,6 +200,16 @@ const EntityDetailsPage = () => {
                 </Grid>
                 <Grid xs={2} display="flex" justifyContent="flex-end">
                     <Stack direction="row" spacing={2}>
+                        {data && data.kind === MICA_DASHBOARD_KIND && (
+                            <FormControl>
+                                <Button
+                                    startIcon={<PreviewIcon />}
+                                    variant="outlined"
+                                    onClick={() => navigate(`/dashboard/${entityId}`)}>
+                                    View
+                                </Button>
+                            </FormControl>
+                        )}
                         <FormControl>
                             <Button
                                 startIcon={<DeleteIcon />}
@@ -253,7 +269,7 @@ const EntityDetailsPage = () => {
                 </FormControl>
             )}
             {entityId && showPreview && (
-                <Paper sx={{ p: 2, mb: 2 }}>
+                <Paper sx={{ p: 2, mb: 2, height: '200px' }}>
                     <RenderView request={{ viewId: entityId, limit: -1 }} />
                 </Paper>
             )}

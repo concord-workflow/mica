@@ -1,0 +1,36 @@
+name: /mica/dashboard/v1
+kind: /mica/kind/v1
+schema:
+  properties:
+    title:
+      type: string
+    view:
+      type: object
+      properties:
+        name:
+          type: string
+        parameters:
+          type: object
+      required:
+        - name
+    layout:
+      enum:
+        - table
+    table:
+      properties:
+        columns:
+          type: array
+          items:
+            properties:
+              title:
+                type: string
+              jsonPath:
+                type: string
+            required:
+              - title
+      required:
+        - columns
+  required:
+    - title
+    - view
+    - layout

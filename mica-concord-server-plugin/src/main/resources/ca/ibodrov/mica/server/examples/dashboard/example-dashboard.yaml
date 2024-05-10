@@ -1,0 +1,14 @@
+kind: /mica/dashboard/v1
+name: /examples/dashboard/example-dashboard
+title: Releases (example)
+view:
+  name: /examples/dashboard/example-view
+  parameters:
+    account: prod
+layout: table
+table:
+  columns:
+    - title: Version
+      jsonPath: $.version
+    - title: Date
+      jsonPath: $.date

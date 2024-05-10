@@ -86,6 +86,7 @@ public class MicaModule implements Module {
         // jax-rs resources
 
         bindJaxRsResource(binder, BatchOperationResource.class);
+        bindJaxRsResource(binder, DashboardResource.class);
         bindJaxRsResource(binder, EditorSchemaResource.class);
         bindJaxRsResource(binder, EntityHistoryResource.class);
         bindJaxRsResource(binder, EntityListResource.class);

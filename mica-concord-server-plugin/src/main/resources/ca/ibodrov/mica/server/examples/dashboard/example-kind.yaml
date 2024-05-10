@@ -1,0 +1,13 @@
+name: /examples/dashboard/example-kind
+kind: /mica/kind/v1
+schema:
+  unevaluatedProperties: false
+  properties:
+    releases:
+      type: array
+      items:
+        properties:
+          version:
+            type: string
+          date:
+            type: string

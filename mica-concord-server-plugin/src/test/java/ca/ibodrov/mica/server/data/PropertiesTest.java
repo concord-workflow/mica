@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.api;
+package ca.ibodrov.mica.server.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,7 +27,7 @@ public class PropertiesTest {
                     }
                 }
                 """);
-        var result = ViewResource.formatAsProperties((ObjectNode) node);
+        var result = ViewController.formatAsProperties((ObjectNode) node);
         assertEquals("1", result.get("a"));
         assertEquals("2", result.get("b"));
         assertEquals("3", result.get("c.d"));
