@@ -19,7 +19,6 @@ import {
     TableRow,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
-import { JSONPath } from 'jsonpath-plus';
 
 import { useQuery } from 'react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -103,12 +102,10 @@ const DashboardPage = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {rows.map((row, idx) => (
-                            <TableRow key={idx}>
-                                {columns.map((col, idx) => (
-                                    <TableCell key={idx}>
-                                        {JSONPath({ path: col.jsonPath, json: row })}
-                                    </TableCell>
+                        {rows.map((_, row) => (
+                            <TableRow key={row}>
+                                {columns.map((_, col) => (
+                                    <TableCell key={col}>{rows[row][col]}</TableCell>
                                 ))}
                             </TableRow>
                         ))}

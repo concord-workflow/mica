@@ -50,6 +50,7 @@ public class ViewController {
                           EntityStore entityStore,
                           EntityKindStore entityKindStore,
                           Set<EntityFetcher> includeFetchers,
+                          JsonPathEvaluator jsonPathEvaluator,
                           ObjectMapper objectMapper) {
 
         this.entityStore = requireNonNull(entityStore);
@@ -58,7 +59,8 @@ public class ViewController {
         this.objectMapper = requireNonNull(objectMapper);
         var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
         this.viewInterpolator = new ViewInterpolator(objectMapper, schemaFetcher);
-        this.viewRenderer = new ViewRenderer(objectMapper);
+        requireNonNull(jsonPathEvaluator);
+        this.viewRenderer = new ViewRenderer(jsonPathEvaluator, objectMapper);
         this.validator = Validator.getDefault(objectMapper, schemaFetcher);
         this.dsl = requireNonNull(dsl);
     }

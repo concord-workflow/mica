@@ -46,7 +46,9 @@ public class ViewControllerTest extends AbstractDatabaseTest {
         var builtinSchemas = new BuiltinSchemas(objectMapper);
         var entityKindStore = new EntityKindStore(entityStore, builtinSchemas);
         var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));
-        viewController = new ViewController(dsl(), entityStore, entityKindStore, entityFetchers, objectMapper);
+        var jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
+        viewController = new ViewController(dsl(), entityStore, entityKindStore, entityFetchers, jsonPathEvaluator,
+                objectMapper);
     }
 
     @Test

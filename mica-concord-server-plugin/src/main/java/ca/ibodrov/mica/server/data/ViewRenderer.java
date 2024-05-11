@@ -2,23 +2,18 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.ViewLike;
-import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.InvalidJsonPatchException;
 import com.flipkart.zjsonpatch.JsonPatch;
 import com.flipkart.zjsonpatch.JsonPatchApplicationException;
 import com.google.common.collect.ImmutableList;
-import com.jayway.jsonpath.*;
-import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.stream.Stream;
@@ -29,17 +24,12 @@ import static java.util.stream.StreamSupport.stream;
 
 public class ViewRenderer {
 
+    private final JsonPathEvaluator jsonPathEvaluator;
     private final ObjectMapper objectMapper;
-    private final ParseContext parseContext;
 
-    public ViewRenderer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-
-        this.parseContext = JsonPath.using(Configuration.builder()
-                .options(Option.DEFAULT_PATH_LEAF_TO_NULL)
-                // a custom JsonProvider that supports both JsonNode and Map
-                .jsonProvider(new MicaJsonProvider(objectMapper))
-                .build());
+    public ViewRenderer(JsonPathEvaluator jsonPathEvaluator, ObjectMapper objectMapper) {
+        this.jsonPathEvaluator = requireNonNull(jsonPathEvaluator);
+        this.objectMapper = requireNonNull(objectMapper);
     }
 
     public RenderedView render(ViewLike view, Stream<? extends EntityLike> entities) {
@@ -136,12 +126,13 @@ public class ViewRenderer {
 
     private Optional<JsonNode> applyAllJsonPaths(String entityName, JsonNode data, JsonNode jsonPath) {
         if (jsonPath.isTextual()) {
-            return applyJsonPath(entityName, data, jsonPath.asText());
+            return jsonPathEvaluator.apply(entityName, data, jsonPath.asText());
         } else if (jsonPath.isArray()) {
             var result = data;
             for (int i = 0; i < jsonPath.size(); i++) {
                 var node = jsonPath.get(i);
-                var output = applyJsonPath(entityName, result, node.asText());
+                String jsonPath1 = node.asText();
+                var output = jsonPathEvaluator.apply(entityName, result, jsonPath1);
                 if (output.isEmpty()) {
                     return Optional.empty();
                 }
@@ -152,29 +143,6 @@ public class ViewRenderer {
             throw new ViewProcessorException(
                     "Expected a string or an array of strings as JSON path, got a " + jsonPath.getNodeType());
         }
-    }
-
-    private Optional<JsonNode> applyJsonPath(String entityName, JsonNode data, String jsonPath) {
-        Object result;
-        try {
-            result = parseContext.parse(data).read(jsonPath);
-        } catch (PathNotFoundException e) {
-            return Optional.empty();
-        } catch (IllegalArgumentException | JsonPathException e) {
-            throw ApiException.badRequest(
-                    "Error while processing entity '%s'. %s (%s)".formatted(entityName, e.getMessage(), jsonPath));
-        }
-        if (result == null || result instanceof NullNode) {
-            return Optional.empty();
-        }
-        if (!(result instanceof JsonNode)) {
-            try {
-                result = objectMapper.convertValue(result, JsonNode.class);
-            } catch (IllegalArgumentException e) {
-                throw new ViewProcessorException("Expected a JsonNode, got: " + result.getClass());
-            }
-        }
-        return Optional.of((JsonNode) result);
     }
 
     private JsonNode applyJsonPatch(JsonNode node, JsonNode patchData) {
@@ -213,34 +181,6 @@ public class ViewRenderer {
 
         public static RenderOverrides merged() {
             return new RenderOverrides(true);
-        }
-    }
-
-    private static class MicaJsonProvider extends JacksonJsonNodeJsonProvider {
-
-        public MicaJsonProvider(ObjectMapper objectMapper) {
-            super(objectMapper);
-        }
-
-        @Override
-        public boolean isMap(Object obj) {
-            return super.isMap(obj) || obj instanceof Map;
-        }
-
-        @Override
-        public Object getMapValue(Object obj, String key) {
-            if (obj instanceof ObjectNode) {
-                return super.getMapValue(obj, key);
-            }
-            if (obj instanceof Map) {
-                return ((Map<?, ?>) obj).get(key);
-            }
-            throw new ViewProcessorException("Expected a Map, got: " + obj.getClass());
-        }
-
-        @Override
-        public String toString() {
-            return "mica-json-provider";
         }
     }
 }

@@ -21,7 +21,7 @@ export interface TableColumnDef {
 
 export interface DashboardRenderResponse {
     dashboard: MicaDashboardV1;
-    data: Array<object>;
+    data: Array<Array<string | boolean | number>>;
 }
 
 export const render = (entityId: string): Promise<DashboardRenderResponse> =>

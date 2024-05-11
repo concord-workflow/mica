@@ -23,7 +23,8 @@ public class ViewRendererTest {
 
     private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
     private static final YamlMapper yamlMapper = new YamlMapper(objectMapper);
-    private static final ViewRenderer renderer = new ViewRenderer(objectMapper);
+    private static final JsonPathEvaluator jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
+    private static final ViewRenderer renderer = new ViewRenderer(jsonPathEvaluator, objectMapper);
     private static final ViewInterpolator interpolator = new ViewInterpolator(objectMapper, new NoopSchemaFetcher());
 
     @Test
