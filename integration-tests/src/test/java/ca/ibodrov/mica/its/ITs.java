@@ -779,6 +779,78 @@ public class ITs extends TestResources {
         assertTrue(doc.contains("kind: \"/mica/record/v1\""));
     }
 
+    @Test
+    public void nameAndKindCanBeReplacedWhenUploadingAndItWorksWithMasking() throws Exception {
+        upsert(new MicaKindV1.Builder()
+                .name("/acme/config")
+                .schema(parseObject("""
+                        properties:
+                          acme:
+                            properties:
+                              fooSecret:
+                                type: string
+                              barSecret:
+                                type: string
+                            required: ["fooSecret", "barSecret"]
+                        required: ["acme"]
+                        """))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        var orgName = "testOrg_" + System.currentTimeMillis();
+        var fooSecretName = "fooSecret_" + System.currentTimeMillis();
+        var fooSecret = "f00!";
+        var barSecretName = "barSecret_" + System.currentTimeMillis();
+        var barSecret = "b4r!";
+
+        createBinarySecret(orgName, fooSecretName, fooSecret.getBytes(UTF_8));
+        createBinarySecret(orgName, barSecretName, barSecret.getBytes(UTF_8));
+
+        var ciProcess = startConcordProcess(Map.of(
+                "arguments.orgName", orgName,
+                "arguments.fooSecretName", fooSecretName,
+                "arguments.fooSecret", fooSecret,
+                "arguments.barSecretName", barSecretName,
+                "arguments.barSecret", barSecret,
+                "concord.yml",
+                """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - set:
+                                acmeId: "boom"
+                                entityName: "/acme/${acmeId}.yaml"
+                                entity:
+                                  apiVersion: "config.acme.com/v1"
+                                  kind: "AcmeConfig"
+                                  acme:
+                                    fooSecret: "${crypto.exportAsString(orgName, fooSecretName, null)}"
+                                    barSecret: "${crypto.exportAsString(orgName, barSecretName, null)}"
+                                testFile: ${resource.writeAsYaml(entity)}
+                            - task: mica
+                              in:
+                                action: upload
+                                kind: /acme/config
+                                name: ${entityName}
+                                src: ${testFile}
+                                sensitiveDataExclusions:
+                                  - ${barSecret}
+                        """
+                        .strip().getBytes()));
+        assertFinished(ciProcess);
+
+        var entity = entityStore.getByName("/acme/boom.yaml").orElseThrow();
+        assertEquals("/acme/config", entity.kind());
+
+        var doc = entityStore.getEntityDocById(entity.id(), entity.updatedAt())
+                .orElseThrow();
+        assertTrue(doc.contains("name: \"/acme/boom.yaml\""));
+        assertTrue(doc.contains("kind: \"/acme/config\""));
+        assertTrue(doc.contains("fooSecret: \"_*****\""));
+        assertTrue(doc.contains("barSecret: \"b4r!\""));
+    }
+
     private static void createBinarySecret(String orgName, String secretName, byte[] secret) throws Exception {
         securityContext.runAs(adminId, () -> {
             var orgId = orgManager.createOrGet(orgName).orgId();

@@ -64,7 +64,7 @@ public class SensitiveDataUtilsTest {
         for (int i = 0; i < SensitiveDataUtils.MAX_DEPTH; i++) {
             assertEquals("_*****_1", result.get(0));
             assertEquals("_*****_2", result.get(1));
-            assertTrue(result.get(2) instanceof List<?>);
+            assertInstanceOf(List.class, result.get(2));
             result = (List<Object>) result.get(2);
         }
         assertEquals("...to deep", result.get(0));
@@ -80,5 +80,16 @@ public class SensitiveDataUtilsTest {
         assertEquals("Hello, _*****!", result.get("foo"));
         result = hideSensitiveData(aMap, Set.of("bar"));
         assertEquals("Hello, bar!", result.get("_*****"));
+    }
+
+    @Test
+    public void maskingWorksWithStandardKeysAsExpected() {
+        var holder = SensitiveDataHolder.getInstance();
+        holder.addAll(List.of("foo", "bar"));
+        var aMap = Map.of("name", "foo", "kind", "foo", "foo", "Hello, bar!");
+        var result = hideSensitiveData(aMap, Set.of("foo"));
+        assertEquals("foo", result.get("name"));
+        assertEquals("foo", result.get("kind"));
+        assertEquals("Hello, _*****!", result.get("foo"));
     }
 }

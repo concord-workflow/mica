@@ -31,6 +31,28 @@ public class EntityStoreTest {
     }
 
     @Test
+    public void testInplaceUpdateOfAMissingKey() {
+        var doc = """
+                # some comments
+                createdAt: 2021-01-01T00:00:00Z
+                updatedAt: 2021-01-01T00:00:00Z
+                """;
+
+        var updated = EntityStore.inplaceUpdate(doc,
+                "id", "12345",
+                "name", "foo");
+
+        var expected = """
+                id: "12345"
+                name: "foo"
+                # some comments
+                createdAt: 2021-01-01T00:00:00Z
+                updatedAt: 2021-01-01T00:00:00Z
+                """;
+        assertEquals(expected, updated);
+    }
+
+    @Test
     public void testNameNormalization() {
         assertEquals("/test", EntityStore.normalizeName("/test"));
         assertEquals("/test", EntityStore.normalizeName("//test"));
