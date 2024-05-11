@@ -147,7 +147,7 @@ public class EntityStore {
                 .fetchOptional(r -> new EntityId(r.value1()));
     }
 
-    public Optional<byte[]> getEntityDocById(EntityId entityId, @Nullable Instant updatedAt) {
+    public Optional<String> getEntityDocById(EntityId entityId, @Nullable Instant updatedAt) {
         var query = dsl.select(MICA_ENTITIES.DOC)
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.ID.eq(entityId.id()));
@@ -156,7 +156,7 @@ public class EntityStore {
             query = query.and(MICA_ENTITIES.UPDATED_AT.eq(updatedAt));
         }
 
-        return query.fetchOptional(Record1::value1);
+        return query.fetchOptional(Record1::value1).map(ab -> new String(ab, UTF_8));
     }
 
     public Optional<EntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
@@ -215,7 +215,7 @@ public class EntityStore {
         return dsl.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName).and(MICA_ENTITIES.KIND.eq(entityKind)));
     }
 
-    public Optional<EntityVersion> upsert(UserPrincipal session, PartialEntity entity, @Nullable byte[] doc) {
+    public Optional<EntityVersion> upsert(UserPrincipal session, PartialEntity entity, @Nullable String doc) {
         return dsl.transactionResult(tx -> upsert(tx.dsl(), entity, session.getUsername(), doc));
     }
 
@@ -223,7 +223,7 @@ public class EntityStore {
         return upsert(tx, entity, session.getUsername(), null);
     }
 
-    public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, String author, @Nullable byte[] doc) {
+    public Optional<EntityVersion> upsert(DSLContext tx, PartialEntity entity, String author, @Nullable String doc) {
         var name = normalizeName(entity.name());
 
         if (isNameUsedAsPathElsewhere(tx, name)) {
@@ -237,8 +237,7 @@ public class EntityStore {
         var createdAt = entity.createdAt().orElse(updatedAt);
 
         // find and replace "id", "name", "createdAt" and "updatedAt" properties in the
-        // doc
-        // array using substring replacement to preserve the original formatting and
+        // doc using substring replacement to preserve the original formatting and
         // comments
         if (doc != null) {
             doc = inplaceUpdate(doc,
@@ -248,17 +247,18 @@ public class EntityStore {
                     "createdAt", objectMapper.convertValue(createdAt, String.class),
                     "updatedAt", objectMapper.convertValue(updatedAt, String.class));
         } else {
-            doc = "n/a".getBytes(UTF_8);
+            doc = "n/a";
         }
 
         var data = serializeData(entity.data());
+        var docBytes = doc.getBytes(UTF_8);
 
         var version = tx.insertInto(MICA_ENTITIES)
                 .set(MICA_ENTITIES.ID, id)
                 .set(MICA_ENTITIES.NAME, name)
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
-                .set(MICA_ENTITIES.DOC, doc)
+                .set(MICA_ENTITIES.DOC, docBytes)
                 .set(MICA_ENTITIES.CREATED_AT, createdAt)
                 .set(MICA_ENTITIES.UPDATED_AT, updatedAt)
                 .onConflict(MICA_ENTITIES.ID)
@@ -266,7 +266,7 @@ public class EntityStore {
                 .set(MICA_ENTITIES.NAME, name)
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
-                .set(MICA_ENTITIES.DOC, doc)
+                .set(MICA_ENTITIES.DOC, docBytes)
                 .set(MICA_ENTITIES.UPDATED_AT, updatedAt)
                 .where(entity.updatedAt().map(MICA_ENTITIES.UPDATED_AT::eq).orElseGet(DSL::noCondition))
                 .returning(MICA_ENTITIES.UPDATED_AT)
@@ -274,7 +274,7 @@ public class EntityStore {
                 .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt()));
 
         // TODO move into the controller
-        historyController.addEntry(tx, new EntityHistoryEntry(new EntityId(id), updatedAt, UPDATE, author), doc);
+        historyController.addEntry(tx, new EntityHistoryEntry(new EntityId(id), updatedAt, UPDATE, author), docBytes);
 
         return version;
     }
@@ -312,9 +312,8 @@ public class EntityStore {
     }
 
     @VisibleForTesting
-    static byte[] inplaceUpdate(byte[] doc, String... kvs) {
+    static String inplaceUpdate(String s, String... kvs) {
         assert kvs != null && kvs.length % 2 == 0;
-        var s = new String(doc, UTF_8);
         for (int i = kvs.length - 2; i >= 0; i -= 2) {
             var k = kvs[i];
             var v = kvs[i + 1];
@@ -326,7 +325,7 @@ public class EntityStore {
                 s = "%s: \"%s\"\n%s".formatted(k, v, s);
             }
         }
-        return s.getBytes(UTF_8);
+        return s;
     }
 
     @VisibleForTesting

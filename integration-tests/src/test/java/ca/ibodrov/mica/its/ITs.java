@@ -680,19 +680,9 @@ public class ITs extends TestResources {
         var secretKey = "k3y";
         var secretKeyName = "testSecretKey_" + System.currentTimeMillis();
 
-        securityContext.runAs(adminId, () -> {
-            var orgId = orgManager.createOrGet(orgName).orgId();
-
-            var injector = micaServer.getServer().getInjector();
-            var secretManager = injector.getInstance(SecretManager.class);
-            secretManager.createBinaryData(orgId, Set.of(), secretName, null,
-                    new ByteArrayInputStream(secretString.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
-            secretManager.createBinaryData(orgId, Set.of(), otherSecretName, null,
-                    new ByteArrayInputStream(otherSecretString.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
-            secretManager.createBinaryData(orgId, Set.of(), secretKeyName, null,
-                    new ByteArrayInputStream(secretKey.getBytes(UTF_8)), SecretVisibility.PUBLIC, "concord");
-            return null;
-        });
+        createBinarySecret(orgName, secretName, secretString.getBytes(UTF_8));
+        createBinarySecret(orgName, otherSecretName, otherSecretString.getBytes(UTF_8));
+        createBinarySecret(orgName, secretKeyName, secretKey.getBytes(UTF_8));
 
         var ciProcess = startConcordProcess(Map.of(
                 "arguments.orgName", orgName,
@@ -784,10 +774,20 @@ public class ITs extends TestResources {
         var entity = entityStore.getByName("/result-file.yaml").orElseThrow();
         assertEquals("/mica/record/v1", entity.kind());
         var doc = entityStore.getEntityDocById(entity.id(), entity.updatedAt())
-                .map(ab -> new String(ab, UTF_8))
                 .orElseThrow();
         assertTrue(doc.contains("name: \"/result-file.yaml\""));
         assertTrue(doc.contains("kind: \"/mica/record/v1\""));
+    }
+
+    private static void createBinarySecret(String orgName, String secretName, byte[] secret) throws Exception {
+        securityContext.runAs(adminId, () -> {
+            var orgId = orgManager.createOrGet(orgName).orgId();
+            var injector = micaServer.getServer().getInjector();
+            var secretManager = injector.getInstance(SecretManager.class);
+            secretManager.createBinaryData(orgId, Set.of(), secretName, null, new ByteArrayInputStream(secret),
+                    SecretVisibility.PUBLIC, "concord");
+            return null;
+        });
     }
 
     private static void upsert(PartialEntity entity) {

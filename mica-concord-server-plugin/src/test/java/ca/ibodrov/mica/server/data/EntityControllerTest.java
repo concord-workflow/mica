@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
@@ -105,9 +104,9 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName());
 
         var entity = parseYaml(doc);
-        var initialVersion = controller.createOrUpdate(session, entity, doc.getBytes(UTF_8), false);
+        var initialVersion = controller.createOrUpdate(session, entity, doc, false);
         var createdAt = initialVersion.updatedAt();
-        var updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
+        var updatedDoc = entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow();
 
         var expected = """
                 id: "%s"
@@ -125,8 +124,8 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertEquals(expected, updatedDoc);
 
         entity = parseYaml(updatedDoc);
-        var updatedVersion = controller.createOrUpdate(session, entity, updatedDoc.getBytes(UTF_8), false);
-        updatedDoc = new String(entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow(), UTF_8);
+        var updatedVersion = controller.createOrUpdate(session, entity, updatedDoc, false);
+        updatedDoc = entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow();
 
         expected = """
                 id: "%s"
@@ -156,17 +155,16 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName());
 
         var entity = parseYaml(doc);
-        var initialVersion = controller.createOrUpdate(session, entity, doc.getBytes(UTF_8), false);
+        var initialVersion = controller.createOrUpdate(session, entity, doc, false);
 
         // fetch the created document
 
         var createdDoc = entityStore.getEntityDocById(initialVersion.id(), initialVersion.updatedAt())
-                .map(bytes -> new String(bytes, UTF_8))
                 .orElseThrow();
 
         // modify and update the document as if it was done by a user
         var updatedDoc = createdDoc + "\n # updated by user1";
-        var updatedVersion = controller.createOrUpdate(session, parseYaml(updatedDoc), updatedDoc.getBytes(UTF_8),
+        var updatedVersion = controller.createOrUpdate(session, parseYaml(updatedDoc), updatedDoc,
                 false);
         assertEquals(initialVersion.id(), updatedVersion.id());
         assertNotEquals(initialVersion.updatedAt(), updatedVersion.updatedAt());
@@ -176,13 +174,13 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var updatedDocAlternative = createdDoc + "\n # updated by user2";
         var error = assertThrows(ApiException.class,
                 () -> controller.createOrUpdate(session, parseYaml(updatedDocAlternative),
-                        updatedDocAlternative.getBytes(UTF_8),
+                        updatedDocAlternative,
                         false));
         assertEquals(CONFLICT, error.getStatus());
 
         // overwrite the document
         var overwrittenVersion = controller.createOrUpdate(session, parseYaml(updatedDocAlternative),
-                updatedDocAlternative.getBytes(UTF_8), true);
+                updatedDocAlternative, true);
         assertEquals(initialVersion.id(), overwrittenVersion.id());
         assertNotEquals(initialVersion.updatedAt(), overwrittenVersion.updatedAt());
     }
@@ -222,19 +220,19 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                   hello!
                 """.formatted(namePrefix);
         var entityFoo = parseYaml(docFoo);
-        var initialVersion = controller.createOrUpdate(session, entityFoo, docFoo.getBytes(UTF_8), false);
+        var initialVersion = controller.createOrUpdate(session, entityFoo, docFoo, false);
 
         // grab the saved doc and try saving it again, there should be no changes
         var updatedDoc = entityStore.getEntityDocById(initialVersion.id(), initialVersion.updatedAt()).orElseThrow();
-        entityFoo = parseYaml(new String(updatedDoc, UTF_8));
+        entityFoo = parseYaml(updatedDoc);
         var updatedVersion = controller.createOrUpdate(session, entityFoo, updatedDoc, false);
         assertEquals(initialVersion, updatedVersion);
 
         // modify the saved doc and try saving it, there should be a new version
-        var updatedDoc2 = new String(updatedDoc, UTF_8).replace("hello!", "bye!");
+        var updatedDoc2 = updatedDoc.replace("hello!", "bye!");
         entityFoo = parseYaml(updatedDoc2);
         assertEquals("bye!\n", entityFoo.data().get("data").asText());
-        var updatedVersion2 = controller.createOrUpdate(session, entityFoo, updatedDoc2.getBytes(UTF_8), false);
+        var updatedVersion2 = controller.createOrUpdate(session, entityFoo, updatedDoc2, false);
         assertNotEquals(initialVersion, updatedVersion2);
         assertEquals(initialVersion.id(), updatedVersion2.id());
     }
@@ -259,7 +257,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var entity = parseYaml(doc)
                 .withName("/replacement/name")
                 .withKind("/replacement/kind");
-        controller.createOrUpdate(session, entity, doc.getBytes(UTF_8), false);
+        controller.createOrUpdate(session, entity, doc, false);
 
         var updatedEntity = entityStore.getByName("/replacement/name")
                 .orElseThrow();
@@ -267,7 +265,6 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertEquals("/replacement/kind", updatedEntity.kind());
 
         var updatedDoc = entityStore.getEntityDocById(updatedEntity.id(), updatedEntity.updatedAt())
-                .map(ab -> new String(ab, UTF_8))
                 .orElseThrow();
         assertTrue(updatedDoc.contains("name: \"/replacement/name\""));
         assertTrue(updatedDoc.contains("kind: \"/replacement/kind\""));

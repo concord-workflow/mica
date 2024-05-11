@@ -1,7 +1,7 @@
 configuration:
   runtime: "concord-v2"
   dependencies:
-    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.19-SNAPSHOT
+    - mvn://ca.ibodrov.mica:mica-concord-task:0.0.21
 
 flows:
   default:

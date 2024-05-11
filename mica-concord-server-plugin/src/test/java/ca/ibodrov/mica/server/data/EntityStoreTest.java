@@ -3,7 +3,6 @@ package ca.ibodrov.mica.server.data;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EntityStoreTest {
@@ -15,8 +14,7 @@ public class EntityStoreTest {
                 createdAt: 2021-01-01T00:00:00Z
                 updatedAt: 2021-01-01T00:00:00Z
                 name: bar
-                """
-                .getBytes(UTF_8);
+                """;
 
         var updated = EntityStore.inplaceUpdate(doc,
                 "id", "12345",
@@ -28,9 +26,8 @@ public class EntityStoreTest {
                 createdAt: "2024-01-01T00:00:00Z"
                 updatedAt: 2021-01-01T00:00:00Z
                 name: bar
-                """
-                .getBytes(UTF_8);
-        assertArrayEquals(expected, updated);
+                """;
+        assertEquals(expected, updated);
     }
 
     @Test

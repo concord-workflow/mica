@@ -19,9 +19,7 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -50,11 +48,11 @@ public class EntityUploadResource implements Resource {
     @Consumes("*/yaml")
     @Operation(summary = "Upload an entity in YAML format", operationId = "putYaml")
     public EntityVersion putYaml(@Context UserPrincipal session,
-                                 InputStream in,
-                                 @QueryParam("overwrite") @DefaultValue("false") boolean overwrite) {
+                                 @QueryParam("overwrite") @DefaultValue("false") boolean overwrite,
+                                 String doc) {
 
         // assume the name is present in the document
-        return putPartialYaml(session, null, null, false, overwrite, in);
+        return putPartialYaml(session, null, null, false, overwrite, doc);
     }
 
     @PUT
@@ -66,18 +64,12 @@ public class EntityUploadResource implements Resource {
                                         @Nullable @QueryParam("entityKind") String entityKind,
                                         @Parameter(description = "Replace any entity with the same name") @QueryParam("replace") @DefaultValue("false") boolean replace,
                                         @Parameter(description = "Overwrite any other changes to the entity") @QueryParam("overwrite") @DefaultValue("false") boolean overwrite,
-                                        InputStream in) {
-        byte[] doc;
-        try {
-            doc = in.readAllBytes();
-        } catch (IOException e) {
-            throw ApiException.badRequest("Error reading the input: " + e.getMessage());
-        }
+                                        String doc) {
 
         // TODO validate entityName
         PartialEntity entity;
         try {
-            var object = yamlMapper.readValue(new ByteArrayInputStream(doc), ObjectNode.class);
+            var object = yamlMapper.readValue(doc, ObjectNode.class);
             if (entityName != null && !entityName.isBlank()) {
                 object = object.put("name", entityName);
             }

@@ -11,7 +11,7 @@ import com.walmartlabs.concord.server.security.UserPrincipal;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.Arrays;
+import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,7 +41,7 @@ public class EntityController {
 
     public EntityVersion createOrUpdate(UserPrincipal session,
                                         PartialEntity entity,
-                                        @Nullable byte[] doc,
+                                        @Nullable String doc,
                                         boolean overwrite) {
 
         var kind = validateKind(entity.kind());
@@ -64,7 +64,7 @@ public class EntityController {
         if (entity.id().isPresent() && entity.updatedAt().isPresent()) {
             var existingDoc = entityStore.getEntityDocById(entity.id().get(), entity.updatedAt().get());
             if (existingDoc.isPresent()) {
-                if (Arrays.equals(existingDoc.get(), doc)) {
+                if (Objects.equals(existingDoc.get(), doc)) {
                     // no changes
                     return new EntityVersion(entity.id().get(), entity.updatedAt().get());
                 }

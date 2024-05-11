@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Map;
 
@@ -21,6 +20,7 @@ import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.MICA_VIEW_V1;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.MICA_RECORD_V1;
 import static ca.ibodrov.mica.server.data.UserEntryUtils.systemUser;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -68,8 +68,8 @@ public class InitialDataLoader {
         reflections.getResources(s -> s.endsWith(".yaml")).forEach(resourceName -> {
             try (var in = cl.getResourceAsStream(resourceName)) {
                 assert in != null;
-                var doc = in.readAllBytes();
-                var entity = yamlMapper.readValue(new ByteArrayInputStream(doc), PartialEntity.class);
+                var doc = new String(in.readAllBytes(), UTF_8);
+                var entity = yamlMapper.readValue(doc, PartialEntity.class);
                 createOrReplace(session, entity, doc);
             } catch (IOException e) {
                 throw new RuntimeException("Error loading " + resourceName, e);
@@ -77,7 +77,7 @@ public class InitialDataLoader {
         });
     }
 
-    private void createOrReplace(UserPrincipal session, PartialEntity entity, byte[] doc) {
+    private void createOrReplace(UserPrincipal session, PartialEntity entity, String doc) {
         entityStore.getByName(entity.name())
                 .flatMap(existingEntity -> entityStore.deleteById(session, existingEntity.id()))
                 .ifPresent(deleted -> log.info("Removed old version of {}: {}", entity.name(), deleted));

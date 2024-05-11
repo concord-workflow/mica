@@ -104,7 +104,7 @@ public class EntityResource implements Resource {
                             .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
 
                     try {
-                        return yamlMapper.prettyPrintAsBytes(entity);
+                        return yamlMapper.prettyPrint(entity);
                     } catch (IOException e) {
                         log.warn("YAML serialization error: {}", e.getMessage(), e);
                         throw ApiException.internalError(e.getMessage());
