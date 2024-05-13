@@ -1,18 +1,25 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { IconButton, Tooltip, styled } from '@mui/material';
+import SvgIcon from '@mui/material/SvgIcon/SvgIcon';
 
 import React from 'react';
 
 interface Props {
     text: string;
+    tooltipText?: string;
+    Icon?: typeof SvgIcon;
 }
 
 const InlineIconButton = styled(IconButton)(() => ({
     fontSize: 'inherit',
 }));
 
-const CopyToClipboardButton = ({ text }: Props) => {
-    const [tooltip, setTooltip] = React.useState<string>('Copy to clipboard');
+const CopyToClipboardButton = ({
+    text,
+    tooltipText = 'Copy to clipboard',
+    Icon = ContentCopyIcon,
+}: Props) => {
+    const [tooltip, setTooltip] = React.useState<string>(tooltipText);
     const [open, setOpen] = React.useState<boolean>(false);
     const handleOpen = React.useCallback(() => {
         setOpen(true);
@@ -26,14 +33,14 @@ const CopyToClipboardButton = ({ text }: Props) => {
             setOpen(true);
             setTimeout(() => {
                 setOpen(false);
-                setTooltip('Copy to clipboard');
+                setTooltip(tooltipText);
             }, 1000);
         });
-    }, [text]);
+    }, [text, tooltipText]);
     return (
         <Tooltip title={tooltip} open={open} onOpen={handleOpen} onClose={handleClose}>
             <InlineIconButton onClick={handleClick}>
-                <ContentCopyIcon fontSize="inherit" />
+                <Icon fontSize="inherit" />
             </InlineIconButton>
         </Tooltip>
     );

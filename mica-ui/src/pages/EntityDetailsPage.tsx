@@ -18,7 +18,9 @@ import EntityChangesTable from '../features/history/EntityChangesTable.tsx';
 import RenderView from '../features/views/RenderView.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import LinkIcon from '@mui/icons-material/Link';
 import PreviewIcon from '@mui/icons-material/Preview';
+import ShareIcon from '@mui/icons-material/Share';
 import {
     Button,
     CircularProgress,
@@ -139,6 +141,36 @@ const MetadataItem = ({ label, children }: MetadataItemProps) => (
     </>
 );
 
+const CopyPermalinkButton = ({ entityId }: { entityId: string | undefined }) => {
+    if (!entityId) {
+        return <></>;
+    }
+    return (
+        <Typography variant="h6">
+            <CopyToClipboardButton
+                text={`${window.location.protocol}//${window.location.host}/mica/entity/${entityId}/details`}
+                tooltipText="Copy permalink"
+                Icon={LinkIcon}
+            />
+        </Typography>
+    );
+};
+
+const CopyHumanReadableLinkButton = ({ entityName }: { entityName: string | undefined }) => {
+    if (!entityName) {
+        return <></>;
+    }
+    return (
+        <Typography variant="h6">
+            <CopyToClipboardButton
+                text={`${window.location.protocol}//${window.location.host}/mica/redirect?type=entityByName&entityName=${entityName}`}
+                tooltipText="Copy human-readable link"
+                Icon={ShareIcon}
+            />
+        </Typography>
+    );
+};
+
 const PropertiesFound = ({ count }: { count: number }) => {
     return (
         <Typography variant="body2">
@@ -200,6 +232,12 @@ const EntityDetailsPage = () => {
                 </Grid>
                 <Grid xs={2} display="flex" justifyContent="flex-end">
                     <Stack direction="row" spacing={2}>
+                        <FormControl>
+                            <CopyPermalinkButton entityId={entityId} />
+                        </FormControl>
+                        <FormControl>
+                            <CopyHumanReadableLinkButton entityName={data?.name} />
+                        </FormControl>
                         {data && data.kind === MICA_DASHBOARD_KIND && (
                             <FormControl>
                                 <Button
