@@ -70,6 +70,6 @@ public class DashboardResource implements Resource {
 
     private static RenderRequest toRenderRequest(MicaDashboardV1 dashboard) {
         var viewRef = dashboard.view();
-        return RenderRequest.parameterized(viewRef.name(), viewRef.parameters().orElse(null), -1);
+        return RenderRequest.parameterized(viewRef.name(), viewRef.parameters().orElse(null));
     }
 }

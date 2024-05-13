@@ -60,7 +60,6 @@ const parseData = (data: string): PreviewRequestOrError => {
         return {
             request: {
                 view,
-                limit: -1,
             },
             parameters,
         };

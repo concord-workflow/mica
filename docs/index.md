@@ -411,7 +411,7 @@ Parameters can be used in:
 To pass the parameters, use the `parameters` field in the request body:
 
 ```
-curl -i --json '{"viewName": "/views/ActiveClients", "limit": 10, "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
+curl -i --json '{"viewName": "/views/ActiveClients", "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
 
 ### View Includes

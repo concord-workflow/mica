@@ -113,7 +113,6 @@ export interface ListEntitiesRequest {
     entityName?: string;
     entityKind?: string;
     orderBy?: OrderBy;
-    limit?: number;
 }
 
 export const listEntities = (request: ListEntitiesRequest): Promise<EntityList> => {

@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 public record RenderRequest(Optional<EntityId> viewId,
         Optional<String> viewName,
-        int limit,
         Optional<JsonNode> parameters) {
 
     public RenderRequest {
@@ -30,11 +29,11 @@ public record RenderRequest(Optional<EntityId> viewId,
         });
     }
 
-    public static RenderRequest of(String viewName, int limit) {
-        return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.empty());
+    public static RenderRequest of(String viewName) {
+        return new RenderRequest(Optional.empty(), Optional.of(viewName), Optional.empty());
     }
 
-    public static RenderRequest parameterized(String viewName, JsonNode parameters, int limit) {
-        return new RenderRequest(Optional.empty(), Optional.of(viewName), limit, Optional.ofNullable(parameters));
+    public static RenderRequest parameterized(String viewName, JsonNode parameters) {
+        return new RenderRequest(Optional.empty(), Optional.of(viewName), Optional.ofNullable(parameters));
     }
 }

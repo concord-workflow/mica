@@ -61,8 +61,7 @@ public class EntityStore {
             @Nullable String entityNameStartsWith,
             @Nullable String entityName,
             @Nullable String entityKind,
-            @Nullable OrderBy orderBy,
-            int limit) {
+            @Nullable OrderBy orderBy) {
     }
 
     public List<EntityMetadata> search(ListEntitiesRequest request) {
@@ -96,11 +95,6 @@ public class EntityStore {
             switch (orderBy) {
                 case NAME -> query.orderBy(MICA_ENTITIES.NAME);
             }
-        }
-
-        var limit = request.limit();
-        if (limit > 0) {
-            query.limit(limit);
         }
 
         return query

@@ -56,10 +56,9 @@ public class ViewResource implements Resource {
     @Path("render/{viewId}")
     @Operation(summary = "Render a simple view (without parameters)", operationId = "renderSimple")
     @Validate
-    public PartialEntity renderSimple(@PathParam("viewId") EntityId viewId,
-                                      @QueryParam("limit") @DefaultValue("-1") int limit) {
+    public PartialEntity renderSimple(@PathParam("viewId") EntityId viewId) {
 
-        var request = new RenderRequest(Optional.of(viewId), Optional.empty(), limit, Optional.empty());
+        var request = new RenderRequest(Optional.of(viewId), Optional.empty(), Optional.empty());
         return controller.renderAsEntity(request);
     }
 

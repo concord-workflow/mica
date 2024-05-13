@@ -104,8 +104,7 @@ public class MicaTask implements Task {
     private RenderRequest parseRenderRequest(Variables input) {
         var viewName = input.assertString("name");
         var parameters = parseParameters(input);
-        var limit = input.getInt("limit", -1);
-        return new RenderRequest(Optional.empty(), Optional.of(viewName), limit,
+        return new RenderRequest(Optional.empty(), Optional.of(viewName),
                 Optional.of(objectMapper.convertValue(parameters, JsonNode.class)));
     }
 

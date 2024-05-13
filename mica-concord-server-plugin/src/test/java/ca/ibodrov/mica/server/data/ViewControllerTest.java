@@ -84,7 +84,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .build()
                 .toPartialEntity(objectMapper));
 
-        var result = viewController.renderAsEntity(RenderRequest.of("/test-name-patterns", 10));
+        var result = viewController.renderAsEntity(RenderRequest.of("/test-name-patterns"));
         assertEquals(6, result.data().get("data").size());
 
         // validate record order
@@ -130,8 +130,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         var result = viewController.renderAsEntity(RenderRequest.parameterized("/test-name-pattern-substitution",
-                parameters("x", TextNode.valueOf("first"), "y", TextNode.valueOf("second")),
-                10));
+                parameters("x", TextNode.valueOf("first"), "y", TextNode.valueOf("second"))));
         assertEquals(1, result.data().get("data").size());
         assertEquals("/second/record", result.data().get("data").get(0).get("name").asText());
         assertEquals(2, result.data().get("data").get(0).get("value").asInt());
@@ -187,7 +186,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
 
         // we expect the view to return the original data plus the validation errors
         var result = viewController
-                .renderAsEntity(RenderRequest.parameterized("/test-view-validation", NullNode.getInstance(), 10));
+                .renderAsEntity(RenderRequest.parameterized("/test-view-validation", NullNode.getInstance()));
         assertEquals(2, result.data().get("data").size());
         assertEquals(2, result.data().get("validation").size());
         assertEquals("required", result.data().get("validation").get(0).get("messages").get(0).get("type").asText());
@@ -231,7 +230,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // we expect entities to be flattened into a .properties format
-        var result = viewController.renderProperties(RenderRequest.of("/test-properties", 10));
+        var result = viewController.renderProperties(RenderRequest.of("/test-properties"));
         assertEquals("x.y=true\n", result);
     }
 
@@ -246,7 +245,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         var error = assertThrows(ApiException.class,
-                () -> viewController.renderAsEntity(RenderRequest.of("/unknown-include", 10)));
+                () -> viewController.renderAsEntity(RenderRequest.of("/unknown-include")));
         assertEquals(CLIENT_ERROR, error.getStatus().getFamily());
         var entity = assertInstanceOf(ApiError.class, error.getResponse().getEntity());
         assertTrue(entity.message().contains("Unsupported URI"));

@@ -94,7 +94,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                   multiline
                   text
                 """);
-        var entities = entityResource.listEntities("testRecord", null, null, null, null, 10);
+        var entities = entityResource.listEntities("testRecord", null, null, null, null);
         assertEquals(1, entities.data().size());
         var entity1 = entities.data().get(0);
         assertEquals(entity1Version, entity1.toVersion());
@@ -108,9 +108,9 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                   nested:
                     object: "why not?"
                 """);
-        entities = entityResource.listEntities("testRecord", null, null, null, null, 10);
+        entities = entityResource.listEntities("testRecord", null, null, null, null);
         assertEquals(2, entities.data().size());
-        entities = entityResource.listEntities("anotherTestRecord", null, null, null, null, 10);
+        entities = entityResource.listEntities("anotherTestRecord", null, null, null, null);
         assertEquals(1, entities.data().size());
         var entity2 = entities.data().get(0);
         assertEquals(entity2Version, entity2.toVersion());
@@ -156,13 +156,13 @@ public class EntityResourceTest extends AbstractDatabaseTest {
                 data: "foo"
                 """);
 
-        var entityList = entityResource.listEntities(null, null, "/someRecord", null, null, 10);
+        var entityList = entityResource.listEntities(null, null, "/someRecord", null, null);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).anyMatch(createdVersion::equals));
 
         var deletedVersion = entityResource.deleteById(session, createdVersion.id().id());
         assertEquals(createdVersion, deletedVersion);
 
-        entityList = entityResource.listEntities(null, null, "/someRecord", null, null, 10);
+        entityList = entityResource.listEntities(null, null, "/someRecord", null, null);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).noneMatch(createdVersion::equals));
     }
 

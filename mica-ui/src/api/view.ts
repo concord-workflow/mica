@@ -7,7 +7,6 @@ import { UseMutationOptions } from 'react-query/types/react/types';
 
 export interface PreviewRequest {
     view: PartialEntity;
-    limit: number;
     parameters?: Record<string, string>;
 }
 
@@ -25,7 +24,6 @@ export const usePreview = (options?: UseMutationOptions<PartialEntity, ApiError,
 
 export interface RenderRequest {
     viewId: string;
-    limit: number;
 }
 
 export const render = (request: RenderRequest): Promise<PartialEntity> =>

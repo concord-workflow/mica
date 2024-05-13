@@ -68,19 +68,19 @@ public class ViewController {
     public RenderedView render(RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        return render(view, request.limit());
+        return render(view);
     }
 
     public PartialEntity renderAsEntity(RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        return renderAsEntity(view, request.limit());
+        return renderAsEntity(view);
     }
 
     public String renderProperties(RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = select(view, request.limit());
+        var entities = select(view);
 
         var renderedView = viewRenderer.render(view, ViewRenderer.RenderOverrides.merged(), entities);
         if (renderedView.data().size() != 1) {
@@ -105,13 +105,13 @@ public class ViewController {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var viewEntity = validate(request.view());
         var view = interpolateView(viewEntity, parameters);
-        return renderAsEntity(view, request.limit());
+        return renderAsEntity(view);
     }
 
     public PartialEntity materialize(UserPrincipal session, RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = select(view, request.limit());
+        var entities = select(view);
         var renderedView = viewRenderer.render(view, entities);
         // TODO validation
         // TODO optimistic locking
@@ -148,13 +148,13 @@ public class ViewController {
         return viewInterpolator.interpolate(view, parameters);
     }
 
-    private RenderedView render(ViewLike view, int limit) {
-        var entities = select(view, limit);
+    private RenderedView render(ViewLike view) {
+        var entities = select(view);
         return viewRenderer.render(view, entities);
     }
 
-    private PartialEntity renderAsEntity(ViewLike view, int limit) {
-        var renderedView = render(view, limit);
+    private PartialEntity renderAsEntity(ViewLike view) {
+        var renderedView = render(view);
         var validation = validateRenderedView(view, renderedView);
         return buildEntity(view.name(),
                 objectMapper.convertValue(renderedView.data(), JsonNode.class),
@@ -167,7 +167,7 @@ public class ViewController {
      * includes, filtering them by the entity kind and name patterns, and returning
      * the result.
      */
-    private Stream<? extends EntityLike> select(ViewLike view, int limit) {
+    private Stream<? extends EntityLike> select(ViewLike view) {
         var includes = view.selector().includes().orElse(List.of(INTERNAL_ENTITY_STORE_URI));
 
         // grab all entities matching the selector's entity kind
@@ -203,10 +203,6 @@ public class ViewController {
                         .filter(e -> e.name() != null)
                         .filter(e -> pattern.matcher(e.name()).matches()));
             }
-        }
-
-        if (limit > 0) {
-            result = result.limit(limit);
         }
 
         return result;

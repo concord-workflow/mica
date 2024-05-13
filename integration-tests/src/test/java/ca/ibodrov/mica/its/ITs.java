@@ -530,7 +530,7 @@ public class ITs extends TestResources {
 
     @Test
     public void requestsMustBeValidated() {
-        assertThrows(ConstraintViolationException.class, () -> viewResource.render(RenderRequest.of("_invalid_", 10)));
+        assertThrows(ConstraintViolationException.class, () -> viewResource.render(RenderRequest.of("_invalid_")));
     }
 
     @Test
@@ -670,7 +670,7 @@ public class ITs extends TestResources {
                 .toPartialEntity(objectMapper));
 
         var result = securityContext.runAs(adminId,
-                () -> viewResource.render(RenderRequest.of("/acme/views/json-store-demo", 10)));
+                () -> viewResource.render(RenderRequest.of("/acme/views/json-store-demo")));
         var data = result.data().get("data");
         assertEquals(1, data.size());
         var item = data.get(0);

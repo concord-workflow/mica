@@ -49,18 +49,16 @@ public class EntityResource implements Resource {
                                    @Nullable @QueryParam("entityNameStartsWith") String entityNameStartsWith,
                                    @Nullable @QueryParam("entityName") String entityName,
                                    @Nullable @QueryParam("entityKind") String entityKind,
-                                   @Nullable @QueryParam("orderBy") OrderBy orderBy,
-                                   @QueryParam("limit") @DefaultValue("100") int limit) {
+                                   @Nullable @QueryParam("orderBy") OrderBy orderBy) {
 
         // TODO validate entityName and entityKind, use @ValidName
         var request = new ListEntitiesRequest(nonBlank(search),
                 nonBlank(entityNameStartsWith),
                 nonBlank(entityName),
                 nonBlank(entityKind),
-                orderBy,
-                limit);
+                orderBy);
         var data = entityStore.search(request);
-        return new EntityList(limit, data);
+        return new EntityList(data);
     }
 
     @GET
