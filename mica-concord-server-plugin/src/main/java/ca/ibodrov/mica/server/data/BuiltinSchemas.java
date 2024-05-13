@@ -41,7 +41,6 @@ public final class BuiltinSchemas {
     public static final String MICA_RECORD_V1 = "/mica/record/v1";
 
     private final ObjectNode standardProperties;
-    private final ObjectNode micaRecordV1Schema;
     private final ObjectNode micaKindV1Schema;
     private final ObjectNode micaViewV1Schema;
 
@@ -64,17 +63,6 @@ public final class BuiltinSchemas {
                   updatedAt:
                     type: string
                 required: ["kind", "name"]
-                """);
-
-        this.micaRecordV1Schema = makeJsonSchema(mapper, """
-                $ref: %%STANDARD_PROPERTIES_REF%%
-                properties:
-                  kind:
-                    type: string
-                    enum: ["/mica/record/v1"]
-                  data:
-                    type: [object, array, string, number, boolean, null]
-                required: ["kind", "data"]
                 """);
 
         this.micaKindV1Schema = makeJsonSchema(mapper, """
@@ -144,13 +132,6 @@ public final class BuiltinSchemas {
     }
 
     /**
-     * /mica/record/v1 - use to declare entities of any kind.
-     */
-    public ObjectNode getMicaRecordV1Schema() {
-        return micaRecordV1Schema.deepCopy();
-    }
-
-    /**
      * /mica/kind/v1 - use to declare new entity kinds.
      */
     public ObjectNode getMicaKindV1Schema() {
@@ -167,7 +148,6 @@ public final class BuiltinSchemas {
     public Optional<JsonNode> get(String kind) {
         return switch (kind) {
             case STANDARD_PROPERTIES_V1 -> Optional.of(getStandardProperties());
-            case MICA_RECORD_V1 -> Optional.of(getMicaRecordV1Schema());
             case MICA_KIND_V1 -> Optional.of(getMicaKindV1Schema());
             case MICA_VIEW_V1 -> Optional.of(getMicaViewV1Schema());
             default -> Optional.empty();

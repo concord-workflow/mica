@@ -52,7 +52,6 @@ public class InitialDataLoader {
 
         // built-in entity kinds
         createOrReplace(session, schema(MICA_KIND_V1, builtinSchemas.getMicaKindV1Schema()), null);
-        createOrReplace(session, schema(MICA_RECORD_V1, builtinSchemas.getMicaRecordV1Schema()), null);
         createOrReplace(session, schema(MICA_VIEW_V1, builtinSchemas.getMicaViewV1Schema()), null);
 
         // load example files

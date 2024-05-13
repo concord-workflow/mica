@@ -1,0 +1,11 @@
+name: /mica/record/v1
+kind: /mica/kind/v1
+schema:
+  $ref: mica://internal/mica/standard-properties/v1
+  properties:
+    kind:
+      type: string
+      enum: [ "/mica/record/v1" ]
+    data:
+      type: [ object, array, string, number, boolean, null ]
+  required: [ "kind", "data" ]
