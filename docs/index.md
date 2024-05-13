@@ -502,8 +502,16 @@ scheme:
 selector:
   entityKind: /some/kind/v1
   includes:
-    - concord+jsonstore://orgName/jsonStoreName
+    - concord+jsonstore://myOrg/myStore
 ```
+
+Mica will look for entries with `kind` equals to `/some/kind/v1` in `myStore`
+JSON store in `myOrg` Concord organization.
+
+Supported parameters:
+
+- `defaultKind` -- optional, sets `kind` for JSON store entries without their
+own. Default is `/concord/json-store/item/v1`.
 
 ### Property Files Support
 

@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.data.git;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.data.EntityFetcher;
+import ca.ibodrov.mica.server.data.QueryParams;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -19,18 +20,19 @@ import com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.git.EntityFile.PROPERTIES_KIND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toMap;
 
 public class ConcordGitEntityFetcher implements EntityFetcher {
 
@@ -120,9 +122,8 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                 .getSecret();
     }
 
-    private static Set<FileFormat> parseAllowedFormats(Map<String, List<String>> queryParams) {
-        return Optional.ofNullable(queryParams.get("allowedFormats"))
-                .flatMap(p -> Optional.ofNullable(p.get(0)))
+    private static Set<FileFormat> parseAllowedFormats(QueryParams queryParams) {
+        return queryParams.getFirst("allowedFormats")
                 .map(s -> {
                     var formats = s.split(",");
                     if (formats.length < 1) {
@@ -142,11 +143,10 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     private static Map<FileFormat, FileFormatOptions> parseFormatOptions(Set<FileFormat> allowedFormats,
-                                                                         Map<String, List<String>> queryParams) {
+                                                                         QueryParams queryParams) {
         return allowedFormats.stream()
                 .collect(toMap(f -> f, f -> {
-                    var pattern = Optional.ofNullable(queryParams.get(f.name().toLowerCase() + ".filePattern"))
-                            .flatMap(p -> Optional.ofNullable(p.get(0)))
+                    var pattern = queryParams.getFirst(f.name().toLowerCase() + ".filePattern")
                             .orElseGet(() -> {
                                 switch (f) {
                                     case YAML -> {
@@ -230,24 +230,6 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
         }
     }
 
-    private static Map<String, List<String>> parseQueryParameters(String s) {
-        if (s == null || s.isBlank()) {
-            return Map.of();
-        }
-        return Arrays.stream(s.split("&"))
-                .map(ConcordGitEntityFetcher::splitQueryParameter)
-                .collect(groupingBy(Map.Entry::getKey, HashMap::new, mapping(Map.Entry::getValue, toList())));
-    }
-
-    private static SimpleEntry<String, String> splitQueryParameter(String it) {
-        var idx = it.indexOf("=");
-        var key = idx > 0 ? it.substring(0, idx) : it;
-        var value = idx > 0 && it.length() > idx + 1 ? it.substring(idx + 1) : null;
-        return new SimpleEntry<>(
-                URLDecoder.decode(key, UTF_8),
-                value != null ? URLDecoder.decode(value, UTF_8) : null);
-    }
-
     private record Query(String orgName,
             String projectName,
             String repoName,
@@ -277,20 +259,11 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             var orgName = uri.getAuthority();
             var projectName = pathElements[1];
             var repoName = pathElements[2];
-            var queryParams = parseQueryParameters(uri.getQuery());
-            var ref = Optional.ofNullable(queryParams.get("ref"))
-                    .flatMap(r -> Optional.ofNullable(r.get(0)))
-                    .orElse(DEFAULT_REF);
-            var path = Optional.ofNullable(queryParams.get("path"))
-                    .flatMap(p -> Optional.ofNullable(p.get(0)))
-                    .orElse("/");
-            var useFileNames = Optional.ofNullable(queryParams.get("useFileNames"))
-                    .flatMap(p -> Optional.ofNullable(p.get(0)))
-                    .map(Boolean::parseBoolean)
-                    .orElse(false);
-            var namePrefix = Optional.ofNullable(queryParams.get("namePrefix"))
-                    .flatMap(p -> Optional.ofNullable(p.get(0)))
-                    .orElse("");
+            var queryParams = new QueryParams(uri.getQuery());
+            var ref = queryParams.getFirst("ref").orElse(DEFAULT_REF);
+            var path = queryParams.getFirst("path").orElse("/");
+            var useFileNames = queryParams.getFirst("useFileNames").map(Boolean::parseBoolean).orElse(false);
+            var namePrefix = queryParams.getFirst("namePrefix").orElse("");
             var allowedFormats = parseAllowedFormats(queryParams);
             var formatOptions = parseFormatOptions(allowedFormats, queryParams);
 

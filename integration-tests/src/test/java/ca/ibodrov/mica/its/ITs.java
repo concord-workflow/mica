@@ -643,10 +643,18 @@ public class ITs extends TestResources {
                     }
                     """));
 
+            dataManager.createOrUpdate(orgName, storeName, itemPath + "_other", parseMap("""
+                    {
+                        "kind": "/something/else",
+                        "items": ["qux"]
+                    }
+                    """));
+
             return null;
         });
 
-        var includeUri = "concord+jsonstore://%s/%s".formatted(orgName, storeName);
+        var entityKind = "/acme/kinds/json-store-entity";
+        var includeUri = "concord+jsonstore://%s/%s?defaultKind=%s".formatted(orgName, storeName, entityKind);
 
         upsert(new MicaViewV1.Builder()
                 .name("/acme/views/json-store-demo")
@@ -655,7 +663,7 @@ public class ITs extends TestResources {
                           env:
                             type: string
                         """))
-                .selector(byEntityKind("/acme/kinds/json-store-entity")
+                .selector(byEntityKind(entityKind)
                         .withIncludes(List.of(includeUri)))
                 .data(jsonPath("$"))
                 .build()
