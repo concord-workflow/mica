@@ -156,7 +156,7 @@ const CopyPermalinkButton = ({ entityId }: { entityId: string | undefined }) => 
     );
 };
 
-const CopyHumanReadableLinkButton = ({ entityName }: { entityName: string | undefined }) => {
+const ShareButton = ({ entityName }: { entityName: string | undefined }) => {
     if (!entityName) {
         return <></>;
     }
@@ -236,7 +236,7 @@ const EntityDetailsPage = () => {
                             <CopyPermalinkButton entityId={entityId} />
                         </FormControl>
                         <FormControl>
-                            <CopyHumanReadableLinkButton entityName={data?.name} />
+                            <ShareButton entityName={data?.name} />
                         </FormControl>
                         {data && data.kind === MICA_DASHBOARD_KIND && (
                             <FormControl>

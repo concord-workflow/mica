@@ -1,6 +1,8 @@
 import { DashboardRenderResponse, Layout, render } from '../api/dashboard.ts';
+import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import EditIcon from '@mui/icons-material/Edit';
+import LinkIcon from '@mui/icons-material/Link';
 import { AlertTitle } from '@mui/lab';
 import {
     Alert,
@@ -11,12 +13,14 @@ import {
     Container,
     FormControl,
     Paper,
+    Stack,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
     TableRow,
+    Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 
@@ -34,6 +38,20 @@ const Error = ({ message }: { message: string }) => {
     );
 };
 
+const CopyPermalinkButton = ({ entityId }: { entityId: string | undefined }) => {
+    if (!entityId) {
+        return <></>;
+    }
+    return (
+        <Typography variant="h6">
+            <CopyToClipboardButton
+                text={`${window.location.protocol}//${window.location.host}/mica/dashboard/${entityId}`}
+                tooltipText="Copy permalink"
+                Icon={LinkIcon}
+            />
+        </Typography>
+    );
+};
 const DashboardPage = () => {
     const navigate = useNavigate();
 
@@ -82,14 +100,19 @@ const DashboardPage = () => {
                     <PageTitle>{data.dashboard.title}</PageTitle>
                 </Grid>
                 <Grid xs={2} display="flex" justifyContent="flex-end">
-                    <FormControl>
-                        <Button
-                            startIcon={<EditIcon />}
-                            variant="outlined"
-                            onClick={() => navigate(`/entity/${entityId}/edit`)}>
-                            Edit
-                        </Button>
-                    </FormControl>
+                    <Stack direction="row" spacing={2}>
+                        <FormControl>
+                            <CopyPermalinkButton entityId={entityId} />
+                        </FormControl>
+                        <FormControl>
+                            <Button
+                                startIcon={<EditIcon />}
+                                variant="outlined"
+                                onClick={() => navigate(`/entity/${entityId}/edit`)}>
+                                Edit
+                            </Button>
+                        </FormControl>
+                    </Stack>
                 </Grid>
             </Grid>
             <TableContainer sx={{ mt: 1 }} component={Paper}>
