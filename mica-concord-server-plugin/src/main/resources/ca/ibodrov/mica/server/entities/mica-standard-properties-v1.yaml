@@ -1,0 +1,15 @@
+name: /mica/standard-properties/v1
+kind: /mica/kind/v1
+schema:
+  properties:
+    id:
+      type: string
+    kind:
+      type: string
+    name:
+      type: string
+    createdAt:
+      type: string
+    updatedAt:
+      type: string
+  required: [ "kind", "name" ]

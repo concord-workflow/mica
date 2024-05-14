@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,12 +31,11 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         yamlMapper = new YamlMapper(objectMapper);
         var entityHistoryController = new EntityHistoryController(dsl());
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
-        var builtinSchemas = new BuiltinSchemas(objectMapper);
-        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas);
+        var entityKindStore = new EntityKindStore(entityStore);
         controller = new EntityController(entityStore, entityKindStore, objectMapper);
 
         // insert the built-in entity kinds
-        new InitialDataLoader(builtinSchemas, entityStore, objectMapper).load();
+        new InitialDataLoader(entityStore, objectMapper).load();
     }
 
     @Test

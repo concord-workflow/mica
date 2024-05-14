@@ -3,7 +3,10 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.model.EntityMetadata;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.data.*;
+import ca.ibodrov.mica.server.data.EntityController;
+import ca.ibodrov.mica.server.data.EntityHistoryController;
+import ca.ibodrov.mica.server.data.EntityKindStore;
+import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.walmartlabs.concord.common.DateTimeUtils;
 import com.walmartlabs.concord.server.security.UserPrincipal;
@@ -32,8 +35,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         var uuidGenerator = new UuidGenerator();
         var entityHistoryController = new EntityHistoryController(dsl());
         var entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
-        var builtInSchemas = new BuiltinSchemas(objectMapper);
-        var entityKindStore = new EntityKindStore(entityStore, builtInSchemas);
+        var entityKindStore = new EntityKindStore(entityStore);
         var controller = new EntityController(entityStore, entityKindStore, objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()

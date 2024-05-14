@@ -1,7 +1,6 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.server.exceptions.ApiException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonMetaSchema;
@@ -11,7 +10,6 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.uri.URIFactory;
 import com.networknt.schema.uri.URIFetcher;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -76,28 +74,6 @@ public class Validator {
         @Override
         public Optional<InputStream> fetch(String kind) {
             return Optional.empty();
-        }
-    }
-
-    public static class BuiltinSchemasFetcher implements SchemaFetcher {
-
-        private final BuiltinSchemas builtinSchemas;
-        private final ObjectMapper objectMapper;
-
-        public BuiltinSchemasFetcher(BuiltinSchemas builtinSchemas, ObjectMapper objectMapper) {
-            this.builtinSchemas = requireNonNull(builtinSchemas);
-            this.objectMapper = requireNonNull(objectMapper);
-        }
-
-        @Override
-        public Optional<InputStream> fetch(String kind) {
-            return builtinSchemas.get(kind).map(v -> {
-                try {
-                    return objectMapper.writeValueAsBytes(v);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-            }).map(ByteArrayInputStream::new);
         }
     }
 

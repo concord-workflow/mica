@@ -1,0 +1,11 @@
+name: /mica/kind/v1
+kind: /mica/kind/v1
+schema:
+  $ref: mica://internal/mica/standard-properties/v1
+  properties:
+    kind:
+      type: string
+      enum: [ "/mica/kind/v1" ]
+    schema:
+      $ref: classpath:///draft/2020-12/schema
+  required: [ "kind", "schema" ]

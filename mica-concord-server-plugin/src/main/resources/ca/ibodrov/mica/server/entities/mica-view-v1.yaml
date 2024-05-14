@@ -1,0 +1,44 @@
+name: /mica/view/v1
+kind: /mica/kind/v1
+schema:
+  $ref: mica://internal/mica/standard-properties/v1
+  properties:
+    kind:
+      type: string
+      enum: [ "/mica/view/v1" ]
+    parameters:
+      $ref: classpath:///draft/2020-12/schema
+    selector:
+      properties:
+        entityKind:
+          type: string
+        includes:
+          type: array
+          items:
+            type: string
+        namePatterns:
+          type: array
+          items:
+            type: string
+      required: [ "entityKind" ]
+    data:
+      properties:
+        jsonPath:
+          type: [ array, string ]
+        jsonPatch:
+          type: array
+        flatten:
+          type: boolean
+        merge:
+          type: boolean
+        dropProperties:
+          type: array
+          items:
+            type: string
+      required: [ "jsonPath" ]
+    validation:
+      properties:
+        asEntityKind:
+          type: string
+      required: [ "asEntityKind" ]
+  required: [ "kind", "selector", "data" ]

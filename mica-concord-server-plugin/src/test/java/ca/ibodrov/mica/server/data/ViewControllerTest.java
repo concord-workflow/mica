@@ -43,8 +43,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
         var uuidGenerator = new UuidGenerator();
         var entityHistoryController = new EntityHistoryController(dsl());
         entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
-        var builtinSchemas = new BuiltinSchemas(objectMapper);
-        var entityKindStore = new EntityKindStore(entityStore, builtinSchemas);
+        var entityKindStore = new EntityKindStore(entityStore);
         var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));
         var jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
         viewController = new ViewController(dsl(), entityStore, entityKindStore, entityFetchers, jsonPathEvaluator,
