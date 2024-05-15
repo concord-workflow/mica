@@ -134,23 +134,20 @@ public class EntityStore {
                 .fetchOptional(this::toEntity);
     }
 
-    public Optional<EntityId> getIdByName(String entityName) {
-        return dsl.select(MICA_ENTITIES.ID)
+    public Optional<EntityVersion> getVersion(String entityName) {
+        return dsl.select(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT)
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.NAME.eq(entityName))
-                .fetchOptional(r -> new EntityId(r.value1()));
+                .fetchOptional(r -> new EntityVersion(new EntityId(r.value1()), r.value2()));
     }
 
-    public Optional<String> getEntityDocById(EntityId entityId, @Nullable Instant updatedAt) {
-        var query = dsl.select(MICA_ENTITIES.DOC)
+    public Optional<String> getEntityDoc(EntityVersion version) {
+        return dsl.select(MICA_ENTITIES.DOC)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(entityId.id()));
-
-        if (updatedAt != null) {
-            query = query.and(MICA_ENTITIES.UPDATED_AT.eq(updatedAt));
-        }
-
-        return query.fetchOptional(Record1::value1).map(ab -> new String(ab, UTF_8));
+                .where(MICA_ENTITIES.ID.eq(version.id().id())
+                        .and(MICA_ENTITIES.UPDATED_AT.eq(version.updatedAt())))
+                .fetchOptional(Record1::value1)
+                .map(ab -> new String(ab, UTF_8));
     }
 
     public Optional<EntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
@@ -192,7 +189,8 @@ public class EntityStore {
                         var id = r.value1();
                         var name = r.value2();
                         var updatedAt = r.value3();
-                        var rows = tx.dsl().deleteFrom(MICA_ENTITIES)
+                        var rows = tx.dsl()
+                                .deleteFrom(MICA_ENTITIES)
                                 .where(MICA_ENTITIES.ID.eq(id)
                                         .and(MICA_ENTITIES.UPDATED_AT.eq(updatedAt)))
                                 .execute();

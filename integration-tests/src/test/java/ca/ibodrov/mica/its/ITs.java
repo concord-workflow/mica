@@ -781,8 +781,7 @@ public class ITs extends TestResources {
 
         var entity = entityStore.getByName("/result-file.yaml").orElseThrow();
         assertEquals("/mica/record/v1", entity.kind());
-        var doc = entityStore.getEntityDocById(entity.id(), entity.updatedAt())
-                .orElseThrow();
+        var doc = entityStore.getEntityDoc(entity.version()).orElseThrow();
         assertTrue(doc.contains("name: \"/result-file.yaml\""));
         assertTrue(doc.contains("kind: \"/mica/record/v1\""));
     }
@@ -851,8 +850,7 @@ public class ITs extends TestResources {
         var entity = entityStore.getByName("/acme/boom.yaml").orElseThrow();
         assertEquals("/acme/config", entity.kind());
 
-        var doc = entityStore.getEntityDocById(entity.id(), entity.updatedAt())
-                .orElseThrow();
+        var doc = entityStore.getEntityDoc(entity.version()).orElseThrow();
         assertTrue(doc.contains("name: \"/acme/boom.yaml\""));
         assertTrue(doc.contains("kind: \"/acme/config\""));
         assertTrue(doc.contains("fooSecret: \"_*****\""));

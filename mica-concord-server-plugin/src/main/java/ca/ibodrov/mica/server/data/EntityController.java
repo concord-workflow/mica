@@ -50,19 +50,25 @@ public class EntityController {
                 .orElseThrow(() -> ApiException.badRequest("Can't find schema for " + kind));
 
         var input = objectMapper.convertValue(entity, JsonNode.class);
+
+        // validate the input
         var validatedInput = validator.validateObject(schema, input);
         if (!validatedInput.isValid()) {
             throw validatedInput.toException();
         }
 
-        var existingId = entityStore.getIdByName(entity.name());
-        if (existingId.isPresent() && (entity.id().isEmpty() || !entity.id().equals(existingId))) {
-            throw new StoreException("Entity '%s' already exists (with ID=%s)"
-                    .formatted(entity.name(), existingId.get().toExternalForm()));
-        }
+        // check if another entity already exists with the same ID
+        entityStore.getVersion(entity.name()).ifPresent(version -> {
+            if (entity.id().isEmpty() || !entity.id().get().equals(version.id())) {
+                throw new StoreException("Entity '%s' already exists (with ID=%s)"
+                        .formatted(entity.name(), version.id().toExternalForm()));
+            }
+        });
 
-        if (entity.id().isPresent() && entity.updatedAt().isPresent()) {
-            var existingDoc = entityStore.getEntityDocById(entity.id().get(), entity.updatedAt().get());
+        // check if there are any changes
+        var entityVersion = entity.version();
+        if (entityVersion.isPresent()) {
+            var existingDoc = entityStore.getEntityDoc(entityVersion.get());
             if (existingDoc.isPresent()) {
                 if (Objects.equals(existingDoc.get(), doc)) {
                     // no changes
@@ -79,7 +85,9 @@ public class EntityController {
     }
 
     public void deleteIfExists(UserPrincipal session, String name) {
-        entityStore.getIdByName(name).ifPresent(entityId -> entityStore.deleteById(session, entityId));
+        entityStore.getVersion(name)
+                // TODO deleteByVersion?
+                .ifPresent(version -> entityStore.deleteById(session, version.id()));
     }
 
     private String validateKind(String kind) {

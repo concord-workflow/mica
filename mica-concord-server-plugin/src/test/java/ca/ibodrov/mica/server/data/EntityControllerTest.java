@@ -104,7 +104,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var entity = parseYaml(doc);
         var initialVersion = controller.createOrUpdate(session, entity, doc, false);
         var createdAt = initialVersion.updatedAt();
-        var updatedDoc = entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow();
+        var updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
 
         var expected = """
                 id: "%s"
@@ -123,7 +123,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
         entity = parseYaml(updatedDoc);
         var updatedVersion = controller.createOrUpdate(session, entity, updatedDoc, false);
-        updatedDoc = entityStore.getEntityDocById(initialVersion.id(), null).orElseThrow();
+        updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
 
         expected = """
                 id: "%s"
@@ -157,8 +157,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
         // fetch the created document
 
-        var createdDoc = entityStore.getEntityDocById(initialVersion.id(), initialVersion.updatedAt())
-                .orElseThrow();
+        var createdDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
 
         // modify and update the document as if it was done by a user
         var updatedDoc = createdDoc + "\n # updated by user1";
@@ -221,7 +220,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var initialVersion = controller.createOrUpdate(session, entityFoo, docFoo, false);
 
         // grab the saved doc and try saving it again, there should be no changes
-        var updatedDoc = entityStore.getEntityDocById(initialVersion.id(), initialVersion.updatedAt()).orElseThrow();
+        var updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
         entityFoo = parseYaml(updatedDoc);
         var updatedVersion = controller.createOrUpdate(session, entityFoo, updatedDoc, false);
         assertEquals(initialVersion, updatedVersion);
@@ -262,7 +261,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertEquals("/replacement/name", updatedEntity.name());
         assertEquals("/replacement/kind", updatedEntity.kind());
 
-        var updatedDoc = entityStore.getEntityDocById(updatedEntity.id(), updatedEntity.updatedAt())
+        var updatedDoc = entityStore.getEntityDoc(updatedEntity.version())
                 .orElseThrow();
         assertTrue(updatedDoc.contains("name: \"/replacement/name\""));
         assertTrue(updatedDoc.contains("kind: \"/replacement/kind\""));

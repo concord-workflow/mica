@@ -57,9 +57,8 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
         return new PartialEntity(id, name, kind, createdAt, updatedAt, data);
     }
 
-    @Override
-    public Optional<EntityVersionAndName> versionAndName() {
-        return id.flatMap(id -> updatedAt.map(u -> new EntityVersionAndName(id, u, name)));
+    public Optional<EntityVersion> version() {
+        return id.flatMap(i -> updatedAt.map(u -> new EntityVersion(i, u)));
     }
 
     public PartialEntity withoutUpdatedAt() {

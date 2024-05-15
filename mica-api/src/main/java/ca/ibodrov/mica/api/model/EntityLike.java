@@ -14,6 +14,4 @@ public interface EntityLike {
 
     @JsonAnyGetter
     Map<String, JsonNode> data();
-
-    Optional<EntityVersionAndName> versionAndName();
 }

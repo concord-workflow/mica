@@ -96,7 +96,8 @@ public class EntityResource implements Resource {
                                  @Nullable @QueryParam("updatedAt") String updatedAtString) {
 
         var updatedAt = parseIsoAsInstant(updatedAtString).orElse(null);
-        var doc = entityStore.getEntityDocById(entityId, updatedAt)
+        var version = new EntityVersion(entityId, updatedAt);
+        var doc = entityStore.getEntityDoc(version)
                 .orElseGet(() -> {
                     var entity = entityStore.getById(entityId, updatedAt)
                             .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
