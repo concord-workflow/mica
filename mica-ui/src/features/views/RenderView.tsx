@@ -5,21 +5,20 @@ import ReadableApiError from '../../components/ReadableApiError.tsx';
 import DataView from './DataView.tsx';
 import { Alert, Box, CircularProgress } from '@mui/material';
 
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 interface Props {
     request: RenderRequest;
 }
 
 const RenderView = ({ request }: Props) => {
-    const { data, isLoading, error } = useQuery<PartialEntity, ApiError>(
-        ['render', request],
-        () => render(request),
-        {
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-        },
-    );
+    const { data, isLoading, error } = useQuery<PartialEntity, ApiError>({
+        queryKey: ['render', request],
+        queryFn: () => render(request),
+
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+    });
 
     return (
         <>

@@ -2,8 +2,7 @@ import { doFetch, handleJsonResponse } from './common.ts';
 import { PartialEntity } from './entity.ts';
 import { ApiError } from './error.ts';
 
-import { useMutation } from 'react-query';
-import { UseMutationOptions } from 'react-query/types/react/types';
+import { UseMutationOptions, useMutation } from '@tanstack/react-query';
 
 export interface PreviewRequest {
     view: PartialEntity;
@@ -20,7 +19,7 @@ const preview = (request: PreviewRequest): Promise<PartialEntity> =>
     }).then(handleJsonResponse<PartialEntity>);
 
 export const usePreview = (options?: UseMutationOptions<PartialEntity, ApiError, PreviewRequest>) =>
-    useMutation<PartialEntity, ApiError, PreviewRequest>(preview, options);
+    useMutation<PartialEntity, ApiError, PreviewRequest>({ mutationFn: preview, ...options });
 
 export interface RenderRequest {
     viewId: string;

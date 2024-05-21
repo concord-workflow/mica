@@ -17,8 +17,8 @@ import {
     Typography,
 } from '@mui/material';
 
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useRef } from 'react';
-import { useQueryClient } from 'react-query';
 
 interface Props {
     open: boolean;
@@ -28,9 +28,9 @@ interface Props {
 
 const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
     const client = useQueryClient();
-    const { mutateAsync, isLoading, error } = usePutPartialYaml({
+    const { mutateAsync, isPending, error } = usePutPartialYaml({
         onSuccess: async () => {
-            await client.invalidateQueries(['entity']);
+            await client.invalidateQueries({ queryKey: ['entity'] });
         },
     });
 
@@ -95,7 +95,7 @@ const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
                     Cancel
                 </Button>
                 <LoadingButton
-                    loading={isLoading}
+                    loading={isPending}
                     variant="text"
                     color="error"
                     onClick={handleUpload}>

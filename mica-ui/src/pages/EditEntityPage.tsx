@@ -30,8 +30,8 @@ import {
     styled,
 } from '@mui/material';
 
+import { useQuery } from '@tanstack/react-query';
 import React, { useEffect, useMemo } from 'react';
-import { useQuery } from 'react-query';
 import {
     Link as RouterLink,
     useBeforeUnload,
@@ -101,21 +101,23 @@ const EditEntityPage = () => {
         isLoading,
         isFetching,
         refetch,
-    } = useQuery(['entity', 'yaml', entityId], () => getEntityDoc(entityId!), {
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        keepPreviousData: false,
-        enabled: entityId !== undefined && entityId !== '_new',
-        onSuccess: (data) => {
+    } = useQuery({
+        queryKey: ['entity', 'yaml', entityId],
+        queryFn: async () => {
+            const doc = await getEntityDoc(entityId!);
             if (!hasUnsavedChanges) {
-                setEditorValue(data);
+                setEditorValue(doc);
                 setDirty(false);
             }
+            return doc;
         },
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        enabled: entityId !== undefined && entityId !== '_new',
     });
 
     // save the entity
-    const { mutateAsync, isLoading: isSaving, error: saveError } = usePutYamlString();
+    const { mutateAsync, isPending: isSaving, error: saveError } = usePutYamlString();
 
     // because we redirect to the new entity, we need to pass the success state via the search params
     const success = searchParams.get('success');

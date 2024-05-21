@@ -4,7 +4,7 @@ import { MenuItem, Select } from '@mui/material';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import { SelectProps } from '@mui/material/Select/Select';
 
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 interface Props extends Omit<SelectProps, 'value' | 'onChange'> {
     value: string | undefined;
@@ -13,14 +13,13 @@ interface Props extends Omit<SelectProps, 'value' | 'onChange'> {
 }
 
 const EntityKindSelect = ({ value, onChange, disableAny, ...rest }: Props) => {
-    const { data, isFetching } = useQuery(
-        ['entity', 'list', '/', MICA_KIND_KIND],
-        () => listEntities({ entityKind: MICA_KIND_KIND }),
-        {
-            keepPreviousData: true,
-            select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),
-        },
-    );
+    const { data, isFetching } = useQuery({
+        queryKey: ['entity', 'list', '/', MICA_KIND_KIND],
+        queryFn: () => listEntities({ entityKind: MICA_KIND_KIND }),
+
+        placeholderData: (prev) => prev,
+        select: ({ data }) => data.sort((a, b) => a.name.localeCompare(b.name)),
+    });
 
     const effectiveValue = value ?? '';
     return (

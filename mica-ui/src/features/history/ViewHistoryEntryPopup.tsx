@@ -3,7 +3,7 @@ import { MONACO_OPTIONS } from '../editor/options.ts';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
 import Editor from '@monaco-editor/react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 interface Props {
     open: boolean;
@@ -13,11 +13,12 @@ interface Props {
 }
 
 const ViewHistoryEntryPopup = ({ open, onClose, entityId, updatedAt }: Props) => {
-    const { data, isFetching } = useQuery(
-        ['history', entityId, updatedAt, 'doc'],
-        () => getHistoryDoc(entityId, updatedAt),
-        { enabled: open, keepPreviousData: false },
-    );
+    const { data, isFetching } = useQuery({
+        queryKey: ['history', entityId, updatedAt, 'doc'],
+        queryFn: () => getHistoryDoc(entityId, updatedAt),
+        enabled: open,
+        placeholderData: (prev) => prev,
+    });
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth={true}>

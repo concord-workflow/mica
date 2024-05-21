@@ -13,16 +13,17 @@ import {
     Typography,
 } from '@mui/material';
 
+import { useQuery } from '@tanstack/react-query';
 import React from 'react';
-import { useQuery } from 'react-query';
 
 interface Props {
     entityId: string;
 }
 
 const EntityChangesTable = ({ entityId }: Props) => {
-    const { data, isFetching } = useQuery(['history', entityId], () => listHistory(entityId!, 10), {
-        keepPreviousData: false,
+    const { data, isFetching } = useQuery({
+        queryKey: ['history', entityId],
+        queryFn: () => listHistory(entityId!, 10),
         enabled: entityId !== undefined,
         select: (data) => data.data,
     });

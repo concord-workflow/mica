@@ -2,8 +2,7 @@ import { doFetch, handleJsonResponse } from './common.ts';
 import { EntityVersion } from './entity.ts';
 import { ApiError } from './error.ts';
 
-import { useMutation } from 'react-query';
-import { UseMutationOptions } from 'react-query/types/react/types';
+import { UseMutationOptions, useMutation } from '@tanstack/react-query';
 
 const putPartialYaml = (
     file: File,
@@ -41,10 +40,11 @@ interface PutYamlFileRequest {
 export const usePutPartialYaml = (
     options?: UseMutationOptions<EntityVersion, ApiError, PutYamlFileRequest>,
 ) =>
-    useMutation<EntityVersion, ApiError, PutYamlFileRequest>(
-        ({ file, entityName, entityKind }) => putPartialYaml(file, entityName, entityKind),
-        options,
-    );
+    useMutation<EntityVersion, ApiError, PutYamlFileRequest>({
+        mutationFn: ({ file, entityName, entityKind }) =>
+            putPartialYaml(file, entityName, entityKind),
+        ...options,
+    });
 
 interface PutYamlStringRequest {
     body: string;
@@ -54,7 +54,7 @@ interface PutYamlStringRequest {
 export const usePutYamlString = (
     options?: UseMutationOptions<EntityVersion, ApiError, PutYamlStringRequest>,
 ) =>
-    useMutation<EntityVersion, ApiError, PutYamlStringRequest>(
-        ({ body, overwrite }) => putYamlString(body, overwrite),
-        options,
-    );
+    useMutation<EntityVersion, ApiError, PutYamlStringRequest>({
+        mutationFn: ({ body, overwrite }) => putYamlString(body, overwrite),
+        ...options,
+    });

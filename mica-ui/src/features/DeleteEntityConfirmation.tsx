@@ -3,8 +3,8 @@ import ReadableApiError from '../components/ReadableApiError.tsx';
 import { LoadingButton } from '@mui/lab';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
+import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
-import { useQueryClient } from 'react-query';
 
 interface Props {
     entityId: string;
@@ -16,9 +16,9 @@ interface Props {
 
 const DeleteEntityConfirmation = ({ entityId, entityName, open, onSuccess, onClose }: Props) => {
     const client = useQueryClient();
-    const { mutateAsync, isLoading, error } = useDeleteById({
+    const { mutateAsync, isPending, error } = useDeleteById({
         onSuccess: async () => {
-            await client.invalidateQueries(['entity', 'list']);
+            await client.invalidateQueries({ queryKey: ['entity', 'list'] });
         },
     });
 
@@ -43,7 +43,7 @@ const DeleteEntityConfirmation = ({ entityId, entityName, open, onSuccess, onClo
                     Cancel
                 </Button>
                 <LoadingButton
-                    loading={isLoading}
+                    loading={isPending}
                     variant="text"
                     color="error"
                     onClick={handleDelete}>

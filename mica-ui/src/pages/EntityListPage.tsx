@@ -37,8 +37,8 @@ import {
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
+import { useQuery } from '@tanstack/react-query';
 import React from 'react';
-import { useQuery } from 'react-query';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
@@ -117,14 +117,13 @@ const EntityListPage = () => {
     const [selectedKind, setSelectedKind] = React.useState<string | undefined>(
         searchParams.get('kind') ?? undefined,
     );
-    const { data, isFetching } = useQuery(
-        ['entity', 'list', selectedPath, selectedKind, search],
-        () => list(selectedPath, selectedKind, search),
-        {
-            keepPreviousData: true,
-            select: ({ data }) => data,
-        },
-    );
+    const { data, isFetching } = useQuery({
+        queryKey: ['entity', 'list', selectedPath, selectedKind, search],
+        queryFn: () => list(selectedPath, selectedKind, search),
+
+        placeholderData: (prev) => prev,
+        select: ({ data }) => data,
+    });
 
     const [openUpload, setOpenUpload] = React.useState(false);
 

@@ -98,7 +98,7 @@ const PreviewView = ({ data, onClose }: Props) => {
 
     const {
         mutateAsync,
-        isLoading,
+        isPending,
         error: apiError,
     } = usePreview({
         retry: false,
@@ -144,7 +144,7 @@ const PreviewView = ({ data, onClose }: Props) => {
         mutateAsync({ ...request, parameters: validParameters });
     }, [mutateAsync, request, parameters, debouncedRequestParameters]);
 
-    const debouncedIsLoading = useDebounce(isLoading, 250);
+    const debouncedIsPending = useDebounce(isPending, 250);
 
     const [showDetails, setShowDetails] = React.useState(false);
     const handleDetailsToggle = React.useCallback((value: boolean) => {
@@ -193,7 +193,7 @@ const PreviewView = ({ data, onClose }: Props) => {
                         <CloseIcon />
                     </IconButton>
                 </Box>
-                {debouncedIsLoading && (
+                {debouncedIsPending && (
                     <Overlay>
                         <CircularProgress color="secondary" />
                     </Overlay>

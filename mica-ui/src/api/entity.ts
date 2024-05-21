@@ -2,8 +2,7 @@ import { doFetch, handleJsonResponse, handleTextResponse } from './common.ts';
 import { ApiError } from './error.ts';
 import { JsonNode } from './schema.ts';
 
-import { useMutation } from 'react-query';
-import { UseMutationOptions } from 'react-query/types/react/types';
+import { UseMutationOptions, useMutation } from '@tanstack/react-query';
 
 export const MICA_KIND_KIND = '/mica/kind/v1';
 export const MICA_RECORD_KIND = '/mica/record/v1';
@@ -130,7 +129,7 @@ const deleteById = (entityId: string): Promise<EntityVersion> =>
 export const useDeleteById = (
     options?: UseMutationOptions<EntityVersion, ApiError, { entityId: string }>,
 ) =>
-    useMutation<EntityVersion, ApiError, { entityId: string }>(
-        ({ entityId }) => deleteById(entityId),
-        options,
-    );
+    useMutation<EntityVersion, ApiError, { entityId: string }>({
+        mutationFn: ({ entityId }) => deleteById(entityId),
+        ...options,
+    });

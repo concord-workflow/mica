@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const Error = ({ message }: { message: string }) => {
@@ -57,16 +57,14 @@ const DashboardPage = () => {
 
     const { entityId } = useParams();
 
-    const { data, isLoading, error } = useQuery<DashboardRenderResponse, Error>(
-        ['dashboard', entityId],
-        () => render(entityId!),
-        {
-            enabled: entityId !== undefined,
-            retry: false,
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-        },
-    );
+    const { data, isLoading, error } = useQuery<DashboardRenderResponse, Error>({
+        queryKey: ['dashboard', entityId],
+        queryFn: () => render(entityId!),
+        enabled: entityId !== undefined,
+        retry: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+    });
 
     if (error) {
         return <Error message={error.message} />;

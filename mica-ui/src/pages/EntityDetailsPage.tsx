@@ -43,8 +43,8 @@ import Grid from '@mui/material/Unstable_Grid2';
 import { Theme } from '@mui/material/styles';
 import { SxProps } from '@mui/system';
 
+import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { useQuery } from 'react-query';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
@@ -184,8 +184,9 @@ const EntityDetailsPage = () => {
 
     // TODO handle errors
 
-    const { data, isFetching } = useQuery(['entity', entityId], () => getEntity(entityId!), {
-        keepPreviousData: false,
+    const { data, isFetching } = useQuery({
+        queryKey: ['entity', entityId],
+        queryFn: () => getEntity(entityId!),
         enabled: entityId !== undefined,
     });
 
