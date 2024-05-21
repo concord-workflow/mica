@@ -13,19 +13,21 @@ public class EntityStoreTest {
                 # some comments
                 createdAt: 2021-01-01T00:00:00Z
                 updatedAt: 2021-01-01T00:00:00Z
-                name: bar
+                not_name: bar
                 """;
 
         var updated = EntityStore.inplaceUpdate(doc,
                 "id", "12345",
-                "createdAt", "2024-01-01T00:00:00Z");
+                "createdAt", "2024-01-01T00:00:00Z",
+                "name", "foo");
 
         var expected = """
                 id: "12345"
+                name: "foo"
                 # some comments
                 createdAt: "2024-01-01T00:00:00Z"
                 updatedAt: 2021-01-01T00:00:00Z
-                name: bar
+                not_name: bar
                 """;
         assertEquals(expected, updated);
     }
