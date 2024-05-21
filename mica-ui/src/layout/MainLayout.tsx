@@ -1,5 +1,5 @@
+import ProfileToolbarButton from '../features/ProfileToolbarButton.tsx';
 import Version from '../features/Version.tsx';
-import ProfileToolbarButton from './ProfileToolbarButton.tsx';
 import ApiIcon from '@mui/icons-material/Api';
 import { AppBar, Box, Button, Toolbar, Typography } from '@mui/material';
 
