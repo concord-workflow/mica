@@ -10,8 +10,9 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    'monaco-editor': ['monaco-editor'],
-                    'monaco-yaml': ['monaco-yaml'],
+                    '@mui/material': ['@mui/material'],
+                    'swagger-ui-react': ['swagger-ui-react'],
+                    lodash: ['lodash'],
                     yaml: ['yaml'],
                 },
             },
