@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
@@ -309,9 +310,10 @@ public class EntityStore {
         for (int i = kvs.length - 2; i >= 0; i -= 2) {
             var k = kvs[i];
             var v = kvs[i + 1];
-            if (s.contains(k + ":")) {
+            var existingKey = Pattern.compile("(?m)^" + k + ":.*$").matcher(s);
+            if (existingKey.find()) {
                 // update the existing key
-                s = s.replaceFirst("(?m)^" + k + ":.*$", "%s: \"%s\"".formatted(k, v));
+                s = existingKey.replaceFirst("%s: \"%s\"".formatted(k, v));
             } else {
                 // or pre-pend a new key
                 s = "%s: \"%s\"\n%s".formatted(k, v, s);
