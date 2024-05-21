@@ -310,9 +310,10 @@ public class EntityStore {
         for (int i = kvs.length - 2; i >= 0; i -= 2) {
             var k = kvs[i];
             var v = kvs[i + 1];
-            if (Pattern.compile("(?m)^" + k + ":.*$").matcher(s).find()) {
+            var existingKey = Pattern.compile("(?m)^" + k + ":.*$").matcher(s);
+            if (existingKey.find()) {
                 // update the existing key
-                s = s.replaceFirst("(?m)^" + k + ":.*$", "%s: \"%s\"".formatted(k, v));
+                s = existingKey.replaceFirst("%s: \"%s\"".formatted(k, v));
             } else {
                 // or pre-pend a new key
                 s = "%s: \"%s\"\n%s".formatted(k, v, s);
