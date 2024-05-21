@@ -17,23 +17,23 @@
         "@fontsource/roboto": "^5.0.13",
         "@fontsource/roboto-mono": "^5.0.18",
         "@monaco-editor/react": "^4.6.0",
-        "@mui/icons-material": "^5.15.15",
+        "@mui/icons-material": "^5.15.18",
         "@mui/lab": "^5.0.0-alpha.170",
-        "@mui/material": "^5.15.15",
+        "@mui/material": "^5.15.18",
         "@tanstack/react-query": "^5.37.1",
         "@uidotdev/usehooks": "^2.4.1",
         "monaco-editor": "^0.48.0",
         "monaco-yaml": "^5.1.1",
-        "react": "^18.3.0",
-        "react-dom": "^18.3.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
         "react-error-boundary": "^4.0.13",
         "react-router-dom": "^6.23.0",
         "swagger-ui-react": "^5.17.2",
-        "yaml": "^2.4.1"
+        "yaml": "^2.4.2"
     },
     "devDependencies": {
         "@trivago/prettier-plugin-sort-imports": "^4.3.0",
-        "@types/react": "^18.3.0",
+        "@types/react": "^18.3.2",
         "@types/react-dom": "^18.3.0",
         "@types/swagger-ui-react": "^4.18.3",
         "@typescript-eslint/eslint-plugin": "^7.0.0",
@@ -44,7 +44,7 @@
         "eslint-plugin-react-refresh": "^0.4.6",
         "prettier": "3.2.5",
         "typescript": "5.4.5",
-        "vite": "^5.2.10"
+        "vite": "^5.2.11"
     },
     "prettier": {
         "tabWidth": 4,
