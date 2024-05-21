@@ -355,7 +355,7 @@ const EntityDetailsPage = () => {
             )}
             {entityId && (
                 <>
-                    <Divider sx={{ mt: 10 }} />
+                    <Divider sx={{ mt: 10, mb: 2 }} />
                     <EntityChangesTable entityId={entityId} />
                 </>
             )}

@@ -23,19 +23,22 @@ public class EntityHistoryController {
     }
 
     public List<EntityHistoryEntry> list(EntityId entityId, int limit) {
-        assert limit > 0;
-        return dsl
+        var query = dsl
                 .select(MICA_ENTITY_HISTORY.ENTITY_ID, MICA_ENTITY_HISTORY.UPDATED_AT,
                         MICA_ENTITY_HISTORY.OPERATION_TYPE, MICA_ENTITY_HISTORY.AUTHOR)
                 .from(MICA_ENTITY_HISTORY)
                 .where(MICA_ENTITY_HISTORY.ENTITY_ID.eq(entityId.id()))
-                .orderBy(MICA_ENTITY_HISTORY.UPDATED_AT.desc())
-                .limit(limit)
-                .fetch(r -> new EntityHistoryEntry(
-                        new EntityId(r.get(MICA_ENTITY_HISTORY.ENTITY_ID)),
-                        r.get(MICA_ENTITY_HISTORY.UPDATED_AT),
-                        OperationType.valueOf(r.get(MICA_ENTITY_HISTORY.OPERATION_TYPE).name()),
-                        r.get(MICA_ENTITY_HISTORY.AUTHOR)));
+                .orderBy(MICA_ENTITY_HISTORY.UPDATED_AT.desc());
+
+        if (limit > 0) {
+            query.limit(limit);
+        }
+
+        return query.fetch(r -> new EntityHistoryEntry(
+                new EntityId(r.get(MICA_ENTITY_HISTORY.ENTITY_ID)),
+                r.get(MICA_ENTITY_HISTORY.UPDATED_AT),
+                OperationType.valueOf(r.get(MICA_ENTITY_HISTORY.OPERATION_TYPE).name()),
+                r.get(MICA_ENTITY_HISTORY.AUTHOR)));
     }
 
     public void addEntry(DSLContext tx, EntityHistoryEntry entry, byte[] doc) {

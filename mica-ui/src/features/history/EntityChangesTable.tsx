@@ -1,9 +1,10 @@
 import { listHistory } from '../../api/history.ts';
-import SectionTitle from '../../components/SectionTitle.tsx';
 import ViewHistoryEntryPopup from './ViewHistoryEntryPopup.tsx';
 import {
     Button,
     CircularProgress,
+    MenuItem,
+    Select,
     Table,
     TableBody,
     TableCell,
@@ -12,6 +13,7 @@ import {
     TableRow,
     Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
@@ -21,9 +23,11 @@ interface Props {
 }
 
 const EntityChangesTable = ({ entityId }: Props) => {
+    const [limit, setLimit] = React.useState(10);
+
     const { data, isFetching } = useQuery({
-        queryKey: ['history', entityId],
-        queryFn: () => listHistory(entityId!, 10),
+        queryKey: ['history', entityId, limit],
+        queryFn: () => listHistory(entityId!, limit),
         enabled: entityId !== undefined,
         select: (data) => data.data,
     });
@@ -34,9 +38,28 @@ const EntityChangesTable = ({ entityId }: Props) => {
         <>
             {data && data.length > 0 && (
                 <>
-                    <SectionTitle>
-                        Changes {isFetching && <CircularProgress size={16} />}
-                    </SectionTitle>
+                    <Grid spacing={2} sx={{ mb: 1 }} container={true}>
+                        <Grid xs={6}>
+                            <Typography variant="h6">
+                                Changes {isFetching && <CircularProgress size={16} />}
+                            </Typography>
+                        </Grid>
+                        <Grid xs={6} display="flex" justifyContent="end">
+                            <Typography variant="caption">
+                                Showing{' '}
+                                <Select
+                                    value={limit}
+                                    onChange={(ev) => setLimit(ev.target.value as number)}
+                                    sx={{ ml: 1, mr: 1, height: 32, fontSize: 'inherit' }}
+                                    size="small">
+                                    <MenuItem value={10}>10 recent</MenuItem>
+                                    <MenuItem value={100}>100 recent</MenuItem>
+                                    <MenuItem value={-1}>all</MenuItem>
+                                </Select>{' '}
+                                records.
+                            </Typography>
+                        </Grid>
+                    </Grid>
                     {entityId && (
                         <ViewHistoryEntryPopup
                             open={selectedVersion !== undefined}

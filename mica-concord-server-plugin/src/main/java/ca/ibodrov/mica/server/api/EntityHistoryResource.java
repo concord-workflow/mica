@@ -35,9 +35,6 @@ public class EntityHistoryResource implements Resource {
     @Operation(summary = "Return last N history entries for a given entity", operationId = "listHistory")
     public EntityHistory listHistory(@PathParam("entityId") EntityId entityId,
                                      @QueryParam("limit") @DefaultValue("10") int limit) {
-        if (limit < 1) {
-            throw ApiException.badRequest("Limit must be a positive number");
-        }
         var data = controller.list(entityId, limit);
         return new EntityHistory(data);
     }
