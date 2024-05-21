@@ -142,6 +142,16 @@ public class EntityStore {
                 .fetchOptional(r -> new EntityVersion(new EntityId(r.value1()), r.value2()));
     }
 
+    public Optional<String> getLatestEntityDoc(EntityId entityId) {
+        return dsl.select(MICA_ENTITIES.DOC)
+                .from(MICA_ENTITIES)
+                .where(MICA_ENTITIES.ID.eq(entityId.id()))
+                .orderBy(MICA_ENTITIES.UPDATED_AT.desc())
+                .limit(1)
+                .fetchOptional(Record1::value1)
+                .map(ab -> new String(ab, UTF_8));
+    }
+
     public Optional<String> getEntityDoc(EntityVersion version) {
         return dsl.select(MICA_ENTITIES.DOC)
                 .from(MICA_ENTITIES)

@@ -25,7 +25,6 @@ import static ca.ibodrov.mica.server.api.ApiUtils.nonBlank;
 import static ca.ibodrov.mica.server.api.ApiUtils.parseIsoAsInstant;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 
 @Tag(name = "Entity")
 @Path("/api/mica/v1/entity")
@@ -91,25 +90,32 @@ public class EntityResource implements Resource {
     @GET
     @Path("{id}/doc")
     @Operation(summary = "Return the original unparsed YAML (or JSON) document for the entity", operationId = "getEntityDoc")
-    @Produces(APPLICATION_OCTET_STREAM)
+    @Produces("text/yaml")
     public Response getEntityDoc(@PathParam("id") EntityId entityId,
                                  @Nullable @QueryParam("updatedAt") String updatedAtString) {
 
-        var updatedAt = parseIsoAsInstant(updatedAtString).orElse(null);
-        var version = new EntityVersion(entityId, updatedAt);
-        var doc = entityStore.getEntityDoc(version)
-                .orElseGet(() -> {
-                    var entity = entityStore.getById(entityId, updatedAt)
-                            .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
+        var versionedDoc = parseIsoAsInstant(updatedAtString)
+                .map(updatedAt -> new EntityVersion(entityId, updatedAt))
+                .flatMap(entityStore::getEntityDoc);
+        if (versionedDoc.isPresent()) {
+            return Response.ok(versionedDoc.get()).build();
+        }
 
-                    try {
-                        return yamlMapper.prettyPrint(entity);
-                    } catch (IOException e) {
-                        log.warn("YAML serialization error: {}", e.getMessage(), e);
-                        throw ApiException.internalError(e.getMessage());
-                    }
-                });
-        return Response.ok(doc).build();
+        var latestDoc = entityStore.getLatestEntityDoc(entityId);
+        if (latestDoc.isPresent()) {
+            return Response.ok(latestDoc.get()).build();
+        }
+
+        // render the saved entity as YAML if the original doc is missing
+        var entity = entityStore.getById(entityId)
+                .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
+        try {
+            var renderedDoc = yamlMapper.prettyPrint(entity);
+            return Response.ok(renderedDoc, "text/yaml").build();
+        } catch (IOException e) {
+            log.warn("YAML serialization error: {}", e.getMessage(), e);
+            throw ApiException.internalError(e.getMessage());
+        }
     }
 
     @DELETE
