@@ -28,7 +28,11 @@ const ViewHistoryEntryPopup = ({ open, onClose, entityId, updatedAt }: Props) =>
                     loading={isFetching}
                     height="300px"
                     defaultLanguage="yaml"
-                    options={MONACO_OPTIONS}
+                    options={{
+                        ...MONACO_OPTIONS,
+                        readOnly: true,
+                        renderValidationDecorations: 'off',
+                    }}
                     value={data}
                 />
             </DialogContent>
