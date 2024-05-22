@@ -35,6 +35,10 @@ schema:
           type: array
           items:
             type: string
+        map:
+          type: object
+          additionalProperties:
+            type: string
       required: [ "jsonPath" ]
     validation:
       properties:
