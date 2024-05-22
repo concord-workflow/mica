@@ -19,7 +19,7 @@ import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPaths;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewInterpolatorTest {
 
@@ -52,10 +52,10 @@ public class ViewInterpolatorTest {
 
         var interpolatedView = interpolator.interpolate(view, null);
         assertEquals("\\$\\{parameters.kind}", interpolatedView.selector().entityKind());
-        assertEquals("\\$\\{parameters.include}", interpolatedView.selector().includes().get().get(0));
-        assertEquals("\\$\\{parameters.name}", interpolatedView.selector().namePatterns().get().get(0));
+        assertEquals("\\$\\{parameters.include}", interpolatedView.selector().includes().orElseThrow().get(0));
+        assertEquals("\\$\\{parameters.name}", interpolatedView.selector().namePatterns().orElseThrow().get(0));
         assertEquals("\\$\\{parameters.jsonPath}", interpolatedView.data().jsonPath().textValue());
-        assertEquals("\\$\\{parameters.validationKind}", interpolatedView.validation().get().asEntityKind());
+        assertEquals("\\$\\{parameters.validationKind}", interpolatedView.validation().orElseThrow().asEntityKind());
     }
 
     @Test
@@ -91,10 +91,10 @@ public class ViewInterpolatorTest {
                         "validationKind", "validationKind1"), JsonNode.class));
 
         assertEquals("kind1", interpolatedView.selector().entityKind());
-        assertEquals("include1", interpolatedView.selector().includes().get().get(0));
-        assertEquals("name1", interpolatedView.selector().namePatterns().get().get(0));
+        assertEquals("include1", interpolatedView.selector().includes().orElseThrow().get(0));
+        assertEquals("name1", interpolatedView.selector().namePatterns().orElseThrow().get(0));
         assertEquals("jsonPath1", interpolatedView.data().jsonPath().textValue());
-        assertEquals("validationKind1", interpolatedView.validation().get().asEntityKind());
+        assertEquals("validationKind1", interpolatedView.validation().orElseThrow().asEntityKind());
     }
 
     @Test
@@ -133,8 +133,8 @@ public class ViewInterpolatorTest {
 
         var input = objectMapper.convertValue(Map.of("drop", "x"), JsonNode.class);
         var interpolatedView = interpolator.interpolate(view, input);
-        assertEquals("x", interpolatedView.data().dropProperties().get().get(0));
-        assertEquals("foobar", interpolatedView.data().dropProperties().get().get(1));
+        assertEquals("x", interpolatedView.data().dropProperties().orElseThrow().get(0));
+        assertEquals("foobar", interpolatedView.data().dropProperties().orElseThrow().get(1));
     }
 
     @Test

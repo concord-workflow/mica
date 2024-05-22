@@ -69,8 +69,7 @@ public class EntityListResource implements Resource {
                     }
                 });
 
-        var data = result.entrySet().stream()
-                .map(Map.Entry::getValue)
+        var data = result.values().stream()
                 .sorted(EntityListResource::compare)
                 .toList();
 

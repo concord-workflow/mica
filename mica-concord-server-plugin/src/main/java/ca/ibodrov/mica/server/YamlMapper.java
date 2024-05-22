@@ -1,14 +1,12 @@
 package ca.ibodrov.mica.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 
 import static com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature.*;
@@ -34,10 +32,6 @@ public class YamlMapper {
         return delegate.readValue(src, valueType);
     }
 
-    public <T> T readValue(InputStream src, Class<T> valueType) throws IOException {
-        return delegate.readValue(src, valueType);
-    }
-
     public <T> T readValue(Reader src, Class<T> valueType) throws IOException {
         return delegate.readValue(src, valueType);
     }
@@ -48,14 +42,6 @@ public class YamlMapper {
 
     public String prettyPrint(Object value) throws IOException {
         return prettyPrinter.writeValueAsString(value);
-    }
-
-    public byte[] prettyPrintAsBytes(Object value) throws IOException {
-        return prettyPrinter.writeValueAsBytes(value);
-    }
-
-    public JsonNode readTree(String in) throws JsonProcessingException {
-        return delegate.readTree(in);
     }
 
     public ObjectNode createObjectNode() {

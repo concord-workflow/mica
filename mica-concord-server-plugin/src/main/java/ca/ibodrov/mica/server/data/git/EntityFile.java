@@ -48,8 +48,7 @@ record EntityFile(FileFormat format, Path path) {
     private static PartialEntity parseProperties(YamlMapper yamlMapper,
                                                  Path rootPath,
                                                  EntityFile entityFile,
-                                                 Properties props)
-            throws IOException {
+                                                 Properties props) {
 
         var node = yamlMapper.createObjectNode();
         props.forEach((k, v) -> node.set((String) k, TextNode.valueOf((String) v)));

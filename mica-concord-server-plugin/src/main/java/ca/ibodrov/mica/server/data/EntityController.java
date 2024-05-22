@@ -35,8 +35,8 @@ public class EntityController {
     }
 
     @VisibleForTesting
-    EntityVersion createOrUpdate(UserPrincipal session, PartialEntity entity) {
-        return createOrUpdate(session, entity, null, false);
+    void createOrUpdate(UserPrincipal session, PartialEntity entity) {
+        createOrUpdate(session, entity, null, false);
     }
 
     public EntityVersion createOrUpdate(UserPrincipal session,

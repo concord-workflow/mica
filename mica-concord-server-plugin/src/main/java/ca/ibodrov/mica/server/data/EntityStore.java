@@ -93,8 +93,8 @@ public class EntityStore {
 
         var orderBy = request.orderBy();
         if (orderBy != null) {
-            switch (orderBy) {
-                case NAME -> query.orderBy(MICA_ENTITIES.NAME);
+            if (orderBy == OrderBy.NAME) {
+                query.orderBy(MICA_ENTITIES.NAME);
             }
         }
 

@@ -66,7 +66,7 @@ public class Validator {
         /**
          * Returns a JSON schema object for the specified kind.
          */
-        Optional<InputStream> fetch(String kind) throws IOException;
+        Optional<InputStream> fetch(String kind);
     }
 
     public static class NoopSchemaFetcher implements SchemaFetcher {
@@ -77,12 +77,10 @@ public class Validator {
         }
     }
 
-    private static class URIFetcherImpl implements URIFetcher {
+    private record URIFetcherImpl(SchemaFetcher schemaFetcher) implements URIFetcher {
 
-        private final SchemaFetcher schemaFetcher;
-
-        private URIFetcherImpl(SchemaFetcher schemaFetcher) {
-            this.schemaFetcher = requireNonNull(schemaFetcher);
+        private URIFetcherImpl {
+            requireNonNull(schemaFetcher);
         }
 
         @Override

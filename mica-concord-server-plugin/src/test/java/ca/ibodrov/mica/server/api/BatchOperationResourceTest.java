@@ -86,6 +86,9 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
         assertEquals(bazVersion1.id(), deletedEntities.get(0).id());
         assertEquals("/bar", deletedEntities.get(1).name());
         assertEquals(barVersion2.id(), deletedEntities.get(1).id());
+
+        // check that /foo is still there
+        assertTrue(entityStore.getById(fooVersion2.id()).isPresent());
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {

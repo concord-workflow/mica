@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.api;
 
+import ca.ibodrov.mica.api.model.BatchOperation;
 import ca.ibodrov.mica.api.model.BatchOperationRequest;
 import ca.ibodrov.mica.api.model.BatchOperationResult;
 import ca.ibodrov.mica.server.data.EntityStore;
@@ -36,17 +37,16 @@ public class BatchOperationResource implements Resource {
     @Validate
     public BatchOperationResult apply(@Valid BatchOperationRequest request) {
         assert request.operation() != null;
-        switch (request.operation()) {
-            case DELETE -> {
-                var namePatterns = request.namePatterns()
-                        .orElseThrow(() -> ApiException.badRequest("Missing 'namePatterns'"));
-                if (namePatterns.isEmpty()) {
-                    throw new IllegalArgumentException("Empty 'namePatterns'");
-                }
-                var deletedEntities = entityStore.deleteByNamePatterns(namePatterns);
-                return new BatchOperationResult(Optional.of(deletedEntities));
-            }
-            default -> throw ApiException.badRequest("Unsupported operation: " + request.operation());
+        if (request.operation() != BatchOperation.DELETE) {
+            throw ApiException.badRequest("Unsupported operation: " + request.operation());
         }
+
+        var namePatterns = request.namePatterns()
+                .orElseThrow(() -> ApiException.badRequest("Missing 'namePatterns'"));
+        if (namePatterns.isEmpty()) {
+            throw new IllegalArgumentException("Empty 'namePatterns'");
+        }
+        var deletedEntities = entityStore.deleteByNamePatterns(namePatterns);
+        return new BatchOperationResult(Optional.of(deletedEntities));
     }
 }
