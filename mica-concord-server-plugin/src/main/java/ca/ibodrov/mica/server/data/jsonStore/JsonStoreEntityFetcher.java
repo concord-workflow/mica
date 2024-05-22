@@ -37,21 +37,24 @@ public class JsonStoreEntityFetcher implements EntityFetcher {
     }
 
     @Override
-    public boolean isSupported(URI uri) {
-        return URI_SCHEME.equals(uri.getScheme());
+    public boolean isSupported(FetchRequest request) {
+        return request.uri()
+                .map(uri -> URI_SCHEME.equals(uri.getScheme()))
+                .orElse(false);
     }
 
     @Override
-    public Cursor getAllByKind(URI uri, String kind, int limit) {
+    public Cursor fetch(FetchRequest request) {
+        var uri = request.uri().orElseThrow(() -> new StoreException("URI is required"));
         var query = Query.parse(uri);
         // TODO support for running a query (by name or by specifying the sql)
         // TODO pagination? streaming?
-        var paths = dataManager.listItems(query.orgName, query.jsonStoreName, 0, limit, null);
+        var paths = dataManager.listItems(query.orgName, query.jsonStoreName, 0, -1, null);
         return () -> paths.stream()
                 .flatMap(path -> {
                     var item = getItem(path, query);
                     var itemKind = getKind(path, item).orElse(query.defaultKind);
-                    if (!itemKind.equals(kind)) {
+                    if (!itemKind.equals(request.kind())) {
                         return Stream.empty();
                     }
                     var entity = toEntityLike(path, itemKind, item);

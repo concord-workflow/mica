@@ -8,6 +8,8 @@ import ca.ibodrov.mica.server.data.jsonStore.JsonStoreEntityFetcher;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;
+import ca.ibodrov.mica.server.reports.Report;
+import ca.ibodrov.mica.server.reports.ValidateAllReport;
 import ca.ibodrov.mica.server.ui.*;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -93,9 +95,13 @@ public class MicaModule implements Module {
         bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, EntityUploadResource.class);
         bindJaxRsResource(binder, OidcResource.class);
+        bindJaxRsResource(binder, ReportResource.class);
         bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, ViewResource.class);
         bindJaxRsResource(binder, WhoamiResource.class);
+
+        // reports
+        newSetBinder(binder, Report.class).addBinding().to(ValidateAllReport.class);
 
         // other beans
 
@@ -107,9 +113,11 @@ public class MicaModule implements Module {
 
         binder.bind(InitialDataLoader.class).asEagerSingleton();
 
-        newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(JsonStoreEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(ReportEntityFetcher.class);
+        binder.bind(EntityFetchers.class).to(AllEntityFetchers.class).in(SINGLETON);
     }
 
     private static Config loadDefaultConfig() {

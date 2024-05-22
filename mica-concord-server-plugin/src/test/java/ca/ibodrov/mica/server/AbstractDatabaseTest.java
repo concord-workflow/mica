@@ -14,6 +14,7 @@ public class AbstractDatabaseTest {
     private static TestDatabase testDatabase;
     protected static ObjectMapper objectMapper;
     protected static UuidGenerator uuidGenerator;
+    protected static EntityStore entityStore;
 
     @BeforeAll
     public static void setUpDatabase() {
@@ -26,7 +27,8 @@ public class AbstractDatabaseTest {
 
         var dsl = testDatabase.getJooqConfiguration().dsl();
         var entityHistoryController = new EntityHistoryController(dsl);
-        var entityStore = new EntityStore(dsl, objectMapper, uuidGenerator, entityHistoryController);
+
+        entityStore = new EntityStore(dsl, objectMapper, uuidGenerator, entityHistoryController);
         new InitialDataLoader(entityStore, objectMapper).load();
     }
 

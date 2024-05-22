@@ -10,13 +10,13 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.uri.URIFactory;
 import com.networknt.schema.uri.URIFetcher;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("ClassCanBeRecord")
 public class Validator {
 
     private static final String[] ALL_MICA_SCHEMES = { "http", "https", "mica" };
@@ -32,6 +32,10 @@ public class Validator {
     }
 
     private final JsonSchemaFactory jsonSchemaFactory;
+
+    public JsonSchemaFactory getJsonSchemaFactory() {
+        return jsonSchemaFactory;
+    }
 
     public Validator(JsonSchemaFactory jsonSchemaFactory) {
         this.jsonSchemaFactory = requireNonNull(jsonSchemaFactory);
@@ -84,7 +88,7 @@ public class Validator {
         }
 
         @Override
-        public InputStream fetch(URI uri) throws IOException {
+        public InputStream fetch(URI uri) {
             // TODO handle http/https
             // TODO consider rewriting URIs in URIFactory
             if (uri.getHost().equals("json-schema.org") && uri.getPath().startsWith("/draft/2020-12")) {

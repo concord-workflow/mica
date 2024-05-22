@@ -24,13 +24,10 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static YamlMapper yamlMapper;
     private static EntityController controller;
-    private static EntityStore entityStore;
 
     @BeforeAll
     public static void setUp() {
         yamlMapper = new YamlMapper(objectMapper);
-        var entityHistoryController = new EntityHistoryController(dsl());
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
         var entityKindStore = new EntityKindStore(entityStore);
         controller = new EntityController(entityStore, entityKindStore, objectMapper);
 

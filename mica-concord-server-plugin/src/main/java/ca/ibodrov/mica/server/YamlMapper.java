@@ -47,4 +47,8 @@ public class YamlMapper {
     public ObjectNode createObjectNode() {
         return delegate.createObjectNode();
     }
+
+    public ObjectMapper getDelegate() {
+        return delegate;
+    }
 }

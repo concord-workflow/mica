@@ -3,16 +3,25 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.EntityLike;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface EntityFetcher {
 
-    boolean isSupported(URI uri);
+    default Optional<URI> defaultUri() {
+        return Optional.empty();
+    }
 
-    /**
-     * TODO re-implement as Cursor query(URI uri, Query query)
-     */
-    Cursor getAllByKind(URI uri, String kind, int limit);
+    boolean isSupported(FetchRequest request);
+
+    Cursor fetch(FetchRequest request);
+
+    record FetchRequest(Optional<URI> uri, String kind) {
+
+        public static FetchRequest ofKind(String kind) {
+            return new FetchRequest(Optional.empty(), kind);
+        }
+    }
 
     interface Cursor {
 

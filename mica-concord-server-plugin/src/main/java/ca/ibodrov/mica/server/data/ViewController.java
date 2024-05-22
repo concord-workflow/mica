@@ -3,7 +3,6 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.exceptions.ApiException;
-import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
@@ -22,7 +21,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
@@ -38,7 +36,7 @@ public class ViewController {
 
     private final EntityStore entityStore;
     private final EntityKindStore entityKindStore;
-    private final Set<EntityFetcher> includeFetchers;
+    private final EntityFetchers entityFetchers;
     private final ViewInterpolator viewInterpolator;
     private final ViewRenderer viewRenderer;
     private final Validator validator;
@@ -49,13 +47,13 @@ public class ViewController {
     public ViewController(@MicaDB DSLContext dsl,
                           EntityStore entityStore,
                           EntityKindStore entityKindStore,
-                          Set<EntityFetcher> includeFetchers,
+                          EntityFetchers entityFetchers,
                           JsonPathEvaluator jsonPathEvaluator,
                           ObjectMapper objectMapper) {
 
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
-        this.includeFetchers = requireNonNull(includeFetchers);
+        this.entityFetchers = requireNonNull(entityFetchers);
         this.objectMapper = requireNonNull(objectMapper);
         var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
         this.viewInterpolator = new ViewInterpolator(objectMapper, schemaFetcher);
@@ -174,7 +172,7 @@ public class ViewController {
         var entities = includes.stream()
                 .filter(include -> include != null && !include.isBlank())
                 .map(ViewController::parseUri)
-                .flatMap(uri -> fetch(uri, view.selector().entityKind()))
+                .flatMap(uri -> entityFetchers.fetch(uri, view.selector().entityKind()))
                 .toList();
 
         // TODO filter out invalid entities?
@@ -206,20 +204,6 @@ public class ViewController {
         }
 
         return result;
-    }
-
-    private Stream<EntityLike> fetch(URI uri, String entityKind) {
-        var fetcher = includeFetchers.stream()
-                .filter(f -> f.isSupported(uri))
-                .findAny()
-                .orElseThrow(() -> ApiException.badRequest("Unsupported URI in \"includes\": " + uri));
-
-        try {
-            return fetcher.getAllByKind(uri, entityKind, -1).stream();
-        } catch (StoreException e) {
-            log.warn("Error while fetching {} entities: {}", uri.getScheme(), e.getMessage());
-            throw ApiException.internalError(e.getMessage());
-        }
     }
 
     private Optional<JsonNode> validateRenderedView(ViewLike view, RenderedView renderedView) {

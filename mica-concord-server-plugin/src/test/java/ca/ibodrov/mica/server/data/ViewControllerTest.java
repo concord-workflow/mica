@@ -35,16 +35,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ViewControllerTest extends AbstractDatabaseTest {
 
     private static final UserPrincipal session = new UserPrincipal("test", user("test"));
-    private static EntityStore entityStore;
     private static ViewController viewController;
 
     @BeforeAll
     public static void setUp() {
         var uuidGenerator = new UuidGenerator();
-        var entityHistoryController = new EntityHistoryController(dsl());
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
         var entityKindStore = new EntityKindStore(entityStore);
-        var entityFetchers = Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper));
+        var entityFetchers = new AllEntityFetchers(
+                Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper)));
         var jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
         viewController = new ViewController(dsl(), entityStore, entityKindStore, entityFetchers, jsonPathEvaluator,
                 objectMapper);

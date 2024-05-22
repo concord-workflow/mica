@@ -3,8 +3,6 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.YamlMapper;
-import ca.ibodrov.mica.server.data.EntityHistoryController;
-import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.intellij.lang.annotations.Language;
@@ -22,14 +20,11 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
 
     private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static YamlMapper yamlMapper;
-    private static EntityStore entityStore;
     private static BatchOperationResource batchOperationResource;
 
     @BeforeAll
     public static void setUp() {
         yamlMapper = new YamlMapper(objectMapper);
-        var entityHistoryController = new EntityHistoryController(dsl());
-        entityStore = new EntityStore(dsl(), objectMapper, uuidGenerator, entityHistoryController);
         batchOperationResource = new BatchOperationResource(entityStore);
     }
 

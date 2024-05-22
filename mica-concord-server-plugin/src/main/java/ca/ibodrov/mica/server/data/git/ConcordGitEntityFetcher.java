@@ -19,7 +19,6 @@ import com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -69,13 +68,15 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
     }
 
     @Override
-    public boolean isSupported(URI uri) {
-        return URI_SCHEME.equals(uri.getScheme());
+    public boolean isSupported(FetchRequest request) {
+        return request.uri()
+                .map(uri -> URI_SCHEME.equals(uri.getScheme()))
+                .orElse(false);
     }
 
     @Override
-    public Cursor getAllByKind(URI uri, String kind, int limit) {
-        var query = Query.parseWithKind(uri, kind);
+    public Cursor fetch(FetchRequest request) {
+        var query = Query.parse(request);
         return getAllByKind(query);
     }
 
@@ -101,14 +102,9 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             var org = orgManager.assertAccess(query.orgName, false);
             var repoEntry = projectRepositoryManager.get(org.getId(), query.projectName, query.repoName);
             var secret = Optional.ofNullable(repoEntry.getSecretName())
-                    .map(secretName -> getSecret(org.getId(), secretName));
-            var data = gitUrlFetcher.fetch(repoEntry.getUrl(), query.ref, query.pathInRepo, secret.orElse(null),
-                    fetcher);
-            if (query.limit > 0) {
-                data = data.limit(query.limit);
-            }
-            var finalData = data;
-            return () -> finalData;
+                    .map(secretName -> getSecret(org.getId(), secretName))
+                    .orElse(null);
+            return () -> gitUrlFetcher.fetch(repoEntry.getUrl(), query.ref, query.pathInRepo, secret, fetcher);
         } catch (StoreException e) {
             throw e;
         } catch (RuntimeException e) {
@@ -239,10 +235,11 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             boolean useFileNames,
             String namePrefix,
             Set<FileFormat> allowedFormats,
-            Map<FileFormat, FileFormatOptions> formatOptions,
-            int limit) {
+            Map<FileFormat, FileFormatOptions> formatOptions) {
 
-        static Query parseWithKind(URI uri, String kind) {
+        static Query parse(FetchRequest request) {
+            var uri = request.uri().orElseThrow(() -> new StoreException("Missing URI"));
+
             if (!URI_SCHEME.equals(uri.getScheme())) {
                 throw new StoreException("Unsupported URI scheme: " + uri.getScheme());
             }
@@ -272,13 +269,12 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                     projectName,
                     repoName,
                     ref,
-                    kind,
+                    request.kind(),
                     path,
                     useFileNames,
                     namePrefix,
                     allowedFormats,
-                    formatOptions,
-                    0);
+                    formatOptions);
         }
     }
 }
