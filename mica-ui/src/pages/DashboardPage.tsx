@@ -52,6 +52,13 @@ const CopyPermalinkButton = ({ entityId }: { entityId: string | undefined }) => 
         </Typography>
     );
 };
+const renderCell = (row: string | boolean | number | unknown) => {
+    if (typeof row === 'string' || typeof row === 'boolean' || typeof row === 'number') {
+        return row;
+    }
+    return JSON.stringify(row);
+};
+
 const DashboardPage = () => {
     const navigate = useNavigate();
 
@@ -126,7 +133,7 @@ const DashboardPage = () => {
                         {rows.map((_, row) => (
                             <TableRow key={row}>
                                 {columns.map((_, col) => (
-                                    <TableCell key={col}>{rows[row][col]}</TableCell>
+                                    <TableCell key={col}>{renderCell(rows[row][col])}</TableCell>
                                 ))}
                             </TableRow>
                         ))}
