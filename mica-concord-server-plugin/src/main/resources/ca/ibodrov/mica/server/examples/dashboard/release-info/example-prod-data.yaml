@@ -1,5 +1,5 @@
-name: /examples/dashboard/example-prod-data
-kind: /examples/dashboard/example-kind
+name: /examples/dashboard/release-info/example-prod-data
+kind: /examples/dashboard/release-info/example-kind
 releases:
   - version: "1.0"
     date: 2020-01-01

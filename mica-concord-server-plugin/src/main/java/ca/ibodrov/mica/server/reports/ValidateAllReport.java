@@ -10,6 +10,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.networknt.schema.PathType;
+import com.networknt.schema.SchemaValidatorsConfig;
+import com.networknt.schema.ValidationMessage;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -69,14 +73,16 @@ public class ValidateAllReport implements Report<ValidateAllReport.Options> {
 
                     // parse the schema
                     var schemaFactory = validator.getJsonSchemaFactory();
-                    var schema = schemaFactory.getSchema(schemaJson);
+                    var config = new SchemaValidatorsConfig();
+                    config.setPathType(PathType.JSON_POINTER);
+                    var schema = schemaFactory.getSchema(schemaJson, config);
 
-                    // grab all entities of this kind
+                    // validate each entity of this kind
                     var entities = entityFetchers.fetchAll(kind.name()).map(entityAndSource -> {
                         var entity = entityAndSource.entity();
                         var input = objectMapper.convertValue(entity, JsonNode.class);
                         var violations = schema.validate(input).stream()
-                                .map(violation -> new Violation(violation.getType(), violation.getMessage()))
+                                .map(message -> asViolation(input, message))
                                 .toList();
                         return new EntityEntry(entity.name(), violations);
                     })
@@ -95,20 +101,33 @@ public class ValidateAllReport implements Report<ValidateAllReport.Options> {
                 objectMapper.convertValue(data, MAP_OF_JSON_NODES));
     }
 
-    private record ReportEntry(Optional<URI> uri, String kind, List<Violation> violations, List<EntityEntry> entities) {
+    private static Violation asViolation(JsonNode input, ValidationMessage message) {
+        var path = Optional.ofNullable(message.getPath());
+        var example = path.map(pointer -> {
+            try {
+                return input.at(pointer);
+            } catch (Exception e) {
+                return TextNode.valueOf("Can't get %s: %s".formatted(pointer, e.getMessage()));
+            }
+        });
+        return new Violation(message.getType(), message.getMessage(), path, example);
+    }
 
-        static ReportEntry badSchema(Optional<URI> uri, String kind, String message) {
-            return new ReportEntry(uri, kind, List.of(Violation.badSchema(message)), List.of());
+    private record ReportEntry(Optional<URI> storeUri, String kind, List<Violation> violations,
+            List<EntityEntry> entities) {
+
+        static ReportEntry badSchema(Optional<URI> storeUri, String kind, String message) {
+            return new ReportEntry(storeUri, kind, List.of(Violation.badSchema(message)), List.of());
         }
     }
 
     private record EntityEntry(String entityName, List<Violation> violations) {
     }
 
-    private record Violation(String type, String message) {
+    private record Violation(String type, String message, Optional<String> path, Optional<JsonNode> example) {
 
         static Violation badSchema(String message) {
-            return new Violation("micaBadSchema", message);
+            return new Violation("micaBadSchema", message, Optional.empty(), Optional.empty());
         }
     }
 

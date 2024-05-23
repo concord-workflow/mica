@@ -1,4 +1,4 @@
-name: /examples/dashboard/example-kind
+name: /examples/dashboard/release-info/example-kind
 kind: /mica/kind/v1
 schema:
   unevaluatedProperties: false

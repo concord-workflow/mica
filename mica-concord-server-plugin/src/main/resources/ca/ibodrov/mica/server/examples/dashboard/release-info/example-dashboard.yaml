@@ -1,8 +1,8 @@
 kind: /mica/dashboard/v1
-name: /examples/dashboard/example-dashboard
+name: /examples/dashboard/release-info/example-dashboard
 title: Releases (example)
 view:
-  name: /examples/dashboard/example-view
+  name: /examples/dashboard/release-info/example-view
   parameters:
     account: prod
 layout: table
