@@ -33,7 +33,6 @@ import {
     FormControl,
     Link,
     Paper,
-    Stack,
     Table,
     TableBody,
     TableCell,
@@ -223,8 +222,8 @@ const EntityDetailsPage = () => {
                     onClose={() => setOpenDeleteConfirmation(false)}
                 />
             )}
-            <Grid container>
-                <Grid xs={10}>
+            <Grid container spacing={1}>
+                <Grid flex={1}>
                     <PageTitle help={HELP}>
                         {data && (
                             <>
@@ -234,70 +233,76 @@ const EntityDetailsPage = () => {
                         )}
                     </PageTitle>
                 </Grid>
-                <Grid xs={2} display="flex" justifyContent="flex-end">
-                    <Stack direction="row" spacing={2}>
-                        <FormControl>
-                            <CopyPermalinkButton entityId={entityId} />
-                        </FormControl>
-                        <FormControl>
-                            <ShareButton entityName={data?.name} />
-                        </FormControl>
-                        {data && data.kind === MICA_DASHBOARD_KIND && (
-                            <FormControl>
-                                <Button
-                                    startIcon={<PreviewIcon />}
-                                    variant="outlined"
-                                    onClick={() => navigate(`/dashboard/${entityId}`)}>
-                                    View
-                                </Button>
-                            </FormControl>
-                        )}
-                        {data && data.kind == MICA_VIEW_KIND && (
-                            <FormControl>
-                                <Button
-                                    startIcon={<PreviewIcon />}
-                                    variant="outlined"
-                                    onClick={() => setShowPreview(true)}>
-                                    Preview
-                                </Button>
-                            </FormControl>
-                        )}
-                        {showPreview && entityId && (
-                            <Dialog open={true} fullScreen={true}>
-                                <DialogTitle>
-                                    Preview of <code>{data?.name}</code>
-                                </DialogTitle>
-                                <DialogContent>
-                                    <RenderView request={{ viewId: entityId }} />
-                                </DialogContent>
-                                <DialogActions>
-                                    <Button
-                                        variant="contained"
-                                        onClick={() => setShowPreview(false)}>
-                                        Close
-                                    </Button>
-                                </DialogActions>
-                            </Dialog>
-                        )}
+                <Grid>
+                    <FormControl>
+                        <CopyPermalinkButton entityId={entityId} />
+                    </FormControl>
+                </Grid>
+                <Grid>
+                    <FormControl>
+                        <ShareButton entityName={data?.name} />
+                    </FormControl>
+                </Grid>
+                {data && data.kind === MICA_DASHBOARD_KIND && (
+                    <Grid>
                         <FormControl>
                             <Button
-                                startIcon={<DeleteIcon />}
+                                startIcon={<PreviewIcon />}
                                 variant="outlined"
-                                color="error"
-                                onClick={handleDelete}
-                                disabled={isFetching}>
-                                Delete
+                                onClick={() => navigate(`/dashboard/${entityId}`)}>
+                                View
                             </Button>
                         </FormControl>
+                    </Grid>
+                )}
+                {data && data.kind == MICA_VIEW_KIND && (
+                    <Grid>
                         <FormControl>
                             <Button
-                                startIcon={<EditIcon />}
-                                variant="contained"
-                                onClick={() => navigate(`/entity/${entityId}/edit`)}>
-                                Edit
+                                startIcon={<PreviewIcon />}
+                                variant="outlined"
+                                onClick={() => setShowPreview(true)}>
+                                Preview
                             </Button>
                         </FormControl>
-                    </Stack>
+                    </Grid>
+                )}
+                {showPreview && entityId && (
+                    <Dialog open={true} fullScreen={true}>
+                        <DialogTitle>
+                            Preview of <code>{data?.name}</code>
+                        </DialogTitle>
+                        <DialogContent>
+                            <RenderView request={{ viewId: entityId }} />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button variant="contained" onClick={() => setShowPreview(false)}>
+                                Close
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                )}
+                <Grid>
+                    <FormControl>
+                        <Button
+                            startIcon={<DeleteIcon />}
+                            variant="outlined"
+                            color="error"
+                            onClick={handleDelete}
+                            disabled={isFetching}>
+                            Delete
+                        </Button>
+                    </FormControl>
+                </Grid>
+                <Grid>
+                    <FormControl>
+                        <Button
+                            startIcon={<EditIcon />}
+                            variant="contained"
+                            onClick={() => navigate(`/entity/${entityId}/edit`)}>
+                            Edit
+                        </Button>
+                    </FormControl>
                 </Grid>
             </Grid>
             <MetadataGrid sx={{ mb: 2 }}>
