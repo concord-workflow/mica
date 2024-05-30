@@ -68,7 +68,11 @@ const ViewParameters = ({
             <Typography variant="h6" marginRight={2}>
                 Parameters
             </Typography>
-            {fields.length === 0 && <Typography variant="caption">n/a</Typography>}
+            {fields.length === 0 && (
+                <Typography variant="caption">
+                    No <code>parameters</code> defined in the view.
+                </Typography>
+            )}
             {fields.length > 0 &&
                 fields.map((name) => (
                     <Box key={name} margin={2}>
