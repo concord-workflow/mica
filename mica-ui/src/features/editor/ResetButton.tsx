@@ -45,7 +45,7 @@ const ResetButton = ({ disabled, onConfirm }: Props) => {
             <Button
                 disabled={disabled}
                 startIcon={<RestoreIcon />}
-                variant="contained"
+                variant="text"
                 onClick={handleOpen}>
                 Reset
             </Button>
