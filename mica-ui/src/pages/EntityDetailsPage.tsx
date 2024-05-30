@@ -25,6 +25,10 @@ import {
     Button,
     CircularProgress,
     Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Divider,
     FormControl,
     Link,
@@ -36,7 +40,6 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Tooltip,
     Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -249,6 +252,33 @@ const EntityDetailsPage = () => {
                                 </Button>
                             </FormControl>
                         )}
+                        {data && data.kind == MICA_VIEW_KIND && (
+                            <FormControl>
+                                <Button
+                                    startIcon={<PreviewIcon />}
+                                    variant="outlined"
+                                    onClick={() => setShowPreview(true)}>
+                                    Preview
+                                </Button>
+                            </FormControl>
+                        )}
+                        {showPreview && entityId && (
+                            <Dialog open={true} fullScreen={true}>
+                                <DialogTitle>
+                                    Preview of <code>{data?.name}</code>
+                                </DialogTitle>
+                                <DialogContent>
+                                    <RenderView request={{ viewId: entityId }} />
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => setShowPreview(false)}>
+                                        Close
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
+                        )}
                         <FormControl>
                             <Button
                                 startIcon={<DeleteIcon />}
@@ -296,22 +326,6 @@ const EntityDetailsPage = () => {
                     {data ? new Date(data.updatedAt).toLocaleString() : '?'}
                 </MetadataItem>
             </MetadataGrid>
-            {data && data.kind == MICA_VIEW_KIND && (
-                <FormControl sx={{ mt: 2, mb: 2 }}>
-                    <Tooltip title="Render this view using a small subset of data">
-                        <Button
-                            startIcon={<PreviewIcon />}
-                            onClick={() => setShowPreview((prev) => !prev)}>
-                            {showPreview ? 'Hide preview' : 'Preview data'}
-                        </Button>
-                    </Tooltip>
-                </FormControl>
-            )}
-            {entityId && showPreview && (
-                <Paper sx={{ p: 2, mb: 2, height: '200px' }}>
-                    <RenderView request={{ viewId: entityId }} />
-                </Paper>
-            )}
             {data && (
                 <>
                     <Divider />
