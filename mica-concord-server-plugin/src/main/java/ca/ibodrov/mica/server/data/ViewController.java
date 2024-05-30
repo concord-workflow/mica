@@ -2,6 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.server.data.ViewRenderer.RenderOverrides;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,8 +13,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.jooq.DSLContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -30,8 +29,6 @@ import static java.util.Objects.requireNonNull;
 
 public class ViewController {
 
-    private static final Logger log = LoggerFactory.getLogger(ViewController.class);
-
     private static final String RESULT_ENTITY_KIND = "/mica/rendered-view/v1";
 
     private final EntityStore entityStore;
@@ -39,6 +36,7 @@ public class ViewController {
     private final EntityFetchers entityFetchers;
     private final ViewInterpolator viewInterpolator;
     private final ViewRenderer viewRenderer;
+    private final ViewCache viewCache;
     private final Validator validator;
     private final ObjectMapper objectMapper;
     private final DSLContext dsl;
@@ -49,11 +47,13 @@ public class ViewController {
                           EntityKindStore entityKindStore,
                           EntityFetchers entityFetchers,
                           JsonPathEvaluator jsonPathEvaluator,
+                          ViewCache viewCache,
                           ObjectMapper objectMapper) {
 
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
         this.entityFetchers = requireNonNull(entityFetchers);
+        this.viewCache = requireNonNull(viewCache);
         this.objectMapper = requireNonNull(objectMapper);
         var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
         this.viewInterpolator = new ViewInterpolator(objectMapper, schemaFetcher);
@@ -63,30 +63,26 @@ public class ViewController {
         this.dsl = requireNonNull(dsl);
     }
 
-    public RenderedView render(RenderRequest request) {
+    public RenderedView getCachedOrRender(RenderRequest request, RenderOverrides overrides) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        return render(view);
+        return viewCache.getOrRender(request, overrides, view, this::render);
     }
 
-    public PartialEntity renderAsEntity(RenderRequest request) {
-        var parameters = request.parameters().orElseGet(NullNode::getInstance);
-        var view = interpolateView(assertViewEntity(request), parameters);
-        return renderAsEntity(view);
+    public PartialEntity getCachedOrRenderAsEntity(RenderRequest request) {
+        var renderedView = getCachedOrRender(request, RenderOverrides.none());
+        var validation = validateResult(renderedView);
+        return buildEntity(renderedView, renderedView.data(), validation);
     }
 
-    public String renderProperties(RenderRequest request) {
-        var parameters = request.parameters().orElseGet(NullNode::getInstance);
-        var view = interpolateView(assertViewEntity(request), parameters);
-        var entities = select(view);
-
-        var renderedView = viewRenderer.render(view, ViewRenderer.RenderOverrides.merged(), entities);
+    public String getCachedOrRenderAsProperties(RenderRequest request) {
+        var renderedView = getCachedOrRender(request, RenderOverrides.merged());
         if (renderedView.data().size() != 1) {
             throw ApiException.badRequest("Expected a view flattened down to a single entity, got "
                     + renderedView.data().size() + " entities");
         }
 
-        var validation = validateRenderedView(view, renderedView);
+        var validation = validateResult(renderedView);
         if (validation.isPresent() && !validation.get().isEmpty()) {
             throw ApiException.badRequest("Validation failed: " + validation.get());
         }
@@ -101,9 +97,11 @@ public class ViewController {
 
     public PartialEntity preview(PreviewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
-        var viewEntity = validate(request.view());
+        var viewEntity = validateView(request.view());
         var view = interpolateView(viewEntity, parameters);
-        return renderAsEntity(view);
+        var renderedView = render(view, RenderOverrides.none());
+        var validation = validateResult(renderedView);
+        return buildEntity(renderedView, renderedView.data(), validation);
     }
 
     public PartialEntity materialize(UserPrincipal session, RenderRequest request) {
@@ -111,7 +109,10 @@ public class ViewController {
         var view = interpolateView(assertViewEntity(request), parameters);
         var entities = select(view);
         var renderedView = viewRenderer.render(view, entities);
-        // TODO validation
+        var validation = validateResult(renderedView);
+        if (validation.isPresent() && !validation.get().isEmpty()) {
+            throw ApiException.badRequest("Validation failed: " + validation.get());
+        }
         // TODO optimistic locking
         return dsl.transactionResult(tx -> {
             var data = renderedView.data().stream().map(row -> {
@@ -120,10 +121,7 @@ public class ViewController {
                         .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
                 return entity.withVersion(version);
             });
-            return buildEntity(view.name(),
-                    objectMapper.convertValue(data, JsonNode.class),
-                    objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
-                    Optional.empty());
+            return buildEntity(renderedView, data, Optional.empty());
         });
     }
 
@@ -146,18 +144,9 @@ public class ViewController {
         return viewInterpolator.interpolate(view, parameters);
     }
 
-    private RenderedView render(ViewLike view) {
+    private RenderedView render(ViewLike view, RenderOverrides overrides) {
         var entities = select(view);
-        return viewRenderer.render(view, entities);
-    }
-
-    private PartialEntity renderAsEntity(ViewLike view) {
-        var renderedView = render(view);
-        var validation = validateRenderedView(view, renderedView);
-        return buildEntity(view.name(),
-                objectMapper.convertValue(renderedView.data(), JsonNode.class),
-                objectMapper.convertValue(renderedView.entityNames(), JsonNode.class),
-                validation);
+        return viewRenderer.render(view, overrides, entities);
     }
 
     /**
@@ -206,7 +195,8 @@ public class ViewController {
         return result;
     }
 
-    private Optional<JsonNode> validateRenderedView(ViewLike view, RenderedView renderedView) {
+    private Optional<JsonNode> validateResult(RenderedView renderedView) {
+        var view = renderedView.view();
         return view.validation().map(v -> {
             var schema = entityKindStore.getSchemaForKind(v.asEntityKind())
                     .orElseThrow(() -> ApiException
@@ -218,7 +208,7 @@ public class ViewController {
         });
     }
 
-    private PartialEntity validate(PartialEntity entity) {
+    private PartialEntity validateView(PartialEntity entity) {
         var schema = entityKindStore.getSchemaForKind(entity.kind())
                 .orElseThrow(() -> ApiException
                         .badRequest("Can't validate the entity, schema not found: " + entity.kind()));
@@ -230,16 +220,21 @@ public class ViewController {
         return entity;
     }
 
-    private static PartialEntity buildEntity(String name,
-                                             JsonNode data,
-                                             JsonNode entityNames,
-                                             Optional<JsonNode> validation) {
-        var entityData = ImmutableMap.<String, JsonNode>builder();
-        entityData.put("data", data);
-        entityData.put("length", IntNode.valueOf(data.size()));
-        entityData.put("entityNames", entityNames);
-        validation.ifPresent(v -> entityData.put("validation", v));
-        return PartialEntity.create(name, RESULT_ENTITY_KIND, entityData.build());
+    private PartialEntity buildEntity(RenderedView renderedView,
+                                      Object data,
+                                      Optional<JsonNode> validation) {
+
+        var name = renderedView.view().name();
+        var jsonData = objectMapper.convertValue(data, JsonNode.class);
+        var entityNames = objectMapper.convertValue(renderedView.entityNames(), JsonNode.class);
+
+        var m = ImmutableMap.<String, JsonNode>builder();
+        m.put("data", jsonData);
+        m.put("length", IntNode.valueOf(jsonData.isArray() ? jsonData.size() : 1));
+        m.put("entityNames", entityNames);
+        validation.ifPresent(v -> m.put("validation", v));
+
+        return PartialEntity.create(name, RESULT_ENTITY_KIND, m.build());
     }
 
     private static URI parseUri(String s) {

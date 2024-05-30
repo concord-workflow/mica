@@ -24,7 +24,8 @@ public record MicaViewV1(@ValidName String name,
         @NotNull Selector selector,
         @NotNull Data data,
         @NotNull Optional<Validation> validation,
-        @NotNull Optional<JsonNode> parameters) implements ViewLike {
+        @NotNull Optional<JsonNode> parameters,
+        @NotNull Optional<Caching> caching) implements ViewLike {
 
     public static final String MICA_VIEW_V1 = "/mica/view/v1";
 
@@ -82,11 +83,16 @@ public record MicaViewV1(@ValidName String name,
         }
     }
 
+    // TODO add @NotNull
     public record Validation(String asEntityKind) implements ViewLike.Validation {
 
         public static Validation asEntityKind(String asEntityKind) {
             return new Validation(asEntityKind);
         }
+    }
+
+    public record Caching(@NotNull Optional<String> enabled,
+            @NotNull Optional<String> ttl) implements ViewLike.Caching {
     }
 
     public PartialEntity toPartialEntity(ObjectMapper objectMapper) {
@@ -106,6 +112,7 @@ public record MicaViewV1(@ValidName String name,
         private Data data;
         private Validation validation;
         private JsonNode parameters;
+        private Caching caching;
 
         public Builder name(String name) {
             this.name = name;
@@ -132,9 +139,19 @@ public record MicaViewV1(@ValidName String name,
             return this;
         }
 
+        public Builder caching(Caching caching) {
+            this.caching = caching;
+            return this;
+        }
+
         public MicaViewV1 build() {
-            return new MicaViewV1(name, selector, data, Optional.ofNullable(validation),
-                    Optional.ofNullable(parameters));
+            return new MicaViewV1(
+                    name,
+                    selector,
+                    data,
+                    Optional.ofNullable(validation),
+                    Optional.ofNullable(parameters),
+                    Optional.ofNullable(caching));
         }
     }
 }

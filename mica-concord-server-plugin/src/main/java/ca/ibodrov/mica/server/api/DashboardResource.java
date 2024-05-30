@@ -8,6 +8,7 @@ import ca.ibodrov.mica.server.data.BuiltinSchemas;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.JsonPathEvaluator;
 import ca.ibodrov.mica.server.data.ViewController;
+import ca.ibodrov.mica.server.data.ViewRenderer.RenderOverrides;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
@@ -50,7 +51,7 @@ public class DashboardResource implements Resource {
                 .orElseThrow(() -> new IllegalArgumentException("Non-table layouts are not supported yet."));
 
         var request = toRenderRequest(dashboard);
-        var renderedView = viewController.render(request);
+        var renderedView = viewController.getCachedOrRender(request, RenderOverrides.none());
 
         var data = renderedView.data().stream()
                 .map(row -> parseRow(dashboardEntity.name(), row, table))

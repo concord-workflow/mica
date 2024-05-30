@@ -6,7 +6,6 @@ import ca.ibodrov.mica.api.model.ApiError;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.RenderRequest;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
-import ca.ibodrov.mica.server.UuidGenerator;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,12 +38,16 @@ public class ViewControllerTest extends AbstractDatabaseTest {
 
     @BeforeAll
     public static void setUp() {
-        var uuidGenerator = new UuidGenerator();
         var entityKindStore = new EntityKindStore(entityStore);
         var entityFetchers = new AllEntityFetchers(
                 Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper)));
         var jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
-        viewController = new ViewController(dsl(), entityStore, entityKindStore, entityFetchers, jsonPathEvaluator,
+        viewController = new ViewController(dsl(),
+                entityStore,
+                entityKindStore,
+                entityFetchers,
+                jsonPathEvaluator,
+                ViewCache.noop(),
                 objectMapper);
     }
 
@@ -81,7 +84,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .build()
                 .toPartialEntity(objectMapper));
 
-        var result = viewController.renderAsEntity(RenderRequest.of("/test-name-patterns"));
+        var result = viewController.getCachedOrRenderAsEntity(RenderRequest.of("/test-name-patterns"));
         assertEquals(6, result.data().get("data").size());
 
         // validate record order
@@ -126,8 +129,9 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .build()
                 .toPartialEntity(objectMapper));
 
-        var result = viewController.renderAsEntity(RenderRequest.parameterized("/test-name-pattern-substitution",
-                parameters("x", TextNode.valueOf("first"), "y", TextNode.valueOf("second"))));
+        var result = viewController
+                .getCachedOrRenderAsEntity(RenderRequest.parameterized("/test-name-pattern-substitution",
+                        parameters("x", TextNode.valueOf("first"), "y", TextNode.valueOf("second"))));
         assertEquals(1, result.data().get("data").size());
         assertEquals("/second/record", result.data().get("data").get(0).get("name").asText());
         assertEquals(2, result.data().get("data").get(0).get("value").asInt());
@@ -183,7 +187,8 @@ public class ViewControllerTest extends AbstractDatabaseTest {
 
         // we expect the view to return the original data plus the validation errors
         var result = viewController
-                .renderAsEntity(RenderRequest.parameterized("/test-view-validation", NullNode.getInstance()));
+                .getCachedOrRenderAsEntity(
+                        RenderRequest.parameterized("/test-view-validation", NullNode.getInstance()));
         assertEquals(2, result.data().get("data").size());
         assertEquals(2, result.data().get("validation").size());
         assertEquals("required", result.data().get("validation").get(0).get("messages").get(0).get("type").asText());
@@ -227,7 +232,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // we expect entities to be flattened into a .properties format
-        var result = viewController.renderProperties(RenderRequest.of("/test-properties"));
+        var result = viewController.getCachedOrRenderAsProperties(RenderRequest.of("/test-properties"));
         assertEquals("x.y=true\n", result);
     }
 
@@ -242,7 +247,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         var error = assertThrows(ApiException.class,
-                () -> viewController.renderAsEntity(RenderRequest.of("/unknown-include")));
+                () -> viewController.getCachedOrRenderAsEntity(RenderRequest.of("/unknown-include")));
         assertEquals(CLIENT_ERROR, error.getStatus().getFamily());
         var entity = assertInstanceOf(ApiError.class, error.getResponse().getEntity());
         assertTrue(entity.message().contains("Unsupported URI"));

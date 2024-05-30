@@ -18,6 +18,8 @@ public interface ViewLike {
 
     Optional<JsonNode> parameters();
 
+    Optional<? extends Caching> caching();
+
     interface Selector {
 
         Optional<List<String>> includes();
@@ -45,5 +47,12 @@ public interface ViewLike {
     interface Validation {
 
         String asEntityKind();
+    }
+
+    interface Caching {
+
+        Optional<String> enabled();
+
+        Optional<String> ttl();
     }
 }

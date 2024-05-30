@@ -78,6 +78,7 @@ public final class BuiltinSchemas {
         var selector = asViewLikeSelector(objectMapper, entity);
         var data = asViewLikeData(objectMapper, entity);
         var validation = asViewLikeValidation(entity);
+        var caching = asViewLikeCaching(entity);
 
         return new ViewLike() {
             @Override
@@ -103,6 +104,11 @@ public final class BuiltinSchemas {
             @Override
             public Optional<? extends Validation> validation() {
                 return validation;
+            }
+
+            @Override
+            public Optional<? extends Caching> caching() {
+                return caching;
             }
         };
     }
@@ -188,6 +194,22 @@ public final class BuiltinSchemas {
     private static Optional<ViewLike.Validation> asViewLikeValidation(EntityLike entity) {
         var entityKind = select(entity, "validation", "asEntityKind", JsonNode::asText);
         return entityKind.map(v -> () -> v);
+    }
+
+    private static Optional<ViewLike.Caching> asViewLikeCaching(EntityLike entity) {
+        var enabled = select(entity, "caching", "enabled", JsonNode::asText);
+        var ttl = select(entity, "caching", "ttl", JsonNode::asText);
+        return Optional.of(new ViewLike.Caching() {
+            @Override
+            public Optional<String> enabled() {
+                return enabled;
+            }
+
+            @Override
+            public Optional<String> ttl() {
+                return ttl;
+            }
+        });
     }
 
     private static <T> Optional<T> select(EntityLike entityLike,

@@ -110,6 +110,7 @@ public class MicaModule implements Module {
         binder.bind(EntityStore.class).in(SINGLETON);
         binder.bind(UuidGenerator.class).in(SINGLETON);
         binder.bind(JsonPathEvaluator.class).in(SINGLETON);
+        binder.bind(ViewCache.class).toInstance(ViewCache.inMemory());
 
         binder.bind(InitialDataLoader.class).asEagerSingleton();
 

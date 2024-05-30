@@ -45,4 +45,10 @@ schema:
         asEntityKind:
           type: string
       required: [ "asEntityKind" ]
+    caching:
+      properties:
+        enabled:
+          type: boolean
+        ttl:
+          type: string
   required: [ "kind", "selector", "data" ]

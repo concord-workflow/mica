@@ -50,6 +50,8 @@ public class ViewInterpolator {
         var dataMap = view.data().map().map(map -> interpolate(objectMapper, map, input));
         var validationAsEntityKind = view.validation()
                 .flatMap(v -> Optional.ofNullable(interpolate(v.asEntityKind(), input)));
+        var cachingEnabled = view.caching().flatMap(c -> c.enabled().map(v -> interpolate(v, input)));
+        var cachingTtl = view.caching().flatMap(c -> c.ttl().map(v -> interpolate(v, input)));
 
         return new ViewLike() {
             @Override
@@ -120,6 +122,21 @@ public class ViewInterpolator {
             @Override
             public Optional<JsonNode> parameters() {
                 return view.parameters();
+            }
+
+            @Override
+            public Optional<? extends Caching> caching() {
+                return Optional.of(new Caching() {
+                    @Override
+                    public Optional<String> enabled() {
+                        return cachingEnabled;
+                    }
+
+                    @Override
+                    public Optional<String> ttl() {
+                        return cachingTtl;
+                    }
+                });
             }
         };
     }

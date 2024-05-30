@@ -47,6 +47,7 @@ public class ViewRenderer {
 
         // apply JSON path
         var data = entities
+                // ...while we are at it, collect the entity names
                 .peek(entity -> entityNames.add(entity.name()))
                 .map(row -> applyAllJsonPaths(row.name(), objectMapper.convertValue(row, JsonNode.class), jsonPath))
                 .flatMap(Optional::stream)
@@ -56,8 +57,8 @@ public class ViewRenderer {
             return RenderedView.empty(view, entityNames.build());
         }
 
-        // flatten - convert an array of arrays into a single array by concatenating
-        // them
+        // flatten - convert an array of arrays by concatenating them into a single
+        // array
         var flatten = view.data().flatten().orElse(false);
         if (flatten && data.stream().allMatch(JsonNode::isArray)) {
             data = data.stream()

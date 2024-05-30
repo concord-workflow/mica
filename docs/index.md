@@ -15,6 +15,7 @@
     - [Materialize View Data As Entities](#materialize-view-data-as-entities)
     - [Validate View Entities](#validate-view-entities)
     - [Field Mapping](#field-mapping)
+    - [Caching](#caching)
 - [Dashboards](#dashboards)
 - [Supported JSON Schema Features](#supported-json-schema-features)
 - [Database Design](#database-design)
@@ -511,7 +512,7 @@ JSON store in `myOrg` Concord organization.
 Supported parameters:
 
 - `defaultKind` -- optional, sets `kind` for JSON store entries without their
-own. Default is `/concord/json-store/item/v1`.
+  own. Default is `/concord/json-store/item/v1`.
 
 ### Property Files Support
 
@@ -845,6 +846,29 @@ The rendered view will contain:
     ]
 }
 ```
+
+### Caching
+
+In-memory caching can be enabled for views. The `cache` property in the view
+definition specifies the cache settings:
+
+```yaml
+name: /examples/cached-view
+kind: /mica/view/v1
+selector:
+  entityKind: /mica/record/v1
+data:
+  jsonPath: $
+  cache:
+    enabled: true
+    ttl: PT10S
+```
+
+By default, caching is disabled. The `ttl` value is a duration in ISO 8601
+format. The cache is invalidated after the specified period.
+
+Caching is applied to the regular API operations such as `render` and
+`renderProperties`.
 
 ## Dashboards
 

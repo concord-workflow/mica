@@ -39,7 +39,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Render a view", operationId = "render")
     @Validate
     public PartialEntity render(@Valid RenderRequest request) {
-        return controller.renderAsEntity(request);
+        return controller.getCachedOrRenderAsEntity(request);
     }
 
     @POST
@@ -49,7 +49,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Render a view into a .properties file", operationId = "renderProperties")
     @Validate
     public String renderProperties(@Valid RenderRequest request) {
-        return controller.renderProperties(request);
+        return controller.getCachedOrRenderAsProperties(request);
     }
 
     @GET
@@ -57,9 +57,8 @@ public class ViewResource implements Resource {
     @Operation(summary = "Render a simple view (without parameters)", operationId = "renderSimple")
     @Validate
     public PartialEntity renderSimple(@PathParam("viewId") EntityId viewId) {
-
         var request = new RenderRequest(Optional.of(viewId), Optional.empty(), Optional.empty());
-        return controller.renderAsEntity(request);
+        return controller.getCachedOrRenderAsEntity(request);
     }
 
     @POST
