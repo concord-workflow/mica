@@ -28,4 +28,9 @@ public record EntityId(UUID id) {
     public static EntityId fromString(String s) {
         return new EntityId(UUID.fromString(s));
     }
+
+    @Override
+    public String toString() {
+        return "EntityId=" + id;
+    }
 }

@@ -36,7 +36,8 @@ const DeleteEntityConfirmation = ({ entityId, entityName, open, onSuccess, onClo
                         <ReadableApiError error={error} />
                     </Alert>
                 )}
-                Are you sure you want to delete entity <b>{entityName}</b> (ID: {entityId})?
+                Are you sure you want to delete entity <b>{entityName}</b> (ID: {entityId})? This
+                action cannot be undone.
             </DialogContent>
             <DialogActions>
                 <Button variant="contained" color="primary" onClick={onClose}>

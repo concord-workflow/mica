@@ -5,11 +5,13 @@ import {
     STANDARD_ENTITY_PROPERTIES,
     getEntity,
 } from '../api/entity.ts';
+import { ApiError } from '../api/error.ts';
 import { ObjectSchemaNode } from '../api/schema.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
+import ReadableApiError from '../components/ReadableApiError.tsx';
 import SearchField from '../components/SearchField.tsx';
 import SectionTitle from '../components/SectionTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
@@ -25,6 +27,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import PreviewIcon from '@mui/icons-material/Preview';
 import ShareIcon from '@mui/icons-material/Share';
 import {
+    Alert,
     Button,
     CircularProgress,
     Container,
@@ -41,6 +44,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -61,8 +65,9 @@ const HELP: React.ReactNode = (
             Use <b>Search</b> to search by property name.
         </p>
         <p>
-            Views (<i>/mica/view/v1</i>) entities can be previewed by clicking on the{' '}
-            <b>Preview data</b> button.
+            Depending on the entity's <b>kind</b>, additional actions are available. For example,
+            views (<i>/mica/view/v1</i> entities) can be previewed by clicking on the <b>Preview</b>{' '}
+            button. The view parameters can be set in the dialog.
         </p>
     </>
 );
@@ -239,15 +244,22 @@ const PreviewDialog = ({ data, onClose }: { data: Entity; onClose: () => void })
     );
 };
 
+const PageContainer = ({ children }: { children: React.ReactNode }) => {
+    return (
+        <Container sx={{ mt: 2 }} maxWidth="xl">
+            {children}
+        </Container>
+    );
+};
+
 const EntityDetailsPage = () => {
     const { entityId } = useParams<RouteParams>();
 
-    // TODO handle errors
-
-    const { data, isFetching } = useQuery({
+    const { data, isFetching, error } = useQuery<Entity, ApiError>({
         queryKey: ['entity', entityId],
         queryFn: () => getEntity(entityId!),
         enabled: entityId !== undefined,
+        retry: (failureCount, error) => error.status !== 404 && failureCount < 3,
     });
 
     const [search, setSearch] = React.useState<string>('');
@@ -269,26 +281,40 @@ const EntityDetailsPage = () => {
 
     const [showPreview, setShowPreview] = React.useState(false);
 
+    if (error) {
+        return (
+            <PageContainer>
+                <Alert color="error">
+                    <ReadableApiError error={error} />
+                </Alert>
+            </PageContainer>
+        );
+    }
+
+    if (!data) {
+        return (
+            <PageContainer>
+                <CircularProgress />
+            </PageContainer>
+        );
+    }
+
     return (
-        <Container sx={{ mt: 2 }} maxWidth="xl">
-            {data && (
-                <DeleteEntityConfirmation
-                    entityId={data.id}
-                    entityName={data.name}
-                    open={openDeleteConfirmation}
-                    onSuccess={() => navigate('/entity')}
-                    onClose={() => setOpenDeleteConfirmation(false)}
-                />
-            )}
+        <PageContainer>
+            <DeleteEntityConfirmation
+                entityId={data.id}
+                entityName={data.name}
+                open={openDeleteConfirmation}
+                onSuccess={() => navigate('/entity')}
+                onClose={() => setOpenDeleteConfirmation(false)}
+            />
             <Grid container spacing={1}>
                 <Grid flex={1}>
                     <PageTitle help={HELP}>
-                        {data && (
-                            <>
-                                <PathBreadcrumbs path={data.name} />
-                                <CopyToClipboardButton text={data.name} />
-                            </>
-                        )}
+                        <>
+                            <PathBreadcrumbs path={data.name} />
+                            <CopyToClipboardButton text={data.name} />
+                        </>
                     </PageTitle>
                 </Grid>
                 <Grid>
@@ -301,14 +327,14 @@ const EntityDetailsPage = () => {
                         <ShareButton entityName={data?.name} />
                     </FormControl>
                 </Grid>
-                {data && data.kind == MICA_VIEW_KIND && (
+                {data.kind == MICA_VIEW_KIND && (
                     <Grid>
                         <FormControl>
                             <RenderWithCurlButton entityId={entityId} />
                         </FormControl>
                     </Grid>
                 )}
-                {data && data.kind === MICA_DASHBOARD_KIND && (
+                {data.kind === MICA_DASHBOARD_KIND && (
                     <Grid>
                         <FormControl>
                             <Button
@@ -320,7 +346,7 @@ const EntityDetailsPage = () => {
                         </FormControl>
                     </Grid>
                 )}
-                {data && data.kind == MICA_VIEW_KIND && (
+                {data.kind == MICA_VIEW_KIND && (
                     <Grid>
                         <FormControl>
                             <Button
@@ -332,19 +358,19 @@ const EntityDetailsPage = () => {
                         </FormControl>
                     </Grid>
                 )}
-                {showPreview && data && (
-                    <PreviewDialog data={data} onClose={() => setShowPreview(false)} />
-                )}
+                {showPreview && <PreviewDialog data={data} onClose={() => setShowPreview(false)} />}
                 <Grid>
                     <FormControl>
-                        <Button
-                            startIcon={<DeleteIcon />}
-                            variant="outlined"
-                            color="error"
-                            onClick={handleDelete}
-                            disabled={isFetching}>
-                            Delete
-                        </Button>
+                        <Tooltip title="Permanently delete this entity. This action cannot be undone.">
+                            <Button
+                                startIcon={<DeleteIcon />}
+                                variant="outlined"
+                                color="error"
+                                onClick={handleDelete}
+                                disabled={isFetching}>
+                                Delete
+                            </Button>
+                        </Tooltip>
                     </FormControl>
                 </Grid>
                 <Grid>
@@ -364,74 +390,65 @@ const EntityDetailsPage = () => {
                     {isFetching && <CircularProgress size={16} />}
                 </MetadataItem>
                 <MetadataItem label="Kind">
-                    {data ? (
-                        <>
-                            <Link
-                                component={RouterLink}
-                                to={`/redirect?type=entityByName&entityName=${data.kind}`}>
-                                {data.kind}
-                            </Link>
-                            <CopyToClipboardButton text={data.kind} />
-                        </>
-                    ) : (
-                        '?'
-                    )}
+                    <Link
+                        component={RouterLink}
+                        to={`/redirect?type=entityByName&entityName=${data.kind}`}>
+                        {data.kind}
+                    </Link>
+                    <CopyToClipboardButton text={data.kind} />
                 </MetadataItem>
                 <MetadataItem label="Created">
-                    {data ? new Date(data.createdAt).toLocaleString() : '?'}
+                    {new Date(data.createdAt).toLocaleString()}
                 </MetadataItem>
                 <MetadataItem label="Updated">
-                    {data ? new Date(data.updatedAt).toLocaleString() : '?'}
+                    {new Date(data.updatedAt).toLocaleString()}
                 </MetadataItem>
             </MetadataGrid>
-            {data && (
-                <>
-                    <Divider />
-                    <SectionTitle>{kindToPayloadTitle(data.kind)}</SectionTitle>
-                    <ActionBar sx={{ mb: 2 }}>
-                        <Spacer />
-                        {search !== '' && <PropertiesFound count={visibleProperties.length} />}
-                        <SearchField value={search} onChange={(search) => setSearch(search)} />
-                    </ActionBar>
-                    <TableContainer component={Paper}>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell width="20%">Property</TableCell>
-                                    <TableCell>Value</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {visibleProperties.map((key) => (
-                                    <TableRow key={key}>
-                                        <TableCell
-                                            sx={{
-                                                verticalAlign: 'top',
-                                                fontFamily: 'Roboto Mono',
-                                            }}>
-                                            {highlightSubstring(key, search)}
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{
-                                                verticalAlign: 'top',
-                                                fontFamily: 'Roboto Mono',
-                                            }}>
-                                            <Property name={key} value={data} search={search} />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </>
-            )}
+
+            <Divider />
+            <SectionTitle>{kindToPayloadTitle(data.kind)}</SectionTitle>
+            <ActionBar sx={{ mb: 2 }}>
+                <Spacer />
+                {search !== '' && <PropertiesFound count={visibleProperties.length} />}
+                <SearchField value={search} onChange={(search) => setSearch(search)} />
+            </ActionBar>
+            <TableContainer component={Paper}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell width="20%">Property</TableCell>
+                            <TableCell>Value</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {visibleProperties.map((key) => (
+                            <TableRow key={key}>
+                                <TableCell
+                                    sx={{
+                                        verticalAlign: 'top',
+                                        fontFamily: 'Roboto Mono',
+                                    }}>
+                                    {highlightSubstring(key, search)}
+                                </TableCell>
+                                <TableCell
+                                    sx={{
+                                        verticalAlign: 'top',
+                                        fontFamily: 'Roboto Mono',
+                                    }}>
+                                    <Property name={key} value={data} search={search} />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
             {entityId && (
                 <>
                     <Divider sx={{ mt: 10, mb: 2 }} />
                     <EntityChangesTable entityId={entityId} />
                 </>
             )}
-        </Container>
+        </PageContainer>
     );
 };
 
