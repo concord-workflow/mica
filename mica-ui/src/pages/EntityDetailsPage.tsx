@@ -20,6 +20,7 @@ import RenderView from '../features/views/RenderView.tsx';
 import ViewParameters from '../features/views/ViewParameters.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import HttpIcon from '@mui/icons-material/Http';
 import LinkIcon from '@mui/icons-material/Link';
 import PreviewIcon from '@mui/icons-material/Preview';
 import ShareIcon from '@mui/icons-material/Share';
@@ -174,6 +175,21 @@ const ShareButton = ({ entityName }: { entityName: string | undefined }) => {
     );
 };
 
+const RenderWithCurlButton = ({ entityId }: { entityId: string | undefined }) => {
+    if (!entityId) {
+        return <></>;
+    }
+    return (
+        <Typography variant="h6">
+            <CopyToClipboardButton
+                text={`curl -H 'Authorization: your_token' ${window.location.protocol}//${window.location.host}/api/mica/v1/view/render/${entityId}`}
+                tooltipText="Copy curl command to render the view. Parametrized views might require a POST request."
+                Icon={HttpIcon}
+            />
+        </Typography>
+    );
+};
+
 const PropertiesFound = ({ count }: { count: number }) => {
     return (
         <Typography variant="body2">
@@ -285,6 +301,13 @@ const EntityDetailsPage = () => {
                         <ShareButton entityName={data?.name} />
                     </FormControl>
                 </Grid>
+                {data && data.kind == MICA_VIEW_KIND && (
+                    <Grid>
+                        <FormControl>
+                            <RenderWithCurlButton entityId={entityId} />
+                        </FormControl>
+                    </Grid>
+                )}
                 {data && data.kind === MICA_DASHBOARD_KIND && (
                     <Grid>
                         <FormControl>
