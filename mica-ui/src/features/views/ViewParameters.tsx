@@ -62,7 +62,7 @@ const ViewParameters = ({
     values: Record<string, string | null>;
     onChange: (name: string, value: string) => void;
 }) => {
-    const fields = parameters ? Object.keys(parameters.properties ?? {}) : [];
+    const fields = parameters ? Object.keys(parameters.properties ?? {}).sort() : [];
     return (
         <>
             <Typography variant="h6" marginRight={2}>

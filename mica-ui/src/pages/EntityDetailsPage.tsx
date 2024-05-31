@@ -5,6 +5,7 @@ import {
     STANDARD_ENTITY_PROPERTIES,
     getEntity,
 } from '../api/entity.ts';
+import { ObjectSchemaNode } from '../api/schema.ts';
 import ActionBar from '../components/ActionBar.tsx';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
@@ -16,6 +17,7 @@ import highlightSubstring from '../components/highlight.tsx';
 import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
 import EntityChangesTable from '../features/history/EntityChangesTable.tsx';
 import RenderView from '../features/views/RenderView.tsx';
+import ViewParameters from '../features/views/ViewParameters.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
@@ -26,7 +28,6 @@ import {
     CircularProgress,
     Container,
     Dialog,
-    DialogActions,
     DialogContent,
     DialogTitle,
     Divider,
@@ -181,6 +182,47 @@ const PropertiesFound = ({ count }: { count: number }) => {
     );
 };
 
+const PreviewDialog = ({ data, onClose }: { data: Entity; onClose: () => void }) => {
+    const [requestParameters, setRequestParameters] = React.useState<Record<string, string | null>>(
+        {},
+    );
+
+    const handleParameterChange = React.useCallback((key: string, value: string) => {
+        setRequestParameters((prev) => ({ ...prev, [key]: value === '' ? null : value }));
+    }, []);
+
+    return (
+        <Dialog open={true} fullScreen={true}>
+            <DialogTitle>
+                <Grid container spacing={2}>
+                    <Grid flex={1}>
+                        Preview of <code>{data.name}</code>
+                    </Grid>
+                    <Grid>
+                        <Button variant="contained" onClick={onClose}>
+                            Close
+                        </Button>
+                    </Grid>
+                </Grid>
+            </DialogTitle>
+            <DialogContent>
+                <Grid container spacing={1}>
+                    <Grid xs={3}>
+                        <ViewParameters
+                            parameters={data.parameters as ObjectSchemaNode}
+                            values={requestParameters}
+                            onChange={handleParameterChange}
+                        />
+                    </Grid>
+                    <Grid xs={9}>
+                        <RenderView request={{ viewId: data.id, parameters: requestParameters }} />
+                    </Grid>
+                </Grid>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 const EntityDetailsPage = () => {
     const { entityId } = useParams<RouteParams>();
 
@@ -267,20 +309,8 @@ const EntityDetailsPage = () => {
                         </FormControl>
                     </Grid>
                 )}
-                {showPreview && entityId && (
-                    <Dialog open={true} fullScreen={true}>
-                        <DialogTitle>
-                            Preview of <code>{data?.name}</code>
-                        </DialogTitle>
-                        <DialogContent>
-                            <RenderView request={{ viewId: entityId }} />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button variant="contained" onClick={() => setShowPreview(false)}>
-                                Close
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
+                {showPreview && data && (
+                    <PreviewDialog data={data} onClose={() => setShowPreview(false)} />
                 )}
                 <Grid>
                     <FormControl>

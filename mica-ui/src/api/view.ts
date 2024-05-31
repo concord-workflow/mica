@@ -1,6 +1,7 @@
 import { doFetch, handleJsonResponse } from './common.ts';
 import { PartialEntity } from './entity.ts';
 import { ApiError } from './error.ts';
+import { JsonNode } from './schema.ts';
 
 import { UseMutationOptions, useMutation } from '@tanstack/react-query';
 
@@ -23,13 +24,18 @@ export const usePreview = (options?: UseMutationOptions<PartialEntity, ApiError,
 
 export interface RenderRequest {
     viewId: string;
+    parameters?: JsonNode;
 }
 
-export const render = (request: RenderRequest): Promise<PartialEntity> =>
+export interface RenderResponse {
+    data: JsonNode;
+}
+
+export const render = (request: RenderRequest): Promise<RenderResponse> =>
     doFetch(`/api/mica/v1/view/render`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
-    }).then(handleJsonResponse<PartialEntity>);
+    }).then(handleJsonResponse<RenderResponse>);

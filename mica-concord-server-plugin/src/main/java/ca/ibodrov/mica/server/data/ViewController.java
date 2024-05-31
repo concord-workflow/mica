@@ -25,6 +25,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.util.Objects.requireNonNull;
 
 public class ViewController {
@@ -66,7 +67,10 @@ public class ViewController {
     public RenderedView getCachedOrRender(RenderRequest request, RenderOverrides overrides) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
-        return viewCache.getOrRender(request, overrides, view, this::render);
+        return viewCache.getOrRender(request, overrides, view, (_view, _overrides) -> {
+            var entities = select(view);
+            return viewRenderer.render(view, overrides, entities);
+        });
     }
 
     public PartialEntity getCachedOrRenderAsEntity(RenderRequest request) {
@@ -99,7 +103,9 @@ public class ViewController {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var viewEntity = validateView(request.view());
         var view = interpolateView(viewEntity, parameters);
-        var renderedView = render(view, RenderOverrides.none());
+        RenderOverrides overrides = RenderOverrides.none();
+        var entities = select(view);
+        var renderedView = viewRenderer.render(view, overrides, entities);
         var validation = validateResult(renderedView);
         return buildEntity(renderedView, renderedView.data(), validation);
     }
@@ -142,11 +148,6 @@ public class ViewController {
     private ViewLike interpolateView(EntityLike viewEntity, JsonNode parameters) {
         var view = BuiltinSchemas.asViewLike(objectMapper, viewEntity);
         return viewInterpolator.interpolate(view, parameters);
-    }
-
-    private RenderedView render(ViewLike view, RenderOverrides overrides) {
-        var entities = select(view);
-        return viewRenderer.render(view, overrides, entities);
     }
 
     /**
@@ -225,8 +226,10 @@ public class ViewController {
                                       Optional<JsonNode> validation) {
 
         var name = renderedView.view().name();
-        var jsonData = objectMapper.convertValue(data, JsonNode.class);
-        var entityNames = objectMapper.convertValue(renderedView.entityNames(), JsonNode.class);
+
+        var mapper = objectMapper.copy().setDefaultPropertyInclusion(NON_ABSENT);
+        var jsonData = mapper.convertValue(data, JsonNode.class);
+        var entityNames = mapper.convertValue(renderedView.entityNames(), JsonNode.class);
 
         var m = ImmutableMap.<String, JsonNode>builder();
         m.put("data", jsonData);

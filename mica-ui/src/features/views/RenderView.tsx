@@ -1,6 +1,5 @@
-import { PartialEntity } from '../../api/entity.ts';
 import { ApiError } from '../../api/error.ts';
-import { RenderRequest, render } from '../../api/view.ts';
+import { RenderRequest, RenderResponse, render } from '../../api/view.ts';
 import ReadableApiError from '../../components/ReadableApiError.tsx';
 import DataView from './DataView.tsx';
 import { Alert, Box, CircularProgress } from '@mui/material';
@@ -12,10 +11,11 @@ interface Props {
 }
 
 const RenderView = ({ request }: Props) => {
-    const { data, isLoading, error } = useQuery<PartialEntity, ApiError>({
+    const { data, isLoading, error } = useQuery<RenderResponse, ApiError>({
         queryKey: ['render', request],
         queryFn: () => render(request),
 
+        retry: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
     });
@@ -39,7 +39,11 @@ const RenderView = ({ request }: Props) => {
                     <CircularProgress color="secondary" />
                 </Box>
             )}
-            {data && <DataView data={data.data} />}
+            {data && (
+                <>
+                    <DataView data={data.data} />
+                </>
+            )}
         </>
     );
 };
