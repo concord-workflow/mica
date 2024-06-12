@@ -77,9 +77,9 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .name("/test-name-patterns")
                 .selector(byEntityKind("/test-record-kind")
                         .withNamePatterns(List.of(
-                                "/first-.*",
+                                "/third-.*",
                                 "/second-.*",
-                                "/third-.*")))
+                                "/first-.*")))
                 .data(jsonPath("$"))
                 .build()
                 .toPartialEntity(objectMapper));
@@ -90,7 +90,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
         // validate record order
         var values = Streams.stream(result.data().get("data").iterator()).map(it -> it.get("value").asInt())
                 .toArray(Integer[]::new);
-        assertArrayEquals(new Integer[] { 1, 2, 3, 4, 5, 6 }, values);
+        assertArrayEquals(new Integer[] { 5, 6, 3, 4, 1, 2 }, values);
     }
 
     @Test
