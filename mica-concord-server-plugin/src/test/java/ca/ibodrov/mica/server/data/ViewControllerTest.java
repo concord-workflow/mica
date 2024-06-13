@@ -253,6 +253,63 @@ public class ViewControllerTest extends AbstractDatabaseTest {
         assertTrue(entity.message().contains("Unsupported URI"));
     }
 
+    @Test
+    public void mergeByWithNamePatternsWorkAsIntended() {
+        var pathPrefix = randomPathPrefix();
+        var kind = pathPrefix + "/test-record-kind";
+
+        // create entity kind
+        upsert(new MicaKindV1.Builder()
+                .name(kind)
+                .schema(parseObject("""
+                        properties:
+                          value:
+                            type: integer
+                        """))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // create test records, 2 for each name pattern
+        upsert(PartialEntity.create(pathPrefix + "/first-1", kind,
+                Map.of("key", TextNode.valueOf("foo"), "value", IntNode.valueOf(1))));
+        upsert(PartialEntity.create(pathPrefix + "/first-2", kind,
+                Map.of("key", TextNode.valueOf("bar"), "value", IntNode.valueOf(2))));
+        upsert(PartialEntity.create(pathPrefix + "/second-1", kind,
+                Map.of("key", TextNode.valueOf("foo"), "value", IntNode.valueOf(3))));
+        upsert(PartialEntity.create(pathPrefix + "/second-2", kind,
+                Map.of("key", TextNode.valueOf("bar"), "value", IntNode.valueOf(4))));
+
+        // create view
+        var viewName = pathPrefix + "/test-name-patterns";
+        upsert(new MicaViewV1.Builder()
+                .name(viewName)
+                .selector(byEntityKind(kind)
+                        .withNamePatterns(List.of(
+                                pathPrefix + "/second-.*",
+                                pathPrefix + "/first-.*")))
+                .data(jsonPath("$").withMergeBy("$.key"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // the entities should be selected in the order of the name patterns:
+        // /second-1
+        // /second-2
+        // /first-1
+        // /first-2
+
+        // then merged by $.value
+
+        // we should end up with values 2 and 1
+
+        var result = viewController.getCachedOrRenderAsEntity(RenderRequest.of(viewName));
+        assertEquals(2, result.data().get("data").size());
+
+        // validate record order
+        var values = Streams.stream(result.data().get("data").iterator()).map(it -> it.get("value").asInt())
+                .toArray(Integer[]::new);
+        assertArrayEquals(new Integer[] { 2, 1 }, values);
+    }
+
     private static void upsert(PartialEntity entity) {
         entityStore.upsert(session, entity, null).orElseThrow();
     }
