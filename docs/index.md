@@ -6,6 +6,7 @@
 - [Views](#views)
     - [View Flattening](#view-flattening)
     - [Merge Results](#merge-results)
+    - [Group By Key and Merge](#group-by-key-and-merge)
     - [JSON Patch Support](#json-patch-support)
     - [Parametrized Views](#parametrized-views)
     - [View Includes](#view-includes)
@@ -204,9 +205,11 @@ steps (in the order in which they are applied):
 
 - `jsonPath` -- applies a JSON Path expression to each entity;
 - `flatten` -- joins array of arrays of objects into a regular flat array of objects;
+- `mergeBy` -- merges entities by a key;
 - `merge` -- merges multiple objects into one by deep-merging fields;
 - `jsonPatch` -- applies a JSON Patch to each object;
-- `dropProperties` -- removes specified properties from each object.
+- `dropProperties` -- removes specified properties from each object;
+- `map` -- maps fields from the source to the target.
 
 ### JSON Path in Views
 
@@ -329,6 +332,47 @@ the rendered view will contain the object with keys merged from both entities:
     ]
 }
 ```
+
+### Group By Key and Merge
+
+To group entities by a key and merge them into a single object, use the
+`mergeBy` option:
+
+```yaml
+kind: /mica/view/v1
+name: /views/merge-by-key
+selector:
+  entityKind: /schemas/WeatherMonitoringEvent
+data:
+  jsonPath: $
+  mergeBy: $.city
+```
+
+Given the following entities:
+
+```json
+[
+  { "city":  "London", "temperature": 15 },
+  { "city":  "London", "humidity": 80 },
+  { "city":  "Paris", "temperature": 20 },
+  { "city":  "Paris", "humidity": 70 }
+]
+```
+
+Should produce the following result:
+
+```json
+[
+  { "city": "London", "temperature": 15, "humidity": 80 },
+  { "city": "Paris", "temperature": 20, "humidity": 70 }
+]
+```
+
+Just like with the regular `merge`, the entities are merged in the order they
+match the patterns.
+
+The `mergeBy` option and `merge` are mutually exclusive. If both are specified,
+the `mergeBy` option takes precedence.
 
 ### JSON Patch Support
 

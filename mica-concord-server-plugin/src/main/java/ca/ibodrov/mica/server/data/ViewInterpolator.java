@@ -45,6 +45,7 @@ public class ViewInterpolator {
         var selectorEntityKind = interpolate(view.selector().entityKind(), input);
         var selectorNamePatterns = view.selector().namePatterns().map(namePatterns -> interpolate(namePatterns, input));
         var dataJsonPath = interpolate(objectMapper, view.data().jsonPath(), input);
+        var dataMergeBy = view.data().mergeBy().map(v -> interpolate(objectMapper, v, input));
         var dropProperties = view.data().dropProperties()
                 .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
         var dataMap = view.data().map().map(map -> interpolate(objectMapper, map, input));
@@ -95,6 +96,11 @@ public class ViewInterpolator {
                     @Override
                     public Optional<Boolean> merge() {
                         return view.data().merge();
+                    }
+
+                    @Override
+                    public Optional<JsonNode> mergeBy() {
+                        return dataMergeBy;
                     }
 
                     @Override

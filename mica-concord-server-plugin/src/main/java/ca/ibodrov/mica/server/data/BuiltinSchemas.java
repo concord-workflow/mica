@@ -150,6 +150,8 @@ public final class BuiltinSchemas {
 
         var merge = select(entity, "data", "merge", JsonNode::asBoolean);
 
+        var mergeBy = select(entity, "data", "mergeBy", identity());
+
         var jsonPatch = select(entity, "data", "jsonPatch", identity());
 
         var dropProperties = select(entity, "data", "dropProperties",
@@ -172,6 +174,11 @@ public final class BuiltinSchemas {
             @Override
             public Optional<Boolean> merge() {
                 return merge;
+            }
+
+            @Override
+            public Optional<JsonNode> mergeBy() {
+                return mergeBy;
             }
 
             @Override

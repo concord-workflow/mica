@@ -37,6 +37,8 @@ public interface ViewLike {
 
         Optional<Boolean> merge();
 
+        Optional<JsonNode> mergeBy();
+
         Optional<JsonNode> jsonPatch();
 
         Optional<List<String>> dropProperties();

@@ -242,6 +242,117 @@ public class ViewRendererTest {
     }
 
     @Test
+    public void mergeByWorksAsIntended() {
+        var entityA = parseYaml("""
+                kind: /event/weather
+                name: event-a
+                city: "London"
+                temperature: 20
+                """);
+
+        var entityB = parseYaml("""
+                kind: /event/weather
+                name: event-b
+                city: "Paris"
+                temperature: 21
+                """);
+
+        var entityC = parseYaml("""
+                kind: /event/weather
+                name: event-c
+                city: "London"
+                humidity: 50
+                """);
+
+        var entityD = parseYaml("""
+                kind: /event/weather
+                name: event-d
+                city: "Paris"
+                humidity: 51
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: /weather/report
+                selector:
+                  entityKind: /event/weather
+                data:
+                  jsonPath: $
+                  mergeBy: $.city
+                """);
+
+        var result = renderer.render(view, Stream.of(entityA, entityB, entityC, entityD));
+        assertNotNull(result);
+        assertEquals(2, result.data().size());
+
+        var expected = """
+                - name: "event-c"
+                  kind: "/event/weather"
+                  city: "London"
+                  temperature: 20
+                  humidity: 50
+                - name: "event-d"
+                  kind: "/event/weather"
+                  city: "Paris"
+                  temperature: 21
+                  humidity: 51
+                """;
+        assertEquals(expected, toYaml(result.data()));
+    }
+
+    @Test
+    public void mergeByHandlesMissingKeys() {
+        var entityA = parseYaml("""
+                kind: /event/weather
+                name: event-a
+                city: "London"
+                temperature: 20
+                """);
+
+        var entityB = parseYaml("""
+                kind: /event/weather
+                name: event-b
+                city: "Paris"
+                temperature: 21
+                """);
+
+        var entityC = parseYaml("""
+                kind: /event/weather
+                name: event-c
+                humidity: 50
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: /weather/report
+                selector:
+                  entityKind: /event/weather
+                data:
+                  jsonPath: $
+                  mergeBy: $.city
+                """);
+
+        var result = renderer.render(view, Stream.of(entityA, entityB, entityC));
+        assertNotNull(result);
+        assertEquals(3, result.data().size());
+
+        var expected = """
+                - name: "event-c"
+                  kind: "/event/weather"
+                  humidity: 50
+                - name: "event-a"
+                  kind: "/event/weather"
+                  city: "London"
+                  temperature: 20
+                - name: "event-b"
+                  kind: "/event/weather"
+                  city: "Paris"
+                  temperature: 21
+                """;
+        assertEquals(expected, toYaml(result.data()));
+    }
+
+    @Test
     public void applySimpleJsonPatch() {
         var entity = parseYaml("""
                 kind: ListOfItems

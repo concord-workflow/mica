@@ -58,27 +58,37 @@ public record MicaViewV1(@ValidName String name,
             Optional<JsonNode> jsonPatch,
             Optional<Boolean> flatten,
             Optional<Boolean> merge,
+            Optional<JsonNode> mergeBy,
             Optional<List<String>> dropProperties,
             Optional<Map<String, JsonNode>> map) implements ViewLike.Data {
 
         public static Data jsonPath(String jsonPath) {
             return new Data(TextNode.valueOf(jsonPath), Optional.empty(), Optional.empty(), Optional.empty(),
-                    Optional.empty(), Optional.empty());
+                    Optional.empty(), Optional.empty(), Optional.empty());
         }
 
         public static Data jsonPaths(ObjectMapper objectMapper, String... jsonPaths) {
             var jsonPath = objectMapper.convertValue(requireNonNull(jsonPaths), ArrayNode.class);
             return new Data(jsonPath, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                    Optional.empty(),
                     Optional.empty());
         }
 
         public Data withMerge() {
             return new Data(this.jsonPath, this.jsonPatch, this.flatten, Optional.of(true), Optional.empty(),
-                    Optional.empty());
+                    Optional.empty(), Optional.empty());
+        }
+
+        public Data withMergeBy(String mergeBy) {
+            return new Data(this.jsonPath, this.jsonPatch, this.flatten, this.merge,
+                    Optional.of(TextNode.valueOf(mergeBy)),
+                    Optional.empty(), Optional.empty());
+
         }
 
         public Data withDropProperties(List<String> dropProperties) {
-            return new Data(this.jsonPath, this.jsonPatch, this.flatten, this.merge, Optional.of(dropProperties),
+            return new Data(this.jsonPath, this.jsonPatch, this.flatten, this.merge, Optional.empty(),
+                    Optional.of(dropProperties),
                     Optional.empty());
         }
     }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.InvalidJsonPatchException;
 import com.flipkart.zjsonpatch.JsonPatch;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.StreamSupport.stream;
 
 public class ViewRenderer {
@@ -66,13 +68,32 @@ public class ViewRenderer {
                     .toList();
         }
 
-        // merge - convert an array of objects into a single object
-        var merge = overrides.alwaysMerge() || view.data().merge().orElse(false);
-        if (merge && data.stream().allMatch(JsonNode::isObject)) {
-            var mergedData = data.stream()
-                    .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
-                    .orElseThrow(() -> new ViewProcessorException("Expected a merge result, got nothing"));
-            data = List.of(mergedData);
+        // mergeBy - group by a JSON path and merge the groups
+        var mergeBy = view.data().mergeBy().filter(JsonNode::isTextual)
+                .map(JsonNode::asText);
+
+        if (mergeBy.isPresent()) {
+            data = data.stream()
+                    .collect(groupingBy(
+                            node -> jsonPathEvaluator.apply(entityNames.build().toString(), node, mergeBy.get())
+                                    .orElse(NullNode.getInstance())))
+                    .entrySet().stream()
+                    .flatMap(entry -> {
+                        var rows = entry.getValue();
+                        return rows.stream()
+                                .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
+                                .stream();
+                    })
+                    .toList();
+        } else {
+            // merge - convert an array of objects into a single object
+            var merge = overrides.alwaysMerge() || view.data().merge().orElse(false);
+            if (merge && data.stream().allMatch(JsonNode::isObject)) {
+                var mergedData = data.stream()
+                        .reduce((a, b) -> deepMerge((ObjectNode) a, (ObjectNode) b))
+                        .orElseThrow(() -> new ViewProcessorException("Expected a merge result, got nothing"));
+                data = List.of(mergedData);
+            }
         }
 
         // apply JSON patch
@@ -103,6 +124,7 @@ public class ViewRenderer {
             });
         }
 
+        // apply "map"
         var map = view.data().map();
         if (map.isPresent()) {
             data = data.stream()
