@@ -7,6 +7,8 @@ import ca.ibodrov.mica.concord.task.MicaClient.ListEntitiesParameters;
 import ca.ibodrov.mica.concord.task.MicaClient.SessionToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.walmartlabs.concord.common.ConfigurationUtils;
 import com.walmartlabs.concord.runtime.v2.sdk.Context;
 import com.walmartlabs.concord.runtime.v2.sdk.Task;
@@ -45,7 +47,9 @@ public class MicaTask implements Task {
 
     @Inject
     public MicaTask(ObjectMapper objectMapper, Context ctx) {
-        this.objectMapper = requireNonNull(objectMapper);
+        this.objectMapper = requireNonNull(objectMapper).copy()
+                .registerModule(new JavaTimeModule())
+                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)

@@ -42,6 +42,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.time.Year;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,11 +58,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * End-to-end tests that leverage mica-concord-task expect to find the
- * up-to-date version of the task JAR in the local Maven repository.
+ * Requires up-to-date version of mica-concord-task JAR in the local Maven
+ * repository.
  * <p/>
- * Rebuild mica-concord-task with {@code mvn clean install} before running these
- * tests.
+ * Rebuild mica-concord-task with {@code mvn clean install} before running ITs.
  */
 public class ITs extends TestResources {
 
@@ -763,7 +763,6 @@ public class ITs extends TestResources {
                   hi!
                 """;
         var uploadFile = startConcordProcess(Map.of(
-                "arguments.githubPr", "123",
                 "original-file.yml", originalFile.strip().getBytes(),
                 "concord.yml", """
                         configuration:
@@ -855,6 +854,36 @@ public class ITs extends TestResources {
         assertTrue(doc.contains("kind: \"/acme/config\""));
         assertTrue(doc.contains("fooSecret: \"_*****\""));
         assertTrue(doc.contains("barSecret: \"b4r!\""));
+    }
+
+    @Test
+    public void taskMustCorrectlySerializeTimestamps() throws Exception {
+        @Language("yaml")
+        var originalFile = """
+                data: hi!
+                """;
+
+        var proc = startConcordProcess(Map.of(
+                "original-file.yml", originalFile.strip().getBytes(),
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upload
+                                kind: /mica/record/v1
+                                src: ${workDir}/original-file.yml
+                                name: /result-file.yaml
+                              out: result
+                            - log: "Result: ${result}"
+                        """.strip().getBytes()));
+        assertFinished(proc);
+
+        var log = getProcessLog(proc.getInstanceId());
+        var currentYear = String.valueOf(Year.now().getValue());
+        assertTrue(log.matches("(?s).*Result:.*updatedAt=" + currentYear + "-.*"));
     }
 
     private static void createBinarySecret(String orgName, String secretName, byte[] secret) throws Exception {
