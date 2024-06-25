@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.server;
 
 import com.walmartlabs.concord.server.security.UserPrincipal;
+import org.jboss.resteasy.core.ResteasyContext;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.pac4j.core.context.JEEContext;
 import org.pac4j.core.profile.ProfileManager;
@@ -23,7 +24,7 @@ public class UserPrincipalContextProvider extends HttpFilter {
     protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws IOException, ServletException {
 
-        if (ResteasyProviderFactory.getContextData(UserPrincipal.class) != null) {
+        if (ResteasyProviderFactory.getInstance().getContextData(UserPrincipal.class) != null) {
             chain.doFilter(req, res);
             return;
         }
@@ -37,7 +38,8 @@ public class UserPrincipalContextProvider extends HttpFilter {
             return;
         }
 
-        ResteasyProviderFactory.pushContext(UserPrincipal.class, principal.get());
+        // hm... where is ResteasyProviderFactory...pushContext ?
+        ResteasyContext.pushContext(UserPrincipal.class, principal.get());
 
         chain.doFilter(req, res);
     }
