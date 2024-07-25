@@ -20,6 +20,10 @@ import {
     Alert,
     Box,
     Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Drawer,
     FormControl,
     FormControlLabel,
@@ -35,6 +39,7 @@ import React, { useEffect, useMemo } from 'react';
 import {
     Link as RouterLink,
     useBeforeUnload,
+    useLocation,
     useNavigate,
     useParams,
     useSearchParams,
@@ -96,6 +101,7 @@ const EditEntityPage = () => {
     // load the entity
     const { entityId } = useParams<RouteParams>();
     const hasUnsavedChanges = localStorage.getItem(`dirty-${entityId}`) !== null;
+    console.log('hasUnsavedChanges', hasUnsavedChanges);
     const {
         data: serverValue,
         isLoading,
@@ -208,12 +214,6 @@ const EditEntityPage = () => {
         [handleSave],
     );
 
-    const handleReset = React.useCallback(() => {
-        localStorage.removeItem(`dirty-${entityId}`);
-        setEditorValue(serverValue ?? '');
-        setDirty(false);
-    }, [entityId, serverValue]);
-
     // save any changes to local storage before navigating away
     const saveDirty = React.useCallback(() => {
         if (!dirty) {
@@ -221,28 +221,41 @@ const EditEntityPage = () => {
         }
         localStorage.setItem(`dirty-${entityId}`, editorValue);
     }, [editorValue, entityId, dirty]);
+
+    const location = useLocation();
     useEffect(() => {
-        return () => saveDirty();
-    }, [saveDirty]);
+        saveDirty();
+    }, [saveDirty, location]);
+
     useBeforeUnload(saveDirty);
 
     // load any unsaved changes from local storage (except for the new entities)
-    const [showUnsavedChangesRestored, setShowUnsavedChangesRestored] =
-        React.useState<boolean>(false);
-    const handleUnsavedChangesRestoredClose = React.useCallback(
-        () => setShowUnsavedChangesRestored(false),
-        [],
-    );
+    const [unsavedChanges, setUnsavedChanges] = React.useState<string | null>(null);
     useEffect(() => {
-        const value = localStorage.getItem(`dirty-${entityId}`);
-        if (!value) {
+        if (entityId === '_new') {
             return;
         }
-
-        setEditorValue(value);
-        setDirty(true);
-        setShowUnsavedChangesRestored(true);
+        const unsaved = localStorage.getItem(`dirty-${entityId}`);
+        if (unsaved) {
+            setUnsavedChanges(unsaved);
+        }
     }, [entityId]);
+    const loadUnsavedChanges = React.useCallback(() => {
+        if (unsavedChanges == null) {
+            return;
+        }
+        setEditorValue(unsavedChanges);
+        setDirty(true);
+        localStorage.removeItem(`dirty-${entityId}`);
+        setUnsavedChanges(null);
+    }, [entityId, unsavedChanges]);
+
+    const handleReset = React.useCallback(() => {
+        localStorage.removeItem(`dirty-${entityId}`);
+        setEditorValue(serverValue ?? '');
+        setDirty(false);
+        setUnsavedChanges(null);
+    }, [entityId, serverValue]);
 
     const lastNamePart = useMemo(() => selectedName?.split('/').pop(), [selectedName]);
 
@@ -254,12 +267,20 @@ const EditEntityPage = () => {
                 onClose={handleSuccessClose}
                 message="Data saved successfully"
             />
-            <Snackbar
-                open={showUnsavedChangesRestored}
-                autoHideDuration={5000}
-                onClose={handleUnsavedChangesRestoredClose}
-                message={`Unsaved changes restored. Click "Reset" to discard them.`}
-            />
+            <Dialog open={unsavedChanges !== null}>
+                <DialogTitle>Unsaved Changes</DialogTitle>
+                <DialogContent>
+                    You have unsaved changes from a previous session. Would you like to load them?
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleReset} color="warning">
+                        Discard
+                    </Button>
+                    <Button onClick={loadUnsavedChanges} variant="contained">
+                        Load
+                    </Button>
+                </DialogActions>
+            </Dialog>
             <Box display="flex" flexDirection="column" height="100%">
                 <Box margin={2}>
                     <ActionBar>
