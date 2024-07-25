@@ -215,14 +215,16 @@ const EditEntityPage = () => {
     }, [entityId, serverValue]);
 
     // save any changes to local storage before navigating away
-    useBeforeUnload(
-        React.useCallback(() => {
-            if (!dirty) {
-                return;
-            }
-            localStorage.setItem(`dirty-${entityId}`, editorValue);
-        }, [editorValue, entityId, dirty]),
-    );
+    const saveDirty = React.useCallback(() => {
+        if (!dirty) {
+            return;
+        }
+        localStorage.setItem(`dirty-${entityId}`, editorValue);
+    }, [editorValue, entityId, dirty]);
+    useEffect(() => {
+        return () => saveDirty();
+    }, [saveDirty]);
+    useBeforeUnload(saveDirty);
 
     // load any unsaved changes from local storage (except for the new entities)
     const [showUnsavedChangesRestored, setShowUnsavedChangesRestored] =
