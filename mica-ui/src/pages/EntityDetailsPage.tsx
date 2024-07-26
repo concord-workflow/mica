@@ -227,7 +227,7 @@ const PreviewDialog = ({ data, onClose }: { data: Entity; onClose: () => void })
                 </Grid>
             </DialogTitle>
             <DialogContent>
-                <Grid container spacing={1}>
+                <Grid container spacing={1} height="100%">
                     <Grid xs={3}>
                         <ViewParameters
                             parameters={data.parameters as ObjectSchemaNode}
