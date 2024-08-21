@@ -52,9 +52,9 @@ public class LocalMicaServer {
                 .put("oidc.clientId", oidcClientId)
                 .put("oidc.secret", oidcSecret)
                 .put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration")
+                .put("oidc.afterLogoutUrl", "http://localhost:8080/mica/")
                 .put("oidc.urlBase", "http://localhost:8080")
                 .put("db.changeLogParameters.defaultAdminToken", TEST_ADMIN_TOKEN)
-                .put("mica.oidc.logoutEndpoint", authServerUri + "/login/signout")
                 .build();
     }
 }

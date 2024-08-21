@@ -21,9 +21,12 @@ export const redirectToLogin = () => {
 };
 
 export const redirectToLogout = () => {
+    const from = new URL(window.location.href);
+    from.pathname = '/mica/';
+    from.search = '';
     const url = new URL(window.location.href);
-    url.pathname = `/api/mica/oidc/logout`;
-    url.search = `?from=${encodeURIComponent(window.location.href)}`;
+    url.pathname = `/api/service/oidc/logout`;
+    url.search = `?from=${encodeURIComponent(from.toString())}`;
     console.log('Redirecting to logout: ' + url.toString());
     window.location.assign(url);
 };
