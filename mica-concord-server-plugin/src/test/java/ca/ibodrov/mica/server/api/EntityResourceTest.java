@@ -30,7 +30,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         var entityKindStore = new EntityKindStore(entityStore);
-        var controller = new EntityController(entityStore, entityKindStore, objectMapper);
+        var controller = new EntityController(dsl(), entityStore, entityKindStore, objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
                 .buildValidatorFactory()

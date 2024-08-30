@@ -5,6 +5,7 @@ import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.RenderRequest;
+import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.api.ViewResource;
 import ca.ibodrov.mica.server.data.EntityStore;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Key;
 import com.walmartlabs.concord.client2.ApiException;
 import com.walmartlabs.concord.client2.ProcessApi;
 import com.walmartlabs.concord.client2.ProcessEntry;
@@ -34,6 +36,7 @@ import com.walmartlabs.concord.server.user.UserManager;
 import com.walmartlabs.concord.server.user.UserType;
 import org.eclipse.jgit.api.Git;
 import org.intellij.lang.annotations.Language;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -73,6 +76,7 @@ public class ITs extends TestResources {
     private static EntityStore entityStore;
     private static ViewResource viewResource;
     private static ObjectMapper objectMapper;
+    private static DSLContext dsl;
     private static UUID adminId;
 
     @BeforeAll
@@ -85,6 +89,7 @@ public class ITs extends TestResources {
         entityStore = injector.getInstance(EntityStore.class);
         viewResource = injector.getInstance(ViewResource.class);
         objectMapper = injector.getInstance(ObjectMapper.class);
+        dsl = injector.getInstance(Key.get(DSLContext.class, MicaDB.class));
 
         adminId = injector.getInstance(UserManager.class)
                 .getId("admin", null, UserType.LOCAL)
@@ -875,7 +880,7 @@ public class ITs extends TestResources {
                                 action: upload
                                 kind: /mica/record/v1
                                 src: ${workDir}/original-file.yml
-                                name: /result-file.yaml
+                                name: /taskMustCorrectlySerializeTimestamps/result-file.yaml
                               out: result
                             - log: "Result: ${result}"
                         """.strip().getBytes()));
@@ -898,7 +903,7 @@ public class ITs extends TestResources {
     }
 
     private static void upsert(PartialEntity entity) {
-        entityStore.upsert(session, entity, null).orElseThrow();
+        dsl.transaction(tx -> entityStore.upsert(tx.dsl(), session, entity, null).orElseThrow());
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)

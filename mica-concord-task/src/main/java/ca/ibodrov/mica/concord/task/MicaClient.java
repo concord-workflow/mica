@@ -88,11 +88,16 @@ public class MicaClient {
         return parseResponseAsText(response);
     }
 
-    public EntityVersion uploadPartialYaml(String kind, String name, boolean replace, BodyPublisher bodyPublisher) {
+    public EntityVersion uploadPartialYaml(String kind,
+                                           String name,
+                                           boolean replace,
+                                           boolean overwrite,
+                                           BodyPublisher bodyPublisher) {
         var qp = queryParameters(
                 "entityKind", kind,
                 "entityName", name,
-                "replace", replace);
+                "replace", replace,
+                "overwrite", overwrite);
 
         var uri = "/api/mica/v1/upload/partialYaml?" + qp;
         var request = newRequest(uri)

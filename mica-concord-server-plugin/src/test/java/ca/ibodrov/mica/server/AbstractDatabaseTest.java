@@ -29,7 +29,7 @@ public class AbstractDatabaseTest {
         var entityHistoryController = new EntityHistoryController(dsl);
 
         entityStore = new EntityStore(dsl, objectMapper, uuidGenerator, entityHistoryController);
-        new InitialDataLoader(entityStore, objectMapper).load();
+        new InitialDataLoader(dsl, entityStore, objectMapper).load();
     }
 
     @AfterAll

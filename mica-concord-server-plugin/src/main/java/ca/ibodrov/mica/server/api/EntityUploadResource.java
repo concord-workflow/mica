@@ -86,10 +86,6 @@ public class EntityUploadResource implements Resource {
             throw new ConstraintViolationException("Invalid entity", violations);
         }
 
-        // TODO single transaction
-        if (replace) {
-            controller.deleteIfExists(session, entity.name());
-        }
-        return controller.createOrUpdate(session, entity, doc, overwrite);
+        return controller.put(session, entity, doc, overwrite, replace);
     }
 }

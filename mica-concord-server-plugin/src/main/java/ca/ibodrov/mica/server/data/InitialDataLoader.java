@@ -1,9 +1,11 @@
 package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
+import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.YamlMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.walmartlabs.concord.server.security.UserPrincipal;
+import org.jooq.DSLContext;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -24,11 +26,16 @@ public class InitialDataLoader {
 
     private static final Logger log = LoggerFactory.getLogger(InitialDataLoader.class);
 
+    private final DSLContext dsl;
     private final EntityStore entityStore;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public InitialDataLoader(EntityStore entityStore, ObjectMapper objectMapper) {
+    public InitialDataLoader(@MicaDB DSLContext dsl,
+                             EntityStore entityStore,
+                             ObjectMapper objectMapper) {
+
+        this.dsl = requireNonNull(dsl);
         this.entityStore = requireNonNull(entityStore);
         this.objectMapper = requireNonNull(objectMapper);
 
@@ -61,11 +68,15 @@ public class InitialDataLoader {
     }
 
     private void createOrReplace(UserPrincipal session, PartialEntity entity, String doc) {
-        entityStore.getByName(entity.name())
-                .flatMap(existingEntity -> entityStore.deleteById(session, existingEntity.id()))
-                .ifPresent(deleted -> log.info("Removed old version of {}: {}", entity.name(), deleted));
+        dsl.transaction(cfg -> {
+            var tx = cfg.dsl();
 
-        entityStore.upsert(session, entity, doc);
+            entityStore.getByName(tx, entity.name())
+                    .flatMap(existingEntity -> entityStore.deleteById(tx, session, existingEntity.id()))
+                    .ifPresent(deleted -> log.info("Removed old version of {}: {}", entity.name(), deleted));
+
+            entityStore.upsert(tx, session, entity, doc);
+        });
 
         log.info("Created or replaced an entity: {}", entity.name());
     }

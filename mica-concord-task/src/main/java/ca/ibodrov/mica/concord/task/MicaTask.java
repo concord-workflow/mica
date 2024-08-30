@@ -134,7 +134,7 @@ public class MicaTask implements Task {
         var body = Files.readString(Path.of(src));
         body = hideSensitiveData(input, body);
         var response = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
-                .uploadPartialYaml(kind, name, true, ofString(body));
+                .uploadPartialYaml(kind, name, true, true, ofString(body));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(response, Map.class));
     }
@@ -170,7 +170,8 @@ public class MicaTask implements Task {
             throw new RuntimeException("Error serializing entity: " + name, e);
         }
 
-        var updatedVersion = client.uploadPartialYaml(kind, name, false, BodyPublishers.ofByteArray(requestBody));
+        var updatedVersion = client.uploadPartialYaml(kind, name, false, false,
+                BodyPublishers.ofByteArray(requestBody));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(updatedVersion, Map.class));
     }

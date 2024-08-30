@@ -5,6 +5,7 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import org.jooq.DSLContext;
 
 import javax.inject.Inject;
 import java.util.Optional;
@@ -28,8 +29,8 @@ public class EntityKindStore {
         this.entityStore = requireNonNull(entityStore);
     }
 
-    public boolean isKindExists(String kind) {
-        return entityStore.isNameAndKindExists(kind, MICA_KIND_V1);
+    public boolean isKindExists(DSLContext tx, String kind) {
+        return entityStore.isNameAndKindExists(tx, kind, MICA_KIND_V1);
     }
 
     /**
