@@ -207,12 +207,13 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
 
     }
 
-    private static boolean matchesKind(Path rootPath, EntityFile entityFile, String kindPattern) {
+    @VisibleForTesting
+    static boolean matchesKind(Path rootPath, EntityFile entityFile, String kindPattern) {
         // should be a cheap way to check if the file is of the given kind
         switch (entityFile.format()) {
             case YAML -> {
                 try (var reader = Files.newBufferedReader(entityFile.path(), UTF_8)) {
-                    return reader.lines().anyMatch(l -> l.matches("kind:\\s+" + kindPattern));
+                    return reader.lines().anyMatch(l -> l.matches("kind:\\s+[\"']?" + kindPattern + "[\"']?"));
                 } catch (IOException e) {
                     throw new StoreException("Error while reading %s: %s".formatted(entityFile.path(), e.getMessage()),
                             e);

@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.data.git;
 
+import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.server.YamlMapper;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.junit.jupiter.api.Test;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Map;
 
@@ -77,5 +79,50 @@ public class ConcordGitEntityFetcherTest {
 
         assertEquals(1, result.size());
         assertEquals("foo", result.get(0).name());
+    }
+
+    @Test
+    public void testEntityKindMatching(@TempDir Path tempDir) throws Exception {
+        var fooYaml = tempDir.resolve("foo.yaml");
+        Files.writeString(fooYaml, """
+                kind: /test/kind/v1
+                a: 1
+                b: 2
+                """);
+
+        var fooButNotExactlyYaml = tempDir.resolve("foo.yam");
+        Files.writeString(fooButNotExactlyYaml, """
+                kind-of: /test/kind/v1
+                """);
+
+        var barButWithQuotesInKindYaml = tempDir.resolve("bar.yaml");
+        Files.writeString(barButWithQuotesInKindYaml, """
+                kind: "/test/kind/v1"
+                a: 3
+                b: 4
+                """);
+
+        var quxButWithSingleQuotesYaml = tempDir.resolve("qux.yaml");
+        Files.writeString(quxButWithSingleQuotesYaml, """
+                kind: '/test/kind/v1'
+                a: 3
+                b: 4
+                """);
+
+        var result = ConcordGitEntityFetcher
+                .walkAndParse(yamlMapper, tempDir, "/test/kind/v1", true, "", EnumSet.allOf(FileFormat.class),
+                        DEFAULT_FILE_FORMAT_OPTIONS)
+                .sorted(Comparator.comparing(EntityLike::name))
+                .toList();
+
+        assertEquals(3, result.size());
+        assertEquals("/test/kind/v1", result.get(0).kind());
+        assertEquals("bar", result.get(0).name());
+
+        assertEquals("/test/kind/v1", result.get(1).kind());
+        assertEquals("foo", result.get(1).name());
+
+        assertEquals("/test/kind/v1", result.get(2).kind());
+        assertEquals("qux", result.get(2).name());
     }
 }
