@@ -17,12 +17,9 @@ import ca.ibodrov.mica.server.ui.WhoamiResource;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.typesafe.config.Config;
+import com.walmartlabs.concord.config.ConfigModule;
 import com.walmartlabs.concord.server.boot.FilterChainConfigurator;
 import com.walmartlabs.concord.server.sdk.rest.Component;
-import com.walmartlabs.ollie.config.ConfigurationProcessor;
-import com.walmartlabs.ollie.config.Environment;
-import com.walmartlabs.ollie.config.EnvironmentSelector;
-import com.walmartlabs.ollie.config.OllieConfigurationModule;
 
 import javax.inject.Named;
 import javax.servlet.http.HttpServlet;
@@ -68,7 +65,7 @@ public class MicaModule implements Module {
         if (config == null) {
             throw new RuntimeException("The config property must be injected before calling configure()");
         }
-        binder.install(new OllieConfigurationModule("ca.ibodrov.mica.server", config));
+        binder.install(new ConfigModule("ca.ibodrov.mica.server", config));
 
         // servlets
 
@@ -125,8 +122,7 @@ public class MicaModule implements Module {
 
     private static Config loadDefaultConfig() {
         // TODO avoid re-reading the config
-        Environment env = new EnvironmentSelector().select();
-        return new ConfigurationProcessor("concord-server", env, null, null).process();
+        return ConfigModule.load("concord-server");
     }
 
     public static <K extends ExceptionMapper<?> & Component> void bindExceptionMapper(Binder binder, Class<K> klass) {
