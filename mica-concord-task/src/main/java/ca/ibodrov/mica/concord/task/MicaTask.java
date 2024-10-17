@@ -39,7 +39,7 @@ public class MicaTask implements Task {
     private final HttpClient httpClient;
     private final URI defaultBaseUri;
     private final Optional<String> sessionToken;
-    private final UUID txId;
+    private final String userAgent;
 
     private final Map<String, Object> defaultVariables;
 
@@ -58,7 +58,15 @@ public class MicaTask implements Task {
         this.defaultBaseUri = URI.create(ctx.apiConfiguration().baseUrl());
         this.sessionToken = Optional.ofNullable(ctx.processConfiguration().processInfo().sessionToken());
         this.defaultVariables = ctx.defaultVariables().toMap();
-        this.txId = ctx.processInstanceId();
+
+        try (var in = MicaTask.class.getResourceAsStream("/ca/ibodrov/mica/concord/task/version.properties")) {
+            var props = new Properties();
+            props.load(in);
+            var version = Optional.ofNullable(props.getProperty("version")).orElseThrow();
+            this.userAgent = "mica (version=%s, instanceId=%s)".formatted(version, ctx.processInstanceId());
+        } catch (IOException e) {
+            throw new RuntimeException("Can't load version.properties", e);
+        }
     }
 
     @Override
@@ -190,7 +198,7 @@ public class MicaTask implements Task {
     }
 
     private MicaClient createMicaClient(Variables input) {
-        return new MicaClient(httpClient, baseUri(input), auth(input), objectMapper, "Concord-Mica-task: txId=" + txId);
+        return new MicaClient(httpClient, baseUri(input), auth(input), userAgent, objectMapper);
     }
 
     private URI baseUri(Variables input) {

@@ -34,14 +34,14 @@ public class MicaClient {
     public MicaClient(HttpClient client,
                       URI baseUri,
                       Authorization authorization,
-                      ObjectMapper objectMapper,
-                      String userAgent) {
+                      String userAgent,
+                      ObjectMapper objectMapper) {
 
         this.client = requireNonNull(client);
         this.baseUri = requireNonNull(baseUri);
         this.authorization = requireNonNull(authorization);
+        this.userAgent = requireNonNull(userAgent);
         this.objectMapper = requireNonNull(objectMapper);
-        this.userAgent = userAgent;
     }
 
     public BatchOperationResult apply(BatchOperationRequest body) {
