@@ -29,15 +29,18 @@ public class MicaClient {
     private final URI baseUri;
     private final Authorization authorization;
     private final ObjectMapper objectMapper;
+    private final String userAgent;
 
     public MicaClient(HttpClient client,
                       URI baseUri,
                       Authorization authorization,
+                      String userAgent,
                       ObjectMapper objectMapper) {
 
         this.client = requireNonNull(client);
         this.baseUri = requireNonNull(baseUri);
         this.authorization = requireNonNull(authorization);
+        this.userAgent = requireNonNull(userAgent);
         this.objectMapper = requireNonNull(objectMapper);
     }
 
@@ -111,6 +114,7 @@ public class MicaClient {
 
     private HttpRequest.Builder newRequest(String path) {
         var builder = HttpRequest.newBuilder()
+                .header("User-Agent", userAgent)
                 .timeout(REQUEST_TIMEOUT)
                 .uri(baseUri.resolve(path));
         return authorization.applyTo(builder);
