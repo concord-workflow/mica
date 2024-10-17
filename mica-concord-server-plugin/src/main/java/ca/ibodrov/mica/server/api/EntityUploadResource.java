@@ -7,6 +7,7 @@ import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.walmartlabs.concord.server.sdk.metrics.WithTimer;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +48,7 @@ public class EntityUploadResource implements Resource {
     @Path("yaml")
     @Consumes("*/yaml")
     @Operation(summary = "Upload an entity in YAML format", operationId = "putYaml")
+    @WithTimer
     public EntityVersion putYaml(@Context UserPrincipal session,
                                  @QueryParam("overwrite") @DefaultValue("false") boolean overwrite,
                                  String doc) {
@@ -59,6 +61,7 @@ public class EntityUploadResource implements Resource {
     @Path("partialYaml")
     @Consumes("*/yaml")
     @Operation(summary = "Upload a partial entity in YAML format", description = "Upload a (possibly) partial entity in YAML format with 'name' or 'kind' overrides", operationId = "putPartialYaml")
+    @WithTimer
     public EntityVersion putPartialYaml(@Context UserPrincipal session,
                                         @Nullable @QueryParam("entityName") String entityName,
                                         @Nullable @QueryParam("entityKind") String entityKind,
