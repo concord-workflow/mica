@@ -25,10 +25,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
@@ -42,6 +39,7 @@ public class MicaTask implements Task {
     private final HttpClient httpClient;
     private final URI defaultBaseUri;
     private final Optional<String> sessionToken;
+    private final UUID txId;
 
     private final Map<String, Object> defaultVariables;
 
@@ -60,6 +58,7 @@ public class MicaTask implements Task {
         this.defaultBaseUri = URI.create(ctx.apiConfiguration().baseUrl());
         this.sessionToken = Optional.ofNullable(ctx.processConfiguration().processInfo().sessionToken());
         this.defaultVariables = ctx.defaultVariables().toMap();
+        this.txId = ctx.processInstanceId();
     }
 
     @Override
@@ -80,7 +79,7 @@ public class MicaTask implements Task {
         var operation = BatchOperation.valueOf(input.assertString("operation").toUpperCase());
         var namePatterns = Optional.of(input.<String>assertList("namePatterns"));
 
-        var response = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
+        var response = createMicaClient(input)
                 .apply(new BatchOperationRequest(operation, namePatterns));
 
         return TaskResult.success()
@@ -99,7 +98,7 @@ public class MicaTask implements Task {
                         .orElse(null),
                 input.getInt("limit", -1));
 
-        var entityList = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper).listEntities(params);
+        var entityList = createMicaClient(input).listEntities(params);
 
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(entityList.data(), List.class));
@@ -114,7 +113,7 @@ public class MicaTask implements Task {
 
     private TaskResult renderView(Variables input) {
         var body = parseRenderRequest(input);
-        var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
+        var rendered = createMicaClient(input)
                 .renderView(body);
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(rendered.data().get("data"), List.class));
@@ -122,7 +121,7 @@ public class MicaTask implements Task {
 
     private TaskResult renderProperties(Variables input) {
         var body = parseRenderRequest(input);
-        var rendered = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
+        var rendered = createMicaClient(input)
                 .renderProperties(body);
         return TaskResult.success().value("data", rendered);
     }
@@ -133,14 +132,14 @@ public class MicaTask implements Task {
         var name = input.assertString("name");
         var body = Files.readString(Path.of(src));
         body = hideSensitiveData(input, body);
-        var response = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
+        var response = createMicaClient(input)
                 .uploadPartialYaml(kind, name, true, true, ofString(body));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(response, Map.class));
     }
 
     private TaskResult upsert(Variables input) {
-        var client = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper);
+        var client = createMicaClient(input);
 
         var kind = input.getString("kind");
         var name = input.assertString("name");
@@ -177,7 +176,7 @@ public class MicaTask implements Task {
     }
 
     private Optional<EntityMetadata> findEntityByName(Variables input, String name) {
-        var existingEntities = new MicaClient(httpClient, baseUri(input), auth(input), objectMapper)
+        var existingEntities = createMicaClient(input)
                 .listEntities(ListEntitiesParameters.byEntityName(name, 2));
 
         if (existingEntities.data().isEmpty()) {
@@ -188,6 +187,10 @@ public class MicaTask implements Task {
         }
 
         return Optional.of(existingEntities.data().get(0));
+    }
+
+    private MicaClient createMicaClient(Variables input) {
+        return new MicaClient(httpClient, baseUri(input), auth(input), objectMapper, "Concord-Mica-task: txId=" + txId);
     }
 
     private URI baseUri(Variables input) {

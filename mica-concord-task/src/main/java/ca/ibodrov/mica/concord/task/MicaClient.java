@@ -29,16 +29,19 @@ public class MicaClient {
     private final URI baseUri;
     private final Authorization authorization;
     private final ObjectMapper objectMapper;
+    private final String userAgent;
 
     public MicaClient(HttpClient client,
                       URI baseUri,
                       Authorization authorization,
-                      ObjectMapper objectMapper) {
+                      ObjectMapper objectMapper,
+                      String userAgent) {
 
         this.client = requireNonNull(client);
         this.baseUri = requireNonNull(baseUri);
         this.authorization = requireNonNull(authorization);
         this.objectMapper = requireNonNull(objectMapper);
+        this.userAgent = userAgent;
     }
 
     public BatchOperationResult apply(BatchOperationRequest body) {
@@ -111,6 +114,7 @@ public class MicaClient {
 
     private HttpRequest.Builder newRequest(String path) {
         var builder = HttpRequest.newBuilder()
+                .header("User-Agent", userAgent)
                 .timeout(REQUEST_TIMEOUT)
                 .uri(baseUri.resolve(path));
         return authorization.applyTo(builder);
