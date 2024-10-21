@@ -44,7 +44,7 @@ public class MicaClient {
         this.objectMapper = requireNonNull(objectMapper);
     }
 
-    public BatchOperationResult apply(BatchOperationRequest body) {
+    public BatchOperationResult apply(BatchOperationRequest body) throws ApiException {
         var request = newRequest("/api/mica/v1/batch")
                 .header("Content-Type", "application/json")
                 .POST(BodyPublishers.ofByteArray(serialize(body)))
@@ -53,7 +53,7 @@ public class MicaClient {
         return parseResponseAsJson(response, BatchOperationResult.class);
     }
 
-    public Optional<Entity> getEntityById(EntityId entityId, @Nullable Instant updatedAt) {
+    public Optional<Entity> getEntityById(EntityId entityId, @Nullable Instant updatedAt) throws ApiException {
         var qp = queryParameters("updatedAt", updatedAt);
 
         var uri = "/api/mica/v1/entity/" + entityId.toExternalForm() + "?" + qp;
@@ -65,7 +65,7 @@ public class MicaClient {
         return parseOptionalResponseAsJson(response, Entity.class);
     }
 
-    public EntityList listEntities(ListEntitiesParameters params) {
+    public EntityList listEntities(ListEntitiesParameters params) throws ApiException {
         var request = newRequest("/api/mica/v1/entity?" + params.toQueryParameters())
                 .GET()
                 .build();
@@ -73,7 +73,7 @@ public class MicaClient {
         return parseResponseAsJson(response, EntityList.class);
     }
 
-    public PartialEntity renderView(RenderRequest body) {
+    public PartialEntity renderView(RenderRequest body) throws ApiException {
         var request = newRequest("/api/mica/v1/view/render")
                 .header("Content-Type", "application/json")
                 .POST(BodyPublishers.ofByteArray(serialize(body)))
@@ -82,7 +82,7 @@ public class MicaClient {
         return parseResponseAsJson(response, PartialEntity.class);
     }
 
-    public String renderProperties(RenderRequest body) {
+    public String renderProperties(RenderRequest body) throws ApiException {
         var request = newRequest("/api/mica/v1/view/renderProperties")
                 .header("Content-Type", "application/json")
                 .POST(BodyPublishers.ofByteArray(serialize(body)))
@@ -95,7 +95,8 @@ public class MicaClient {
                                            String name,
                                            boolean replace,
                                            boolean overwrite,
-                                           BodyPublisher bodyPublisher) {
+                                           BodyPublisher bodyPublisher)
+            throws ApiException {
         var qp = queryParameters(
                 "entityKind", kind,
                 "entityName", name,
@@ -124,10 +125,10 @@ public class MicaClient {
         try {
             return client.send(request, responseBodyHandler);
         } catch (IOException e) {
-            throw new RuntimeException("Error sending request: " + e.getMessage(), e);
+            throw new ClientException("Error sending request: " + e.getMessage(), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Request interrupted", e);
+            throw new ClientException("Request interrupted", e);
         }
     }
 
@@ -135,37 +136,39 @@ public class MicaClient {
         try {
             return objectMapper.writeValueAsBytes(o);
         } catch (IOException e) {
-            throw new RuntimeException("Error serializing object: " + e.getMessage(), e);
+            throw new ClientException("Error serializing object: " + e.getMessage(), e);
         }
     }
 
-    private String parseResponseAsText(HttpResponse<InputStream> response) {
+    private String parseResponseAsText(HttpResponse<InputStream> response) throws ApiException {
         try {
-            handleResponseErrors(response);
+            handleResponseErrors(response, "Expected text response");
             assertContentType(response, "text");
             try (var responseBody = response.body()) {
                 return new String(responseBody.readAllBytes(), UTF_8);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error parsing response: " + e.getMessage(), e);
+            throw new ClientException("Error parsing response: " + e.getMessage(), e);
         }
     }
 
     private <T> T parseResponseAsJson(HttpResponse<InputStream> response,
-                                      Class<T> type) {
+                                      Class<T> type)
+            throws ApiException {
         try {
-            handleResponseErrors(response);
+            handleResponseErrors(response, "Expected JSON response");
             assertContentType(response, "json");
             try (var responseBody = response.body()) {
                 return objectMapper.readValue(responseBody, type);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error parsing response: " + e.getMessage(), e);
+            throw new ClientException("Error parsing response: " + e.getMessage(), e);
         }
     }
 
     private <T> Optional<T> parseOptionalResponseAsJson(HttpResponse<InputStream> response,
-                                                        Class<T> type) {
+                                                        Class<T> type)
+            throws ApiException {
         var statusCode = response.statusCode();
         if (statusCode == 404) {
             return Optional.empty();
@@ -173,13 +176,10 @@ public class MicaClient {
         return Optional.of(parseResponseAsJson(response, type));
     }
 
-    private static void handleResponseErrors(HttpResponse<InputStream> response) throws IOException {
+    private static void handleResponseErrors(HttpResponse<InputStream> response, String message) throws ApiException {
         var statusCode = response.statusCode();
         if (statusCode < 200 || statusCode > 299) {
-            try (var body = response.body()) {
-                throw new RuntimeException(
-                        "Request error: " + response.statusCode() + " " + new String(body.readAllBytes(), UTF_8));
-            }
+            throw ApiException.from(response, message);
         }
     }
 
