@@ -15,6 +15,8 @@ import com.walmartlabs.concord.runtime.v2.sdk.Task;
 import com.walmartlabs.concord.runtime.v2.sdk.TaskResult;
 import com.walmartlabs.concord.runtime.v2.sdk.Variables;
 import com.walmartlabs.concord.sdk.MapUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -27,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 
+import static ca.ibodrov.mica.concord.task.Retry.withRetry;
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
 import static java.util.Objects.requireNonNull;
@@ -34,6 +37,8 @@ import static java.util.stream.Collectors.toSet;
 
 @Named("mica")
 public class MicaTask implements Task {
+
+    private static final Logger log = LoggerFactory.getLogger(MicaTask.class);
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
@@ -83,18 +88,18 @@ public class MicaTask implements Task {
         };
     }
 
-    private TaskResult batchAction(Variables input) {
+    private TaskResult batchAction(Variables input) throws ApiException {
         var operation = BatchOperation.valueOf(input.assertString("operation").toUpperCase());
         var namePatterns = Optional.of(input.<String>assertList("namePatterns"));
 
-        var response = createMicaClient(input)
-                .apply(new BatchOperationRequest(operation, namePatterns));
+        var client = createMicaClient(input);
+        var response = withRetry(log, () -> client.apply(new BatchOperationRequest(operation, namePatterns)));
 
         return TaskResult.success()
                 .values(objectMapper.convertValue(response, Map.class));
     }
 
-    private TaskResult listEntities(Variables input) {
+    private TaskResult listEntities(Variables input) throws ApiException {
         var params = new ListEntitiesParameters(
                 input.getString("search"),
                 input.getString("entityNameStartsWith"),
@@ -106,7 +111,8 @@ public class MicaTask implements Task {
                         .orElse(null),
                 input.getInt("limit", -1));
 
-        var entityList = createMicaClient(input).listEntities(params);
+        var client = createMicaClient(input);
+        var entityList = withRetry(log, () -> client.listEntities(params));
 
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(entityList.data(), List.class));
@@ -119,34 +125,37 @@ public class MicaTask implements Task {
                 Optional.of(objectMapper.convertValue(parameters, JsonNode.class)));
     }
 
-    private TaskResult renderView(Variables input) {
+    private TaskResult renderView(Variables input) throws ApiException {
         var body = parseRenderRequest(input);
-        var rendered = createMicaClient(input)
-                .renderView(body);
+        var client = createMicaClient(input);
+        var rendered = withRetry(log, () -> client.renderView(body));
         return TaskResult.success()
                 .value("data", objectMapper.convertValue(rendered.data().get("data"), List.class));
     }
 
-    private TaskResult renderProperties(Variables input) {
+    private TaskResult renderProperties(Variables input) throws ApiException {
         var body = parseRenderRequest(input);
-        var rendered = createMicaClient(input)
-                .renderProperties(body);
+        var client = createMicaClient(input);
+        var rendered = withRetry(log, () -> client.renderProperties(body));
         return TaskResult.success().value("data", rendered);
     }
 
-    private TaskResult upload(Variables input) throws IOException {
+    private TaskResult upload(Variables input) throws IOException, ApiException {
         var kind = input.assertString("kind");
         var src = input.assertString("src");
         var name = input.assertString("name");
-        var body = Files.readString(Path.of(src));
-        body = hideSensitiveData(input, body);
-        var response = createMicaClient(input)
-                .uploadPartialYaml(kind, name, true, true, ofString(body));
+
+        var str = Files.readString(Path.of(src));
+        str = hideSensitiveData(input, str);
+        var body = str;
+
+        var client = createMicaClient(input);
+        var response = withRetry(log, () -> client.uploadPartialYaml(kind, name, true, true, ofString(body)));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(response, Map.class));
     }
 
-    private TaskResult upsert(Variables input) {
+    private TaskResult upsert(Variables input) throws ApiException {
         var client = createMicaClient(input);
 
         var kind = input.getString("kind");
@@ -158,7 +167,8 @@ public class MicaTask implements Task {
             var meta = findEntityByName(input, name);
             if (meta.isPresent()) {
                 var existingVersion = meta.get();
-                var entity = client.getEntityById(existingVersion.id(), existingVersion.updatedAt())
+                var entity = withRetry(log,
+                        () -> client.getEntityById(existingVersion.id(), existingVersion.updatedAt()))
                         .orElseThrow(() -> new RuntimeException("Conflict: " + name));
 
                 var a = objectMapper.convertValue(entity, Map.class);
@@ -183,7 +193,7 @@ public class MicaTask implements Task {
                 .value("version", objectMapper.convertValue(updatedVersion, Map.class));
     }
 
-    private Optional<EntityMetadata> findEntityByName(Variables input, String name) {
+    private Optional<EntityMetadata> findEntityByName(Variables input, String name) throws ApiException {
         var existingEntities = createMicaClient(input)
                 .listEntities(ListEntitiesParameters.byEntityName(name, 2));
 
