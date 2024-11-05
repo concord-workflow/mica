@@ -16,18 +16,22 @@ public final class Retry {
     }
 
     public static <T> T withRetry(Logger log, Retryable<T> call) throws ApiException {
-        int retries = 0;
-        Duration retryDelay = INITIAL_RETRY_DELAY;
+        var retries = 0;
+        var retryDelay = INITIAL_RETRY_DELAY;
 
         while (true) {
             try {
                 return call.call();
-            } catch (ApiException e) {
+            } catch (Exception e) {
                 if (retries >= MAX_RETRIES) {
                     throw e;
                 }
 
-                log.info("Retrying after an API error (status={}, attempt={}, next in {}s): {}", e.getStatus(),
+                var status = -1;
+                if (e instanceof ApiException) {
+                    status = ((ApiException) e).getStatus();
+                }
+                log.info("Retrying after an API error (status={}, attempt={}, next in {}s): {}", status,
                         retries + 1, retryDelay.toSeconds(), e.getMessage());
 
                 try {
