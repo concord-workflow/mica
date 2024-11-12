@@ -8,12 +8,10 @@ import ca.ibodrov.mica.concord.task.MicaClient.SessionToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.walmartlabs.concord.common.ConfigurationUtils;
-import com.walmartlabs.concord.runtime.v2.sdk.Context;
-import com.walmartlabs.concord.runtime.v2.sdk.Task;
-import com.walmartlabs.concord.runtime.v2.sdk.TaskResult;
-import com.walmartlabs.concord.runtime.v2.sdk.Variables;
+import com.walmartlabs.concord.runtime.v2.sdk.*;
 import com.walmartlabs.concord.sdk.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +27,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 
+import static ca.ibodrov.mica.concord.task.MicaClient.ListEntitiesParameters.byEntityName;
 import static ca.ibodrov.mica.concord.task.Retry.withRetry;
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpRequest.BodyPublishers.ofString;
@@ -36,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 @Named("mica")
+@DryRunReady
 public class MicaTask implements Task {
 
     private static final Logger log = LoggerFactory.getLogger(MicaTask.class);
@@ -47,11 +47,13 @@ public class MicaTask implements Task {
     private final String userAgent;
 
     private final Map<String, Object> defaultVariables;
+    private final boolean dryRun;
 
     @Inject
     public MicaTask(ObjectMapper objectMapper, Context ctx) {
         this.objectMapper = requireNonNull(objectMapper).copy()
                 .registerModule(new JavaTimeModule())
+                .registerModule(new Jdk8Module())
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
         this.httpClient = HttpClient.newBuilder()
@@ -72,6 +74,8 @@ public class MicaTask implements Task {
         } catch (IOException e) {
             throw new RuntimeException("Can't load version.properties", e);
         }
+
+        this.dryRun = ctx.processConfiguration().dryRun();
     }
 
     @Override
@@ -90,6 +94,12 @@ public class MicaTask implements Task {
 
     private TaskResult batchAction(Variables input) throws ApiException {
         var operation = BatchOperation.valueOf(input.assertString("operation").toUpperCase());
+        if (isDryRun(input)) {
+            log.info("Dry-run mode enabled: Skipping batch '{}'", operation);
+            return TaskResult.success()
+                    .value("deletedEntities", List.of());
+        }
+
         var namePatterns = Optional.of(input.<String>assertList("namePatterns"));
 
         var client = createMicaClient(input);
@@ -149,6 +159,14 @@ public class MicaTask implements Task {
         str = hideSensitiveData(input, str);
         var body = str;
 
+        if (isDryRun(input)) {
+            log.info("Dry-run mode enabled: Skipping upload and returning a random 'version' value");
+            return TaskResult.success()
+                    .value("version", Map.of(
+                            "id", UUID.randomUUID().toString(),
+                            "updatedAt", "2023-01-01T00:00:00Z"));
+        }
+
         var client = createMicaClient(input);
         var response = withRetry(log, () -> client.uploadPartialYaml(kind, name, true, true, ofString(body)));
         return TaskResult.success()
@@ -180,6 +198,25 @@ public class MicaTask implements Task {
 
         body = hideSensitiveData(input, body);
 
+        if (isDryRun(input)) {
+            var existingVersion = findEntityByName(input, name)
+                    .map(EntityMetadata::toVersion)
+                    .orElse(null);
+
+            if (existingVersion == null) {
+                log.info(
+                        "Dry-run mode enabled: Skipping upsert and returning a random 'version' value (no existing entity found)");
+                return TaskResult.success()
+                        .value("version", Map.of(
+                                "id", UUID.randomUUID().toString(),
+                                "updatedAt", "2023-01-01T00:00:00Z"));
+            }
+
+            log.info("Dry-run mode enabled: Skipping upsert and returning the entity's existing version");
+            return TaskResult.success()
+                    .value("version", objectMapper.convertValue(existingVersion, Map.class));
+        }
+
         byte[] requestBody;
         try {
             requestBody = objectMapper.writeValueAsBytes(body);
@@ -194,8 +231,7 @@ public class MicaTask implements Task {
     }
 
     private Optional<EntityMetadata> findEntityByName(Variables input, String name) throws ApiException {
-        var existingEntities = createMicaClient(input)
-                .listEntities(ListEntitiesParameters.byEntityName(name, 2));
+        var existingEntities = createMicaClient(input).listEntities(byEntityName(name, 2));
 
         if (existingEntities.data().isEmpty()) {
             return Optional.empty();
@@ -227,6 +263,10 @@ public class MicaTask implements Task {
 
         return new SessionToken(sessionToken.orElseThrow(() -> new IllegalArgumentException(
                 "Authentication error: no session token found and no 'apiKey' provided")));
+    }
+
+    private boolean isDryRun(Variables input) {
+        return input.getBoolean("dryRun", this.dryRun);
     }
 
     private static Map<String, Object> parseParameters(Variables input) {
