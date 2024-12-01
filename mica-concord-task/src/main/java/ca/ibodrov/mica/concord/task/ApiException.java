@@ -21,7 +21,7 @@ public class ApiException extends Exception {
     private final byte[] body;
 
     public ApiException(String message, int code, HttpHeaders headers, byte[] body) {
-        super(message);
+        super(message + ", response: " + new String(body));
         this.status = code;
         this.headers = headers;
         this.body = body;
