@@ -8,7 +8,7 @@ public class ApiException extends Exception {
 
     public static ApiException from(HttpResponse<InputStream> response, String message) {
         try (var body = response.body()) {
-            byte[] bytes = body.readAllBytes();
+            var bytes = body.readAllBytes();
             return new ApiException(message, response.statusCode(), response.headers(), bytes);
         } catch (Exception e) {
             return new ApiException(message + " Failed to read response body: " + e.getMessage(), response.statusCode(),
@@ -21,7 +21,7 @@ public class ApiException extends Exception {
     private final byte[] body;
 
     public ApiException(String message, int code, HttpHeaders headers, byte[] body) {
-        super(message + ", response: " + new String(body));
+        super(formatMessage(message, code, body));
         this.status = code;
         this.headers = headers;
         this.body = body;
@@ -37,5 +37,17 @@ public class ApiException extends Exception {
 
     public byte[] getBody() {
         return body;
+    }
+
+    private static String formatMessage(String message, int code, byte[] body) {
+        var response = "[empty]";
+        var maxResponseLength = Math.min(128, body.length);
+        if (maxResponseLength > 0) {
+            response = new String(body, 0, maxResponseLength);
+            if (body.length > maxResponseLength) {
+                response += "...[cut]";
+            }
+        }
+        return "%s (code: %s). Response: %s".formatted(message, code, response);
     }
 }
