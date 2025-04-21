@@ -1,2 +1,2 @@
 FROM alpine
-COPY ./docker/* /dist/
+COPY ./target/docker/* /dist/

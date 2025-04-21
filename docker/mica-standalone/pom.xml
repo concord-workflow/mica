@@ -7,73 +7,26 @@
         <groupId>ca.ibodrov.mica</groupId>
         <artifactId>mica</artifactId>
         <version>0.0.27-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>docker</artifactId>
+    <groupId>ca.ibodrov.mica.docker</groupId>
+    <artifactId>mica-standalone</artifactId>
     <packaging>pom</packaging>
 
     <properties>
         <docker.skip>true</docker.skip>
-        <docker.image>concordworkflow/mica-sidecar</docker.image>
+        <docker.image>concordworkflow/mica-standalone</docker.image>
         <docker.platforms>linux/amd64</docker.platforms>
         <docker.loadOrPush>load</docker.loadOrPush>
+        <jdk.version>21</jdk.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>ca.ibodrov.mica</groupId>
-            <artifactId>mica-concord-server-plugin</artifactId>
+            <artifactId>mica-standalone</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.validation</groupId>
-                    <artifactId>validation-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.postgresql</groupId>
-                    <artifactId>postgresql</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jooq</groupId>
-                    <artifactId>jooq</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.inject</groupId>
-                    <artifactId>guice</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.inject</groupId>
-                    <artifactId>javax.inject</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.swagger.core.v3</groupId>
-                    <artifactId>swagger-annotations</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
@@ -121,7 +74,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>mica-sidecar-build</id>
+                        <id>mica-standalone-build</id>
                         <phase>package</phase>
                         <goals>
                             <goal>exec</goal>
@@ -129,7 +82,7 @@
                         <configuration>
                             <skip>${docker.skip}</skip>
                             <executable>docker</executable>
-                            <workingDirectory>${project.build.directory}</workingDirectory>
+                            <workingDirectory>${project.build.directory}/../</workingDirectory>
                             <arguments>
                                 <argument>buildx</argument>
                                 <argument>build</argument>
@@ -138,7 +91,7 @@
                                 <argument>--platform=${docker.platforms}</argument>
                                 <argument>--${docker.loadOrPush}</argument>
                                 <argument>-f</argument>
-                                <argument>../mica-sidecar/Dockerfile</argument>
+                                <argument>./Dockerfile</argument>
                                 <argument>.</argument>
                             </arguments>
                         </configuration>

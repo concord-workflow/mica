@@ -31,7 +31,8 @@ import static com.walmartlabs.concord.server.Utils.bindJaxRsResource;
 import static com.walmartlabs.concord.server.Utils.bindServletFilter;
 
 /**
- * Mica's Guice module.
+ * Mica's Guice module. Intended to use as a concord-server plugin. For the
+ * standalone version see MicaServerModule in mica-standalone.
  * <p/>
  * Several things are assumed to be provided by the environment:
  * <ul>
@@ -42,15 +43,15 @@ import static com.walmartlabs.concord.server.Utils.bindServletFilter;
  * </ul>
  */
 @Named
-public class MicaModule implements Module {
+public class MicaPluginModule implements Module {
 
     private final Config config;
 
-    public MicaModule() {
+    public MicaPluginModule() {
         this(loadDefaultConfig());
     }
 
-    public MicaModule(Config config) {
+    public MicaPluginModule(Config config) {
         this.config = config;
     }
 
