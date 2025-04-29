@@ -5,7 +5,9 @@ import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -28,10 +30,15 @@ public class ViewRenderer {
 
     private final JsonPathEvaluator jsonPathEvaluator;
     private final ObjectMapper objectMapper;
+    private final JsonMapper mergeMapper;
 
     public ViewRenderer(JsonPathEvaluator jsonPathEvaluator, ObjectMapper objectMapper) {
         this.jsonPathEvaluator = requireNonNull(jsonPathEvaluator);
         this.objectMapper = requireNonNull(objectMapper);
+        this.mergeMapper = JsonMapper.builder()
+                .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                .withConfigOverride(ArrayNode.class, cfg -> cfg.setMergeable(false))
+                .build();
     }
 
     public RenderedView render(ViewLike view, Stream<? extends EntityLike> entities) {
@@ -184,13 +191,8 @@ public class ViewRenderer {
     }
 
     private ObjectNode deepMerge(ObjectNode left, ObjectNode right) {
-        var mapper = objectMapper.copy();
-
-        mapper.configOverride(ArrayNode.class)
-                .setMergeable(false);
-
         try {
-            return mapper.updateValue(left, right);
+            return mergeMapper.updateValue(left, right);
         } catch (JsonProcessingException e) {
             throw new ViewProcessorException("Error while merging JSON objects: " + e.getMessage());
         }
