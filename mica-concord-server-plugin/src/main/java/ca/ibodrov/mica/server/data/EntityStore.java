@@ -18,10 +18,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -38,7 +35,7 @@ import static org.jooq.impl.DSL.noCondition;
  */
 public class EntityStore {
 
-    private static final TypeReference<Map<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
+    private static final TypeReference<LinkedHashMap<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
     };
 
     private final DSLContext dsl;

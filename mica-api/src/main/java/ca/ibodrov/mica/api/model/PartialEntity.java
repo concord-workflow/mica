@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -31,7 +32,7 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
     }
 
     public PartialEntity {
-        data = new HashMap<>(data != null ? data : Map.of()); // has to be mutable to support @JsonAnySetter
+        data = new LinkedHashMap<>(data != null ? data : Map.of()); // has to be mutable to support @JsonAnySetter
     }
 
     @JsonAnyGetter

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -26,7 +27,7 @@ public record Entity(@NotNull EntityId id,
         implements EntityLike {
 
     public Entity {
-        data = new HashMap<>(data != null ? data : Map.of()); // has to be mutable to support @JsonAnySetter
+        data = new LinkedHashMap<>(data != null ? data : Map.of()); // has to be mutable to support @JsonAnySetter
     }
 
     @JsonAnyGetter
