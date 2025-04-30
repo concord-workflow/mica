@@ -48,22 +48,22 @@ spec:
             - name: MICA_SERVER_PORT
               value: "{{ .Values.service.port }}"
             - name: MICA_BASE_URL
-              value: {{ .Values.mica.baseUrl }}
+              value: "{{ .Values.mica.baseUrl }}"
             - name: MICA_DB_URL
-              value: {{ .Values.mica.db.url }}
+              value: "{{ .Values.mica.db.url }}"
             - name: MICA_DB_USERNAME
-              value: {{ .Values.mica.db.username }}
+              value: "{{ .Values.mica.db.username }}"
             - name: MICA_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: mica-secrets
                   key: MICA_DB_PASSWORD
             - name: MICA_DB_CREATE_EXTENSIONS
-              value: {{ .Values.mica.db.createExtensions | toString }}
+              value: "{{ .Values.mica.db.createExtensions }}"
             - name: MICA_AUTH_SERVER_URI
-              value: {{ .Values.mica.oidc.authServerUri }}
+              value: "{{ .Values.mica.oidc.authServerUri }}"
             - name: MICA_OIDC_CLIENT_ID
-              value: {{ .Values.mica.oidc.clientId }}
+              value: "{{ .Values.mica.oidc.clientId }}"
             - name: MICA_OIDC_SECRET
               valueFrom:
                 secretKeyRef:
