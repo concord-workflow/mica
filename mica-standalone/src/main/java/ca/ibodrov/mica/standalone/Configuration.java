@@ -1,38 +1,121 @@
 package ca.ibodrov.mica.standalone;
 
-import com.google.common.collect.ImmutableMap;
-
+import java.util.HashMap;
 import java.util.Map;
 
 public final class Configuration {
 
-    public static Map<String, String> fromEnv() {
-        var serverPort = getEnv("MICA_SERVER_PORT", "8080");
-        var baseUrl = assertEnv("MICA_BASE_URL");
+    private final Map<String, String> config = new HashMap<>();
+
+    private boolean databaseConfigured = false;
+    private boolean oidcConfigured = false;
+    private boolean secretsConfigured = false;
+    private boolean serverPortConfigured = false;
+    private boolean dataDirConfigured = false;
+
+    public Map<String, String> toMap() {
+        if (!databaseConfigured) {
+            throw new IllegalStateException("Database is not configured");
+        }
+
+        if (!oidcConfigured) {
+            throw new IllegalStateException("OIDC is not configured");
+        }
+
+        if (!secretsConfigured) {
+            throw new IllegalStateException("Secrets are not configured");
+        }
+
+        if (!serverPortConfigured) {
+            throw new IllegalStateException("Server port is not configured");
+        }
+
+        if (!dataDirConfigured) {
+            throw new IllegalStateException("Data directory is not configured");
+        }
+
+        return config;
+    }
+
+    public Configuration configureDatabaseUsingEnv() {
         var dbUrl = getEnv("MICA_DB_URL", "jdbc:postgresql://localhost:5432/postgres");
         var dbUsername = getEnv("MICA_DB_USERNAME", "postgres");
         var dbPassword = assertEnv("MICA_DB_PASSWORD");
-        var sharedSecret = assertEnv("MICA_SHARED_SECRET");
+        config.put("db.url", dbUrl);
+        config.put("db.appUsername", dbUsername);
+        config.put("db.appPassword", dbPassword);
+        config.put("db.inventoryUsername", dbPassword);
+        config.put("db.inventoryPassword", dbPassword);
+        this.databaseConfigured = true;
+        return this;
+    }
+
+    public Configuration configureDatabase(String dbUrl, String dbUsername, String dbPassword) {
+        config.put("db.url", dbUrl);
+        config.put("db.appUsername", dbUsername);
+        config.put("db.appPassword", dbPassword);
+        config.put("db.inventoryUsername", dbPassword);
+        config.put("db.inventoryPassword", dbPassword);
+        this.databaseConfigured = true;
+        return this;
+    }
+
+    public Configuration configureOidcUsingEnv() {
+        var baseUrl = assertEnv("MICA_BASE_URL");
         var authServerUri = assertEnv("MICA_AUTH_SERVER_URI");
         var oidcClientId = assertEnv("MICA_OIDC_CLIENT_ID");
         var oidcSecret = assertEnv("MICA_OIDC_SECRET");
-        return ImmutableMap.<String, String>builder()
-                .put("server.port", serverPort)
-                .put("db.url", dbUrl)
-                .put("db.appUsername", dbUsername)
-                .put("db.appPassword", dbPassword)
-                .put("db.inventoryUsername", dbPassword)
-                .put("db.inventoryPassword", dbPassword)
-                .put("secretStore.serverPassword", sharedSecret)
-                .put("secretStore.secretStoreSalt", sharedSecret)
-                .put("secretStore.projectSecretSalt", sharedSecret)
-                .put("oidc.enabled", "true")
-                .put("oidc.clientId", oidcClientId)
-                .put("oidc.secret", oidcSecret)
-                .put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration")
-                .put("oidc.afterLogoutUrl", baseUrl + "/mica/")
-                .put("oidc.urlBase", baseUrl)
-                .build();
+        config.put("oidc.enabled", "true");
+        config.put("oidc.clientId", oidcClientId);
+        config.put("oidc.secret", oidcSecret);
+        config.put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration");
+        config.put("oidc.afterLogoutUrl", baseUrl + "/mica/");
+        config.put("oidc.urlBase", baseUrl);
+        this.oidcConfigured = true;
+        return this;
+    }
+
+    public Configuration configureOidc(String baseUrl, String authServerUri, String oidcClientId, String oidcSecret) {
+        config.put("oidc.enabled", "true");
+        config.put("oidc.clientId", oidcClientId);
+        config.put("oidc.secret", oidcSecret);
+        config.put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration");
+        config.put("oidc.afterLogoutUrl", baseUrl + "/mica/");
+        config.put("oidc.urlBase", baseUrl);
+        this.oidcConfigured = true;
+        return this;
+    }
+
+    public Configuration configureSecretsUsingEnv() {
+        var sharedSecret = assertEnv("MICA_SHARED_SECRET");
+        config.put("secretStore.serverPassword", sharedSecret);
+        config.put("secretStore.secretStoreSalt", sharedSecret);
+        config.put("secretStore.projectSecretSalt", sharedSecret);
+        this.secretsConfigured = true;
+        return this;
+    }
+
+    public Configuration configureSecrets(String sharedSecret) {
+        config.put("secretStore.serverPassword", sharedSecret);
+        config.put("secretStore.secretStoreSalt", sharedSecret);
+        config.put("secretStore.projectSecretSalt", sharedSecret);
+        this.secretsConfigured = true;
+        return this;
+    }
+
+    public Configuration configureServerPortUsingEnv() {
+        var serverPort = getEnv("MICA_SERVER_PORT", "8080");
+        config.put("server.port", serverPort);
+        this.serverPortConfigured = true;
+        return this;
+    }
+
+    public Configuration configureDataDirUsingEnv() {
+        var dataDir = getEnv("MICA_DATA_DIR", "/tmp/mica");
+        config.put("repositoryCache.cacheDir", dataDir + "/repositoryCache");
+        config.put("repositoryCache.cacheInfoDir", dataDir + "/repositoryCacheInfo");
+        this.dataDirConfigured = true;
+        return this;
     }
 
     private static String getEnv(String key, String defaultValue) {
@@ -49,8 +132,5 @@ public final class Configuration {
             throw new RuntimeException("Missing %s environment variable".formatted(key));
         }
         return v;
-    }
-
-    private Configuration() {
     }
 }

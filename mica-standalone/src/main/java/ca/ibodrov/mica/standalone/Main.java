@@ -7,7 +7,14 @@ public class Main {
     public static void main(String[] args) throws Exception {
         SLF4JBridgeHandler.install();
 
-        var cfg = Configuration.fromEnv();
+        var cfg = new Configuration()
+                .configureServerPortUsingEnv()
+                .configureSecretsUsingEnv()
+                .configureOidcUsingEnv()
+                .configureDatabaseUsingEnv()
+                .configureDataDirUsingEnv()
+                .toMap();
+
         try (var server = new MicaServer(cfg)) {
             server.start();
             Thread.currentThread().join();
