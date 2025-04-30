@@ -58,6 +58,8 @@ spec:
                 secretKeyRef:
                   name: mica-secrets
                   key: MICA_DB_PASSWORD
+            - name: MICA_DB_CREATE_EXTENSIONS
+              value: {{ .Values.mica.db.createExtensions | toString }}
             - name: MICA_AUTH_SERVER_URI
               value: {{ .Values.mica.oidc.authServerUri }}
             - name: MICA_OIDC_CLIENT_ID
