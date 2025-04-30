@@ -17,6 +17,12 @@ public class Main {
 
         try (var server = new MicaServer(cfg)) {
             server.start();
+
+            System.out.println("""
+
+                    MICA is ready.
+
+                    """);
             Thread.currentThread().join();
         }
     }
