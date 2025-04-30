@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -45,6 +46,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <skip>${docker.skip}</skip>
                     <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
                     <generateGitPropertiesFile>false</generateGitPropertiesFile>
                     <injectAllReactorProjects>true</injectAllReactorProjects>
@@ -58,13 +60,27 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-dist</id>
+                        <id>copy-deps</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/docker</outputDirectory>
+                            <skip>${docker.skip}</skip>
+                            <outputDirectory>${project.build.directory}/deps</outputDirectory>
+                            <excludeGroupIds>ca.ibodrov.mica</excludeGroupIds>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-release</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${docker.skip}</skip>
+                            <outputDirectory>${project.build.directory}/release</outputDirectory>
+                            <includeGroupIds>ca.ibodrov.mica</includeGroupIds>
                         </configuration>
                     </execution>
                 </executions>

@@ -34,7 +34,8 @@ RUN groupadd -g 456 concord && \
 
 EXPOSE 8001
 
-COPY ./target/docker/* /opt/mica/lib/
+COPY ./target/deps/* /opt/mica/lib/
+COPY ./target/release/* /opt/mica/lib/
 ADD --chmod=755 ./start.sh /opt/mica/
 
 RUN mkdir -p /opt/concord/server/logs && \
