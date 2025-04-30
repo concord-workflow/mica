@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mica-standalone.fullname" . }}
+  labels:
+    {{- include "mica-standalone.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mica-standalone.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mica-standalone.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mica-standalone.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: MICA_SERVER_PORT
+              value: "{{ .Values.service.port }}"
+            - name: MICA_BASE_URL
+              value: {{ .Values.mica.baseUrl }}
+            - name: MICA_DB_URL
+              value: {{ .Values.mica.db.url }}
+            - name: MICA_DB_USERNAME
+              value: {{ .Values.mica.db.username }}
+            - name: MICA_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mica-secrets
+                  key: MICA_DB_PASSWORD
+            - name: MICA_AUTH_SERVER_URI
+              value: {{ .Values.mica.oidc.authServerUri }}
+            - name: MICA_OIDC_CLIENT_ID
+              value: {{ .Values.mica.oidc.clientId }}
+            - name: MICA_OIDC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mica-secrets
+                  key: MICA_SHARED_SECRET
+            - name: MICA_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mica-secrets
+                  key: MICA_SHARED_SECRET
+            - name: MICA_DATA_DIR
+              value: "/opt/mica/data"
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
