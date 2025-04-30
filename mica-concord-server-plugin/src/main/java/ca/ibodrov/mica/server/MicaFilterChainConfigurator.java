@@ -21,6 +21,9 @@ public class MicaFilterChainConfigurator implements FilterChainConfigurator {
         manager.createChain("/mica/**", "anon");
         manager.createChain("/api/mica/swagger.json", "anon");
 
+        // serve the liveness probe without authentication
+        manager.createChain("/api/mica/v1/system", "anon");
+
         // OIDC login redirect and the logout URL should also be accessible for anyone
         manager.createChain("/api/mica/oidc/login", "anon");
         manager.createChain("/api/mica/oidc/logout", "anon");
