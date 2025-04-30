@@ -1,4 +1,4 @@
-name: Publish mica-sidecar
+name: Publish Docker Images
 
 on:
   workflow_dispatch: { }
