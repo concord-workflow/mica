@@ -127,7 +127,9 @@ mica:
     url: "jdbc:postgresql://postgres.test.svc.cluster.local:5432/postgres"
     username: "postgres"
     password: "q1"
+    createExtensions: true # false for AWS Aurora and other providers with a pre-installed UUID extension
   sharedSecret: "NGIxZ3MzY3IzdA==" # must be a base64 encoded string
+  defaultAdminToken: "" # auto-generated if empty
   oidc:
     authServerUri: "https://example.okta.com"
     clientId: "foobar"

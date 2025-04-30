@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.standalone;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,21 +42,27 @@ public final class Configuration {
         var dbUrl = getEnv("MICA_DB_URL", "jdbc:postgresql://localhost:5432/postgres");
         var dbUsername = getEnv("MICA_DB_USERNAME", "postgres");
         var dbPassword = assertEnv("MICA_DB_PASSWORD");
-        config.put("db.url", dbUrl);
-        config.put("db.appUsername", dbUsername);
-        config.put("db.appPassword", dbPassword);
-        config.put("db.inventoryUsername", dbPassword);
-        config.put("db.inventoryPassword", dbPassword);
-        this.databaseConfigured = true;
-        return this;
+        var defaultAdminToken = getEnv("MICA_DEFAULT_ADMIN_TOKEN", null);
+        var createExtensionAvailable = getEnv("MICA_DB_CREATE_EXTENSIONS", "true");
+        return this.configureDatabase(dbUrl, dbUsername, dbPassword, defaultAdminToken,
+                Boolean.parseBoolean(createExtensionAvailable));
     }
 
-    public Configuration configureDatabase(String dbUrl, String dbUsername, String dbPassword) {
+    public Configuration configureDatabase(String dbUrl,
+                                           String dbUsername,
+                                           String dbPassword,
+                                           @Nullable String defaultAdminToken,
+                                           boolean createExtensionAvailable) {
         config.put("db.url", dbUrl);
         config.put("db.appUsername", dbUsername);
         config.put("db.appPassword", dbPassword);
         config.put("db.inventoryUsername", dbPassword);
         config.put("db.inventoryPassword", dbPassword);
+        config.put("db.changeLogParameters.superuserAvailable", "false");
+        if (defaultAdminToken != null && !defaultAdminToken.isBlank()) {
+            config.put("db.changeLogParameters.defaultAdminToken", defaultAdminToken);
+        }
+        config.put("db.changeLogParameters.createExtensionAvailable", Boolean.toString(createExtensionAvailable));
         this.databaseConfigured = true;
         return this;
     }
@@ -65,14 +72,7 @@ public final class Configuration {
         var authServerUri = assertEnv("MICA_AUTH_SERVER_URI");
         var oidcClientId = assertEnv("MICA_OIDC_CLIENT_ID");
         var oidcSecret = assertEnv("MICA_OIDC_SECRET");
-        config.put("oidc.enabled", "true");
-        config.put("oidc.clientId", oidcClientId);
-        config.put("oidc.secret", oidcSecret);
-        config.put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration");
-        config.put("oidc.afterLogoutUrl", baseUrl + "/mica/");
-        config.put("oidc.urlBase", baseUrl);
-        this.oidcConfigured = true;
-        return this;
+        return this.configureOidc(baseUrl, authServerUri, oidcClientId, oidcSecret);
     }
 
     public Configuration configureOidc(String baseUrl, String authServerUri, String oidcClientId, String oidcSecret) {
@@ -88,11 +88,7 @@ public final class Configuration {
 
     public Configuration configureSecretsUsingEnv() {
         var sharedSecret = assertEnv("MICA_SHARED_SECRET");
-        config.put("secretStore.serverPassword", sharedSecret);
-        config.put("secretStore.secretStoreSalt", sharedSecret);
-        config.put("secretStore.projectSecretSalt", sharedSecret);
-        this.secretsConfigured = true;
-        return this;
+        return this.configureSecrets(sharedSecret);
     }
 
     public Configuration configureSecrets(String sharedSecret) {

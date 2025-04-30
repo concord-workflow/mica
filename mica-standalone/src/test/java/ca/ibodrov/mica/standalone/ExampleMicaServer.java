@@ -7,7 +7,7 @@ import java.util.Base64;
 
 public class ExampleMicaServer {
 
-    private static final String ADMIN_API_KEY = "mica";
+    private static final String ADMIN_API_TOKEN = "mica";
 
     public static void main(String[] args) throws Exception {
         var authServerUri = assertEnv("MICA_AUTH_SERVER_URI");
@@ -20,11 +20,9 @@ public class ExampleMicaServer {
             var cfg = new Configuration().configureServerPortUsingEnv()
                     .configureSecrets(randomString(64))
                     .configureOidc("http://localhost:8080", authServerUri, oidcClientId, oidcSecret)
-                    .configureDatabase(db.getJdbcUrl(), db.getUsername(), db.getPassword())
+                    .configureDatabase(db.getJdbcUrl(), db.getUsername(), db.getPassword(), ADMIN_API_TOKEN, true)
                     .configureDataDirUsingEnv()
                     .toMap();
-
-            cfg.put("db.changeLogParameters.defaultAdminToken", ADMIN_API_KEY);
 
             try (var server = new MicaServer(cfg)) {
                 server.start();
