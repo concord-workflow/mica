@@ -1,7 +1,6 @@
 package ca.ibodrov.mica.standalone;
 
 import ca.ibodrov.concord.webapp.WebappPluginModule;
-import ca.ibodrov.mica.server.MicaPluginModule;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
@@ -10,6 +9,7 @@ import com.walmartlabs.concord.server.ConcordServer;
 import com.walmartlabs.concord.server.plugins.oidc.OidcPluginModule;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -18,6 +18,7 @@ public class MicaServer implements AutoCloseable {
     private final Map<String, String> config;
     private final Lock controlLock = new ReentrantLock();
 
+    private CountDownLatch stopLatch;
     private ConcordServer server;
 
     public MicaServer(Map<String, String> config) {
@@ -33,20 +34,30 @@ public class MicaServer implements AutoCloseable {
             var webapp = new WebappPluginModule();
             server = ConcordServer.withModules(mica, oidc, webapp)
                     .start();
+
+            this.stopLatch = new CountDownLatch(1);
         } finally {
             controlLock.unlock();
         }
     }
 
-    public synchronized void stop() throws Exception {
+    public void stop() throws Exception {
         controlLock.lock();
         try {
             if (server != null) {
                 server.stop();
             }
+
+            if (stopLatch != null) {
+                stopLatch.countDown();
+            }
         } finally {
             controlLock.unlock();
         }
+    }
+
+    public void waitForStop() throws Exception {
+        stopLatch.await();
     }
 
     @Override

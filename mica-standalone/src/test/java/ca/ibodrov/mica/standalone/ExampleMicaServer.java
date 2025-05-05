@@ -1,11 +1,15 @@
 package ca.ibodrov.mica.standalone;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.security.SecureRandom;
 import java.util.Base64;
 
 public class ExampleMicaServer {
+
+    private static final Logger log = LoggerFactory.getLogger(ExampleMicaServer.class);
 
     private static final String ADMIN_API_TOKEN = "mica";
 
@@ -25,16 +29,25 @@ public class ExampleMicaServer {
                     .toMap();
 
             try (var server = new MicaServer(cfg)) {
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    log.info("Received SIGTERM, stopping the server...");
+                    try {
+                        server.stop();
+                    } catch (Exception e) {
+                        log.warn("Failed to stop the server graciously: {}", e.getMessage());
+                    }
+                }, "shutdown-hook"));
+
                 server.start();
-                System.out.printf("""
+                log.info("""
                         ==============================================================
 
                           UI: http://localhost:8080/mica/
                           DB:
-                            JDBC URL: %s
-                            username: %s
-                            password: %s
-                        %n""", db.getJdbcUrl(),
+                            JDBC URL: {}
+                            username: {}
+                            password: {}
+                        """, db.getJdbcUrl(),
                         db.getUsername(),
                         db.getPassword());
 
