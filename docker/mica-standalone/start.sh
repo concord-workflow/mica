@@ -5,7 +5,7 @@ BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 MAIN_CLASS="ca.ibodrov.mica.standalone.Main"
 
 if [[ -z "${MICA_JAVA_OPTS}" ]]; then
-    MICA_JAVA_OPTS="-Xms2g -Xmx2g"
+    MICA_JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
 fi
 echo "MICA_JAVA_OPTS: ${MICA_JAVA_OPTS}"
 

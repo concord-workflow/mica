@@ -27,8 +27,8 @@ ENV LANG=en_US.UTF-8
 RUN virtualenv /usr/local/bin/mica_venv && \
     /usr/local/bin/mica_venv/bin/pip3 --no-cache-dir install dumb-init
 
-RUN groupadd -g 456 concord && \
-    useradd --no-log-init -u 456 -g concord -m -s /sbin/nologin concord && \
+RUN groupadd -g 1456 concord && \
+    useradd --no-log-init -u 1456 -g concord -m -s /sbin/nologin concord && \
     echo "[safe]\n\tdirectory = *\n" > ~concord/.gitconfig && \
     chown concord:concord ~concord/.gitconfig
 
