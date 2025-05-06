@@ -1,16 +1,19 @@
 package ca.ibodrov.mica.db;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.walmartlabs.concord.db.*;
+import com.walmartlabs.concord.db.DataSourceUtils;
+import com.walmartlabs.concord.db.DatabaseChangeLogProvider;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 
 import javax.inject.Singleton;
 import javax.sql.DataSource;
 
+/**
+ * Configures Mica-specific data source and schema.
+ */
 public class MicaDatabaseModule implements Module {
 
     @Override
@@ -21,51 +24,15 @@ public class MicaDatabaseModule implements Module {
     }
 
     @Provides
-    @MainDB
+    @MicaDB
     @Singleton
-    public DataSource mainDataSource(@MainDB DatabaseConfiguration cfg,
-                                     MetricRegistry metricRegistry,
-                                     MainDBChangeLogProvider mainDbChangeLog,
-                                     MicaDBChangeLogProvider micaDbChangeLog) {
-
-        DataSource ds = DataSourceUtils.createDataSource(cfg, "app", cfg.username(), cfg.password(), metricRegistry);
-        DataSourceUtils.migrateDb(ds, mainDbChangeLog, cfg.changeLogParameters());
-        DataSourceUtils.migrateDb(ds, micaDbChangeLog, cfg.changeLogParameters());
-
-        return ds;
-    }
-
-    @Provides
-    @MainDB
-    @Singleton
-    public Configuration appJooqConfiguration(@MainDB DataSource ds) {
-        return DataSourceUtils.createJooqConfiguration(ds);
-    }
-
-    @Provides
-    @JsonStorageDB
-    @Singleton
-    public DataSource inventoryDataSource(@JsonStorageDB DatabaseConfiguration cfg, MetricRegistry metricRegistry) {
-        return DataSourceUtils.createDataSource(cfg, "inventory", cfg.username(), cfg.password(), metricRegistry);
-    }
-
-    @Provides
-    @JsonStorageDB
-    @Singleton
-    public Configuration inventoryJooqConfiguration(@JsonStorageDB DataSource ds) {
+    public Configuration jooqConfiguration(@MicaDB DataSource ds) {
         return DataSourceUtils.createJooqConfiguration(ds);
     }
 
     @Provides
     @MicaDB
-    @Singleton
-    public Configuration micaJooqConfiguration(@MicaDB DataSource ds) {
-        return DataSourceUtils.createJooqConfiguration(ds);
-    }
-
-    @Provides
-    @MicaDB
-    public DSLContext micaDslContext(@MicaDB Configuration cfg) {
+    public DSLContext dslContext(@MicaDB Configuration cfg) {
         return cfg.dsl();
     }
 

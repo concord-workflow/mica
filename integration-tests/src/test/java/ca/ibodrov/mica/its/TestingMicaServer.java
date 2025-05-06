@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.its;
 
 import ca.ibodrov.concord.webapp.WebappPluginModule;
+import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.MicaPluginModule;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -35,6 +36,7 @@ public class TestingMicaServer extends TestingConcordServer {
     private static List<Function<Config, Module>> extraModules() {
         return List.of(
                 MicaPluginModule::new,
+                _cfg -> new MicaDatabaseModule(),
                 _cfg -> new WebappPluginModule(),
                 _cfg -> new LocalServerModule(),
                 _cfg -> new OidcPluginModule());

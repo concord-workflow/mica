@@ -80,6 +80,7 @@ public class MicaServerModule implements Module {
 
         binder.install(new ConfigurationModule(config));
         binder.install(new DatabaseConfigurationModule());
+        binder.install(new MicaStandaloneDatabaseModule());
         binder.install(new MicaPluginModule(config));
 
         binder.install(new ApiKeyModule());

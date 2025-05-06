@@ -1,6 +1,5 @@
 package ca.ibodrov.mica.server;
 
-import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
@@ -57,10 +56,6 @@ public class MicaPluginModule implements Module {
 
     @Override
     public void configure(Binder binder) {
-        // DB
-
-        binder.install(new MicaDatabaseModule());
-
         // config
 
         if (config == null) {
