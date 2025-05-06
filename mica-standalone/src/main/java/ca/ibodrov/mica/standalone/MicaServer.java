@@ -1,6 +1,7 @@
 package ca.ibodrov.mica.standalone;
 
 import ca.ibodrov.concord.webapp.WebappPluginModule;
+import com.google.inject.Injector;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
@@ -58,6 +59,14 @@ public class MicaServer implements AutoCloseable {
 
     public void waitForStop() throws Exception {
         stopLatch.await();
+    }
+
+    public Injector getInjector() {
+        if (server == null) {
+            throw new IllegalStateException("The server must be started first.");
+        }
+
+        return server.getInjector();
     }
 
     @Override

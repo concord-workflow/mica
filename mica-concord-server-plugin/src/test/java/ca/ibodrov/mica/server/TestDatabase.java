@@ -28,7 +28,7 @@ public class TestDatabase implements AutoCloseable {
                 container.getPassword(), 3);
         var dbModule = new MicaDatabaseModule();
         dataSource = new MicaDataSourceProvider(dbCfg, new MetricRegistry()).get();
-        jooqConfiguration = dbModule.jooqConfiguration(dataSource);
+        jooqConfiguration = dbModule.micaJooqConfiguration(dataSource);
     }
 
     public Configuration getJooqConfiguration() {

@@ -6,32 +6,50 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
-import com.walmartlabs.concord.db.DatabaseModule;
+import com.walmartlabs.concord.db.DatabaseChangeLogProvider;
+import com.walmartlabs.concord.db.MainDBChangeLogProvider;
 import com.walmartlabs.concord.dependencymanager.DependencyManagerConfiguration;
+import com.walmartlabs.concord.imports.ImportManager;
+import com.walmartlabs.concord.process.loader.ProjectLoader;
 import com.walmartlabs.concord.server.*;
-import com.walmartlabs.concord.server.agent.AgentModule;
 import com.walmartlabs.concord.server.audit.AuditLogModule;
 import com.walmartlabs.concord.server.boot.BackgroundTasks;
+import com.walmartlabs.concord.server.boot.filters.AuthenticationHandler;
 import com.walmartlabs.concord.server.cfg.ConfigurationModule;
 import com.walmartlabs.concord.server.cfg.DatabaseConfigurationModule;
-import com.walmartlabs.concord.server.events.EventModule;
 import com.walmartlabs.concord.server.metrics.MetricModule;
-import com.walmartlabs.concord.server.org.OrganizationModule;
-import com.walmartlabs.concord.server.policy.PolicyModule;
-import com.walmartlabs.concord.server.process.ProcessModule;
+import com.walmartlabs.concord.server.org.OrganizationDao;
+import com.walmartlabs.concord.server.org.OrganizationManager;
+import com.walmartlabs.concord.server.org.OrganizationResource;
+import com.walmartlabs.concord.server.org.jsonstore.JsonStoreModule;
+import com.walmartlabs.concord.server.org.project.ProjectModule;
+import com.walmartlabs.concord.server.org.secret.SecretModule;
+import com.walmartlabs.concord.server.org.team.TeamModule;
+import com.walmartlabs.concord.server.process.ImportManagerProvider;
+import com.walmartlabs.concord.server.process.queue.ProcessStatusListener;
 import com.walmartlabs.concord.server.repository.RepositoryModule;
 import com.walmartlabs.concord.server.role.RoleModule;
 import com.walmartlabs.concord.server.sdk.events.ProcessEventListener;
-import com.walmartlabs.concord.server.security.SecurityModule;
+import com.walmartlabs.concord.server.sdk.log.ProcessLogListener;
+import com.walmartlabs.concord.server.security.BasicAuthenticationHandler;
+import com.walmartlabs.concord.server.security.UnauthenticatedExceptionMapper;
+import com.walmartlabs.concord.server.security.UnauthorizedExceptionMapper;
+import com.walmartlabs.concord.server.security.UserSecurityContext;
+import com.walmartlabs.concord.server.security.apikey.ApiKeyAuthenticationHandler;
 import com.walmartlabs.concord.server.security.apikey.ApiKeyModule;
+import com.walmartlabs.concord.server.security.apikey.ApiKeyRealm;
+import com.walmartlabs.concord.server.security.internal.InternalRealm;
+import com.walmartlabs.concord.server.security.internal.LocalUserInfoProvider;
 import com.walmartlabs.concord.server.task.TaskSchedulerModule;
-import com.walmartlabs.concord.server.template.TemplateModule;
+import com.walmartlabs.concord.server.user.UserInfoProvider;
 import com.walmartlabs.concord.server.user.UserModule;
+import org.apache.shiro.realm.Realm;
 
 import java.security.SecureRandom;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.walmartlabs.concord.server.Utils.bindExceptionMapper;
 import static com.walmartlabs.concord.server.Utils.bindJaxRsResource;
 
 public class MicaServerModule implements Module {
@@ -44,38 +62,54 @@ public class MicaServerModule implements Module {
 
     @Override
     public void configure(Binder binder) {
-        binder.bind(UuidGenerator.class).in(SINGLETON);
-        binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
+        newSetBinder(binder, DatabaseChangeLogProvider.class).addBinding().to(MainDBChangeLogProvider.class);
+
+        binder.bind(BackgroundTasks.class).in(SINGLETON);
         binder.bind(ConcordObjectMapper.class).in(SINGLETON);
+        binder.bind(DependencyManagerConfiguration.class).toProvider(DependencyManagerConfigurationProvider.class);
+        binder.bind(ImportManager.class).toProvider(ImportManagerProvider.class);
+        binder.bind(Listeners.class).in(SINGLETON);
+        binder.bind(LocalUserInfoProvider.class).in(SINGLETON);
+        binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
+        binder.bind(OrganizationDao.class).in(SINGLETON);
+        binder.bind(OrganizationManager.class).in(SINGLETON);
+        binder.bind(ProjectLoader.class).to(DummyProjectLoader.class);
+        binder.bind(SecureRandom.class).toProvider(SecureRandomProvider.class);
+        binder.bind(UserSecurityContext.class);
+        binder.bind(UuidGenerator.class).in(SINGLETON);
 
         binder.install(new ConfigurationModule(config));
-        binder.install(new MetricModule());
-
         binder.install(new DatabaseConfigurationModule());
-        binder.install(new DatabaseModule());
-
-        binder.install(new TaskSchedulerModule());
-        binder.bind(BackgroundTasks.class).in(SINGLETON);
-
-        binder.bind(Listeners.class).in(SINGLETON);
-        binder.bind(SecureRandom.class).toProvider(SecureRandomProvider.class);
-
-        binder.bind(DependencyManagerConfiguration.class).toProvider(DependencyManagerConfigurationProvider.class);
-
-        binder.install(new ApiServerModule());
+        binder.install(new MicaPluginModule(config));
 
         binder.install(new ApiKeyModule());
+        binder.install(new ApiServerModule());
         binder.install(new AuditLogModule());
-        binder.install(new MicaPluginModule(config));
-        binder.install(new OrganizationModule());
-        binder.install(new ProcessModule());
+        binder.install(new JsonStoreModule());
+        binder.install(new MetricModule());
+        binder.install(new ProjectModule());
         binder.install(new RepositoryModule());
         binder.install(new RoleModule());
-        binder.install(new SecurityModule());
+        binder.install(new SecretModule());
+        binder.install(new TaskSchedulerModule());
+        binder.install(new TeamModule());
         binder.install(new UserModule());
 
+        bindJaxRsResource(binder, OrganizationResource.class);
         bindJaxRsResource(binder, ServerResource.class);
 
+        newSetBinder(binder, AuthenticationHandler.class).addBinding().to(ApiKeyAuthenticationHandler.class)
+                .in(SINGLETON);
+        newSetBinder(binder, AuthenticationHandler.class).addBinding().to(BasicAuthenticationHandler.class)
+                .in(SINGLETON);
         newSetBinder(binder, ProcessEventListener.class);
+        newSetBinder(binder, ProcessLogListener.class);
+        newSetBinder(binder, ProcessStatusListener.class);
+        newSetBinder(binder, Realm.class).addBinding().to(ApiKeyRealm.class);
+        newSetBinder(binder, Realm.class).addBinding().to(InternalRealm.class);
+        newSetBinder(binder, UserInfoProvider.class).addBinding().to(LocalUserInfoProvider.class);
+
+        bindExceptionMapper(binder, UnauthorizedExceptionMapper.class);
+        bindExceptionMapper(binder, UnauthenticatedExceptionMapper.class);
     }
 }

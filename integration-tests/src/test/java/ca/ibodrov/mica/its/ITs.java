@@ -32,6 +32,7 @@ import com.walmartlabs.concord.server.org.secret.SecretManager;
 import com.walmartlabs.concord.server.org.secret.SecretVisibility;
 import com.walmartlabs.concord.server.process.ProcessSecurityContext;
 import com.walmartlabs.concord.server.security.UserPrincipal;
+import com.walmartlabs.concord.server.security.UserSecurityContext;
 import com.walmartlabs.concord.server.user.UserManager;
 import com.walmartlabs.concord.server.user.UserType;
 import org.eclipse.jgit.api.Git;
@@ -72,7 +73,7 @@ public class ITs extends TestResources {
 
     private static OrganizationManager orgManager;
     private static ProjectManager projectManager;
-    private static ProcessSecurityContext securityContext;
+    private static UserSecurityContext securityContext;
     private static EntityStore entityStore;
     private static ViewResource viewResource;
     private static ObjectMapper objectMapper;
@@ -85,7 +86,7 @@ public class ITs extends TestResources {
 
         orgManager = injector.getInstance(OrganizationManager.class);
         projectManager = injector.getInstance(ProjectManager.class);
-        securityContext = injector.getInstance(ProcessSecurityContext.class);
+        securityContext = injector.getInstance(UserSecurityContext.class);
         entityStore = injector.getInstance(EntityStore.class);
         viewResource = injector.getInstance(ViewResource.class);
         objectMapper = injector.getInstance(ObjectMapper.class);
