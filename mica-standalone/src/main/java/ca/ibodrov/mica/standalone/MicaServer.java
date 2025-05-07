@@ -8,13 +8,18 @@ import com.typesafe.config.ConfigParseOptions;
 import com.typesafe.config.ConfigResolveOptions;
 import com.walmartlabs.concord.server.ConcordServer;
 import com.walmartlabs.concord.server.plugins.oidc.OidcPluginModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MicaServer implements AutoCloseable {
+
+    private static final Logger log = LoggerFactory.getLogger(MicaServer.class);
 
     private final Map<String, String> config;
     private final Lock controlLock = new ReentrantLock();
@@ -75,11 +80,26 @@ public class MicaServer implements AutoCloseable {
     }
 
     private Config prepareConfig() {
+        var extraConfigPath = System.getenv("MICA_EXTRA_CONFIG_FILE");
+
+        Config extraConfig = ConfigFactory.empty();
+        if (extraConfigPath != null) {
+            log.info("Using MICA_EXTRA_CONFIG_FILE: {}", extraConfigPath);
+            var file = new File(extraConfigPath);
+            if (!file.exists() || !file.canRead()) {
+                throw new IllegalArgumentException(
+                        "MICA_EXTRA_CONFIG_FILE doesn't exist or not readable: " + extraConfigPath);
+            }
+            extraConfig = ConfigFactory.parseFile(file, ConfigParseOptions.defaults()).getConfig("mica");
+        }
+
         var micaConfig = ConfigFactory.parseMap(this.config);
+
         var defaultConfig = ConfigFactory
                 .load("concord-server.conf", ConfigParseOptions.defaults(),
                         ConfigResolveOptions.defaults().setAllowUnresolved(true))
                 .getConfig("concord-server");
-        return micaConfig.withFallback(defaultConfig).resolve();
+
+        return extraConfig.withFallback(micaConfig.withFallback(defaultConfig)).resolve();
     }
 }

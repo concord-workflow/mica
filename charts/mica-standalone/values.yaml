@@ -113,12 +113,18 @@ autoscaling:
 
 # Additional volumes on the output Deployment definition.
 volumes:
+  - name: mica-extra-conf
+    configMap:
+      name: mica-extra-conf
   - name: mica-data-volume
-    persistentVolumeClaim:
-      claimName: mica-data-pvc
+    emptyDir:
+      sizeLimit: 16Gi
 
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts:
+  - name: mica-extra-conf
+    mountPath: /opt/mica/conf
+    readOnly: true
   - name: mica-data-volume
     mountPath: /opt/mica/data
 
@@ -141,3 +147,13 @@ mica:
     authServerUri: "https://example.okta.com"
     clientId: "foobar"
     clientSecret: "barbaz"
+    teamMapping: {}
+#      "00000000-0000-0000-0000-000000000000":
+#        source:
+#          - "groups.dev.*"
+#          - "groups..*"
+#        role: "MEMBER"
+    roleMapping: {}
+#      "concordAdmin":
+#        source:
+#          - "groups.admin.*"

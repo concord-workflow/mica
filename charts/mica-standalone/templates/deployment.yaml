@@ -79,6 +79,8 @@ spec:
                 secretKeyRef:
                   name: mica-secrets
                   key: MICA_DEFAULT_ADMIN_TOKEN
+            - name: MICA_EXTRA_CONFIG_FILE
+              value: /opt/mica/conf/extra.conf
             - name: MICA_DATA_DIR
               value: "/opt/mica/data"
           {{- with .Values.livenessProbe }}

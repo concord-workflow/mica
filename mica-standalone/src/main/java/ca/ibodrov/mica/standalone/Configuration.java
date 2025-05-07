@@ -80,8 +80,10 @@ public final class Configuration {
         config.put("oidc.clientId", oidcClientId);
         config.put("oidc.secret", oidcSecret);
         config.put("oidc.discoveryUri", authServerUri + "/.well-known/openid-configuration");
-        config.put("oidc.afterLogoutUrl", baseUrl + "/mica/");
         config.put("oidc.urlBase", baseUrl);
+        config.put("oidc.afterLoginUrl", baseUrl + "/mica/");
+        config.put("oidc.afterLogoutUrl", baseUrl + "/mica/");
+        config.put("oidc.onErrorUrl", baseUrl + "/#/unauthorized");
         this.oidcConfigured = true;
         return this;
     }

@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mica-extra-conf
+  labels:
+    {{- include "mica-standalone.labels" . | nindent 4 }}
+data:
+  extra.conf: |-
+    mica {
+      oidc {
+        teamMapping = {
+          {{- range $teamId, $team := .Values.mica.oidc.teamMapping }}
+          "{{ $teamId }}" {
+            source = [
+              {{- range $index, $source := $team.source }}
+              "{{ $source }}"{{ if ne $index (sub (len $team.source) 1) }},{{ end }}
+              {{- end }}
+            ]
+            role = "{{ $team.role }}"
+          }{{ if ne $teamId (last (keys $.Values.mica.oidc.teamMapping)) }},{{ end }}
+          {{- end }}
+        }
+
+        roleMapping = {
+          {{- range $role, $mapping := .Values.mica.oidc.roleMapping }}
+          "{{ $role }}" {
+            source = [
+              {{- range $index, $source := $mapping.source }}
+              "{{ $source }}"{{ if ne $index (sub (len $mapping.source) 1) }},{{ end }}
+              {{- end }}
+            ]
+          }{{ if ne $role (last (keys $.Values.mica.oidc.roleMapping)) }},{{ end }}
+          {{- end }}
+        }
+      }
+    }
