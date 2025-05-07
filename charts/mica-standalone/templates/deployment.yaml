@@ -68,7 +68,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: mica-secrets
-                  key: MICA_SHARED_SECRET
+                  key: MICA_OIDC_SECRET
             - name: MICA_SHARED_SECRET
               valueFrom:
                 secretKeyRef:
