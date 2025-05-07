@@ -1,6 +1,5 @@
 package ca.ibodrov.mica.standalone;
 
-import ca.ibodrov.mica.db.MicaDatabaseModule;
 import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -12,14 +11,12 @@ import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 /**
- * Installs {@link MicaDatabaseModule} and configures standard Concord data
- * sources.
+ * Configures standard Concord data source for the standalone version of Mica.
  */
 public class MicaStandaloneDatabaseModule implements Module {
 
     @Override
     public void configure(Binder binder) {
-        binder.install(new MicaDatabaseModule());
     }
 
     @Provides

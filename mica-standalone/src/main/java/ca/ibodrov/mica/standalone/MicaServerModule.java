@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.standalone;
 
+import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.MicaPluginModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;

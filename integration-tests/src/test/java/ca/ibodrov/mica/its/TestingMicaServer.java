@@ -36,7 +36,6 @@ public class TestingMicaServer extends TestingConcordServer {
     private static List<Function<Config, Module>> extraModules() {
         return List.of(
                 MicaPluginModule::new,
-                _cfg -> new MicaDatabaseModule(),
                 _cfg -> new WebappPluginModule(),
                 _cfg -> new LocalServerModule(),
                 _cfg -> new OidcPluginModule());
