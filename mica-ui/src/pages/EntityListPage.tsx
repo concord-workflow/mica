@@ -149,7 +149,7 @@ const EntityListPage = () => {
     }, []);
 
     return (
-        <Container sx={{ mt: 2 }} maxWidth="xl">
+        <Container sx={{ mt: 2, mb: 2 }} maxWidth="xl">
             <PageTitle help={HELP}>Entities</PageTitle>
             {openUpload && (
                 <UploadEntityDialog
