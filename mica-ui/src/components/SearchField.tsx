@@ -14,12 +14,17 @@ const SearchField = ({ value, onChange }: Props) => {
             size="small"
             value={value}
             onChange={(ev) => onChange(ev.target.value)}
-            InputProps={{
-                endAdornment: (
-                    <IconButton size="small" onClick={() => onChange('')}>
-                        <ClearIcon />
-                    </IconButton>
-                ),
+            slotProps={{
+                input: {
+                    sx: {
+                        paddingRight: 1,
+                    },
+                    endAdornment: (
+                        <IconButton size="small" onClick={() => onChange('')}>
+                            <ClearIcon />
+                        </IconButton>
+                    ),
+                },
             }}
         />
     );
