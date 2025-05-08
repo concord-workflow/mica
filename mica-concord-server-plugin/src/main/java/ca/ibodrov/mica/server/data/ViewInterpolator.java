@@ -41,19 +41,10 @@ public class ViewInterpolator {
 
         // TODO check for unresolved parameters
 
-        var selectorIncludes = view.selector().includes().map(includes -> interpolate(includes, input));
-        var selectorEntityKind = interpolate(view.selector().entityKind(), input);
-        var selectorNamePatterns = view.selector().namePatterns().map(namePatterns -> interpolate(namePatterns, input));
-        var dataJsonPath = interpolate(objectMapper, view.data().jsonPath(), input);
-        var dataMergeBy = view.data().mergeBy().map(v -> interpolate(objectMapper, v, input));
-        var dropProperties = view.data().dropProperties()
-                .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
-        var dataMap = view.data().map().map(map -> interpolate(objectMapper, map, input));
-        var validationAsEntityKind = view.validation()
-                .flatMap(v -> Optional.ofNullable(interpolate(v.asEntityKind(), input)));
-        var cachingEnabled = view.caching().flatMap(c -> c.enabled().map(v -> interpolate(v, input)));
-        var cachingTtl = view.caching().flatMap(c -> c.ttl().map(v -> interpolate(v, input)));
-
+        var selector = interpolate(view.selector(), input);
+        var data = interpolate(view.data(), input);
+        var validation = view.validation().map(v -> interpolate(v, input));
+        var caching = view.caching().map(c -> interpolate(c, input));
         return new ViewLike() {
             @Override
             public String name() {
@@ -62,67 +53,17 @@ public class ViewInterpolator {
 
             @Override
             public Selector selector() {
-                return new Selector() {
-                    @Override
-                    public Optional<List<String>> includes() {
-                        return selectorIncludes;
-                    }
-
-                    @Override
-                    public String entityKind() {
-                        return selectorEntityKind;
-                    }
-
-                    @Override
-                    public Optional<List<String>> namePatterns() {
-                        return selectorNamePatterns;
-                    }
-                };
+                return selector;
             }
 
             @Override
             public Data data() {
-                return new Data() {
-                    @Override
-                    public JsonNode jsonPath() {
-                        return dataJsonPath;
-                    }
-
-                    @Override
-                    public Optional<Boolean> flatten() {
-                        return view.data().flatten();
-                    }
-
-                    @Override
-                    public Optional<Boolean> merge() {
-                        return view.data().merge();
-                    }
-
-                    @Override
-                    public Optional<JsonNode> mergeBy() {
-                        return dataMergeBy;
-                    }
-
-                    @Override
-                    public Optional<JsonNode> jsonPatch() {
-                        return view.data().jsonPatch();
-                    }
-
-                    @Override
-                    public Optional<List<String>> dropProperties() {
-                        return dropProperties;
-                    }
-
-                    @Override
-                    public Optional<Map<String, JsonNode>> map() {
-                        return dataMap;
-                    }
-                };
+                return data;
             }
 
             @Override
             public Optional<? extends Validation> validation() {
-                return validationAsEntityKind.map(entityKind -> () -> entityKind);
+                return validation;
             }
 
             @Override
@@ -132,17 +73,94 @@ public class ViewInterpolator {
 
             @Override
             public Optional<? extends Caching> caching() {
-                return Optional.of(new Caching() {
-                    @Override
-                    public Optional<String> enabled() {
-                        return cachingEnabled;
-                    }
+                return caching;
+            }
+        };
+    }
 
-                    @Override
-                    public Optional<String> ttl() {
-                        return cachingTtl;
-                    }
-                });
+    private ViewLike.Selector interpolate(ViewLike.Selector selector, JsonNode input) {
+        var includes = selector.includes().map(values -> interpolate(values, input));
+        var entityKind = interpolate(selector.entityKind(), input);
+        var namePatterns = selector.namePatterns().map(values -> interpolate(values, input));
+        return new ViewLike.Selector() {
+            @Override
+            public Optional<List<String>> includes() {
+                return includes;
+            }
+
+            @Override
+            public String entityKind() {
+                return entityKind;
+            }
+
+            @Override
+            public Optional<List<String>> namePatterns() {
+                return namePatterns;
+            }
+        };
+    }
+
+    private ViewLike.Data interpolate(ViewLike.Data data, JsonNode input) {
+        var jsonPath = interpolate(objectMapper, data.jsonPath(), input);
+        var mergeBy = data.mergeBy().map(v -> interpolate(objectMapper, v, input));
+        var dropProperties = data.dropProperties()
+                .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
+        var map = data.map().map(v -> interpolate(objectMapper, v, input));
+        return new ViewLike.Data() {
+            @Override
+            public JsonNode jsonPath() {
+                return jsonPath;
+            }
+
+            @Override
+            public Optional<Boolean> flatten() {
+                return data.flatten();
+            }
+
+            @Override
+            public Optional<Boolean> merge() {
+                return data.merge();
+            }
+
+            @Override
+            public Optional<JsonNode> mergeBy() {
+                return mergeBy;
+            }
+
+            @Override
+            public Optional<JsonNode> jsonPatch() {
+                return data.jsonPatch();
+            }
+
+            @Override
+            public Optional<List<String>> dropProperties() {
+                return dropProperties;
+            }
+
+            @Override
+            public Optional<Map<String, JsonNode>> map() {
+                return map;
+            }
+        };
+    }
+
+    private ViewLike.Validation interpolate(ViewLike.Validation validation, JsonNode input) {
+        var validationAsEntityKind = interpolate(validation.asEntityKind(), input);
+        return () -> validationAsEntityKind;
+    }
+
+    private ViewLike.Caching interpolate(ViewLike.Caching caching, JsonNode input) {
+        var enabled = caching.enabled().map(v -> interpolate(v, input));
+        var ttl = caching.ttl().map(v -> interpolate(v, input));
+        return new ViewLike.Caching() {
+            @Override
+            public Optional<String> enabled() {
+                return enabled;
+            }
+
+            @Override
+            public Optional<String> ttl() {
+                return ttl;
             }
         };
     }
