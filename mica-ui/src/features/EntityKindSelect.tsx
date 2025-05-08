@@ -36,7 +36,9 @@ const EntityKindSelect = ({ value, onChange, disableAny, ...rest }: Props) => {
             {data &&
                 data.map((row) => (
                     <MenuItem key={row.id} value={row.name}>
-                        <ListItemIcon>{entityKindToIcon(row.name)}</ListItemIcon>
+                        <ListItemIcon sx={{ minWidth: '36px' }}>
+                            {entityKindToIcon(row.name)}
+                        </ListItemIcon>
                         {row.name}
                     </MenuItem>
                 ))}
