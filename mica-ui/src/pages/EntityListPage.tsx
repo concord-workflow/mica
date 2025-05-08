@@ -227,6 +227,13 @@ const EntityListPage = () => {
                                 </TableCell>
                             </TableRow>
                         )}
+                        {data && search !== '' && data.length < SEARCH_LIMIT && (
+                            <TableRow>
+                                <TableCell colSpan={3} align="center">
+                                    No more search results.
+                                </TableCell>
+                            </TableRow>
+                        )}
                         {data && data.length < 1 && (
                             <TableRow>
                                 <TableCell colSpan={3} align="center">
