@@ -96,14 +96,14 @@ const Property = ({ name, value, search }: { name: string; value: object; search
             `...[${text.length - MAX_PROPERTY_TEXT_LENGTH} more character(s)]`;
         return (
             <>
-                <pre>{text}</pre>
+                <pre style={{ fontFamily: 'Fira Mono' }}>{text}</pre>
                 <Button size="small" onClick={() => setExpand(true)}>
                     Expand
                 </Button>
             </>
         );
     }
-    return <pre>{highlightSubstring(text, search)}</pre>;
+    return <pre style={{ fontFamily: 'Fira Mono' }}>{highlightSubstring(text, search)}</pre>;
 };
 
 const searchProperties = (entity: Entity, search: string): Array<string> => {
@@ -131,7 +131,7 @@ interface MetadataGridProps {
 const MetadataGrid = ({ sx, children }: MetadataGridProps) => {
     return (
         <>
-            <Grid container sx={{ fontFamily: 'Roboto Mono', fontSize: 12, ...sx }}>
+            <Grid container sx={{ fontFamily: 'Fira Mono', fontSize: 12, ...sx }}>
                 {children}
             </Grid>
         </>
@@ -426,14 +426,14 @@ const EntityDetailsPage = () => {
                                 <TableCell
                                     sx={{
                                         verticalAlign: 'top',
-                                        fontFamily: 'Roboto Mono',
+                                        fontFamily: 'Fira Mono',
                                     }}>
                                     {highlightSubstring(key, search)}
                                 </TableCell>
                                 <TableCell
                                     sx={{
                                         verticalAlign: 'top',
-                                        fontFamily: 'Roboto Mono',
+                                        fontFamily: 'Fira Mono',
                                     }}>
                                     <Property name={key} value={data} search={search} />
                                 </TableCell>
