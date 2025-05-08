@@ -6,8 +6,7 @@ import DataView from './DataView.tsx';
 import ShowRenderedViewDetailsToggle from './ShowRenderedViewDetailsToggle.tsx';
 import ViewParameters from './ViewParameters.tsx';
 import CloseIcon from '@mui/icons-material/Close';
-import { Alert, Box, CircularProgress, IconButton } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import { Alert, Box, CircularProgress, Grid, IconButton } from '@mui/material';
 import { useDebounce } from '@uidotdev/usehooks';
 import { parse as parseYaml } from 'yaml';
 
@@ -155,7 +154,7 @@ const PreviewView = ({ data, onClose }: Props) => {
 
     return (
         <Grid container height="100%">
-            <Grid xs={3}>
+            <Grid size={3}>
                 <Box>
                     {apiError && (
                         <Alert color="error" sx={{ m: 1 }}>
@@ -183,7 +182,7 @@ const PreviewView = ({ data, onClose }: Props) => {
                     />
                 </Box>
             </Grid>
-            <Grid xs={9}>
+            <Grid size={9}>
                 <Box position="fixed" right={(theme) => theme.spacing(2)} zIndex={100}>
                     <ShowRenderedViewDetailsToggle
                         checked={showDetails}

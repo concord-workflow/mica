@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { styled } from '@mui/material';
 
 import React from 'react';

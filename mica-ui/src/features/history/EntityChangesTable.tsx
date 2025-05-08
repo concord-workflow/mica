@@ -3,6 +3,7 @@ import ViewHistoryEntryPopup from './ViewHistoryEntryPopup.tsx';
 import {
     Button,
     CircularProgress,
+    Grid,
     MenuItem,
     Select,
     Table,
@@ -13,7 +14,6 @@ import {
     TableRow,
     Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
 
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
@@ -39,12 +39,12 @@ const EntityChangesTable = ({ entityId }: Props) => {
             {data && data.length > 0 && (
                 <>
                     <Grid spacing={2} sx={{ mb: 1 }} container={true}>
-                        <Grid xs={6}>
+                        <Grid size={6}>
                             <Typography variant="h6">
                                 Changes {isFetching && <CircularProgress size={16} />}
                             </Typography>
                         </Grid>
-                        <Grid xs={6} display="flex" justifyContent="end">
+                        <Grid size={6} display="flex" justifyContent="end">
                             <Typography variant="caption">
                                 Showing{' '}
                                 <Select

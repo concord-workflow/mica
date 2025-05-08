@@ -3,15 +3,16 @@ import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
-import { AlertTitle } from '@mui/lab';
 import {
     Alert,
+    AlertTitle,
     Backdrop,
     Box,
     Button,
     CircularProgress,
     Container,
     FormControl,
+    Grid,
     Paper,
     Stack,
     Table,
@@ -22,7 +23,6 @@ import {
     TableRow,
     Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
 
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -101,10 +101,10 @@ const DashboardPage = () => {
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
             <Grid container>
-                <Grid xs={10}>
+                <Grid size={10}>
                     <PageTitle>{data.dashboard.title}</PageTitle>
                 </Grid>
-                <Grid xs={2} display="flex" justifyContent="flex-end">
+                <Grid size={2} display="flex" justifyContent="flex-end">
                     <Stack direction="row" spacing={2}>
                         <FormControl>
                             <CopyPermalinkButton entityId={entityId} />

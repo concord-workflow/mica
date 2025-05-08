@@ -1,8 +1,7 @@
 import { MICA_KIND_KIND, listEntities } from '../api/entity.ts';
 import entityKindToIcon from '../components/entityKindToIcon.tsx';
-import { MenuItem, Select } from '@mui/material';
+import { MenuItem, Select, SelectProps } from '@mui/material';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import { SelectProps } from '@mui/material/Select/Select';
 
 import { useQuery } from '@tanstack/react-query';
 

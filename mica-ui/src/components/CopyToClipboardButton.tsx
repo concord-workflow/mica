@@ -1,6 +1,5 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { IconButton, Tooltip, styled } from '@mui/material';
-import SvgIcon from '@mui/material/SvgIcon/SvgIcon';
+import { IconButton, SvgIcon, Tooltip, styled } from '@mui/material';
 
 import React from 'react';
 

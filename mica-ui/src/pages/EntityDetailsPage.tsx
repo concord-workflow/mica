@@ -36,6 +36,7 @@ import {
     DialogTitle,
     Divider,
     FormControl,
+    Grid,
     Link,
     Paper,
     Table,
@@ -47,7 +48,6 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
 import { Theme } from '@mui/material/styles';
 import { SxProps } from '@mui/system';
 
@@ -145,8 +145,8 @@ interface MetadataItemProps {
 
 const MetadataItem = ({ label, children }: MetadataItemProps) => (
     <>
-        <Grid xs={2}>{label}</Grid>
-        <Grid xs={10}>{children}</Grid>
+        <Grid size={2}>{label}</Grid>
+        <Grid size={10}>{children}</Grid>
     </>
 );
 
@@ -228,14 +228,14 @@ const PreviewDialog = ({ data, onClose }: { data: Entity; onClose: () => void })
             </DialogTitle>
             <DialogContent>
                 <Grid container spacing={1} height="100%">
-                    <Grid xs={3}>
+                    <Grid size={3}>
                         <ViewParameters
                             parameters={data.parameters as ObjectSchemaNode}
                             values={requestParameters}
                             onChange={handleParameterChange}
                         />
                     </Grid>
-                    <Grid xs={9}>
+                    <Grid size={9}>
                         <RenderView request={{ viewId: data.id, parameters: requestParameters }} />
                     </Grid>
                 </Grid>
