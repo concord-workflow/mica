@@ -3,15 +3,14 @@ import { Box, TextField, Typography } from '@mui/material';
 
 import React from 'react';
 
-const StringField = ({
-    name,
-    value,
-    onChange,
-}: {
+interface StringFieldProps {
     name: string;
     value: string;
     onChange: (name: string, value: string) => void;
-}) => {
+    required: boolean | undefined;
+}
+
+const StringField = ({ name, value, onChange, required }: StringFieldProps) => {
     const handleOnChange = React.useCallback(
         (ev: React.ChangeEvent<HTMLInputElement>) => {
             onChange(name, ev.target.value);
@@ -25,29 +24,35 @@ const StringField = ({
             label={name}
             size="small"
             value={value}
+            required={required}
             onChange={handleOnChange}
         />
     );
 };
 
-const ParameterField = ({
-    name,
-    property,
-    values,
-    onChange,
-}: {
+interface ParameterFieldProps {
     name: string;
     property: ObjectSchemaNode | undefined;
+    required: boolean | undefined;
     values: Record<string, string | null>;
     onChange: (name: string, value: string) => void;
-}) => {
+}
+
+const ParameterField = ({ name, property, required, values, onChange }: ParameterFieldProps) => {
     if (!property) {
         return <Typography>Unknown parameter: {name}</Typography>;
     }
 
     switch (property.type) {
         case 'string':
-            return <StringField name={name} value={values[name] ?? ''} onChange={onChange} />;
+            return (
+                <StringField
+                    name={name}
+                    value={values[name] ?? ''}
+                    required={required}
+                    onChange={onChange}
+                />
+            );
         default:
             return <Typography>Unknown type: {property.type}</Typography>;
     }
@@ -79,6 +84,7 @@ const ViewParameters = ({
                         <ParameterField
                             name={name}
                             property={parameters?.properties?.[name]}
+                            required={parameters?.required?.includes(name)}
                             values={values}
                             onChange={onChange}
                         />

@@ -13,12 +13,7 @@ const ReadableApiError = ({ error }: Props) => {
         return (
             <>
                 {error.message}
-                {error.violations &&
-                    error.violations.map((e) => (
-                        <div key={e.id}>
-                            <i>{e.id}</i> property is invalid: {e.message}
-                        </div>
-                    ))}
+                {error.violations && error.violations.map((e) => <div key={e.id}>{e.message}</div>)}
             </>
         );
     }
