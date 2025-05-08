@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="mica-0.0.27-000" author="ibodrov@gmail.com">
+        <addColumn tableName="MICA_ENTITIES">
+            <column name="DOC_TEXT" type="VARCHAR" valueComputed="convert_from(DOC, 'UTF8')">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <dropColumn tableName="MICA_ENTITIES" columnName="DOC"/>
+        <renameColumn tableName="MICA_ENTITIES" oldColumnName="DOC_TEXT" newColumnName="DOC"/>
+
+        <addColumn tableName="MICA_ENTITY_HISTORY">
+            <column name="DOC_TEXT" type="VARCHAR" valueComputed="convert_from(DOC, 'UTF8')">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <dropColumn tableName="MICA_ENTITY_HISTORY" columnName="DOC"/>
+        <renameColumn tableName="MICA_ENTITY_HISTORY" oldColumnName="DOC_TEXT" newColumnName="DOC"/>
+    </changeSet>
+</databaseChangeLog>

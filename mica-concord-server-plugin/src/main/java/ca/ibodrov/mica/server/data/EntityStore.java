@@ -153,8 +153,7 @@ public class EntityStore {
                 .where(MICA_ENTITIES.ID.eq(entityId.id()))
                 .orderBy(MICA_ENTITIES.UPDATED_AT.desc())
                 .limit(1)
-                .fetchOptional(Record1::value1)
-                .map(ab -> new String(ab, UTF_8));
+                .fetchOptional(Record1::value1);
     }
 
     public Optional<String> getEntityDoc(EntityVersion version) {
@@ -166,8 +165,7 @@ public class EntityStore {
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.ID.eq(version.id().id())
                         .and(MICA_ENTITIES.UPDATED_AT.eq(version.updatedAt())))
-                .fetchOptional(Record1::value1)
-                .map(ab -> new String(ab, UTF_8));
+                .fetchOptional(Record1::value1);
     }
 
     public Optional<EntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
@@ -181,7 +179,7 @@ public class EntityStore {
                 .fetchOptional();
 
         if (version.isPresent()) {
-            var doc = version.map(MicaEntitiesRecord::getDoc).orElseGet(() -> "n/a".getBytes(UTF_8));
+            var doc = version.map(MicaEntitiesRecord::getDoc).orElse("n/a");
             historyController.addEntry(tx,
                     new EntityHistoryEntry(entityId, getDatabaseInstant(), DELETE, session.getUsername()), doc);
         }
@@ -265,14 +263,13 @@ public class EntityStore {
         }
 
         var data = serializeData(entity.data());
-        var docBytes = doc.getBytes(UTF_8);
 
         var version = tx.insertInto(MICA_ENTITIES)
                 .set(MICA_ENTITIES.ID, id)
                 .set(MICA_ENTITIES.NAME, name)
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
-                .set(MICA_ENTITIES.DOC, docBytes)
+                .set(MICA_ENTITIES.DOC, doc)
                 .set(MICA_ENTITIES.CREATED_AT, createdAt)
                 .set(MICA_ENTITIES.UPDATED_AT, updatedAt)
                 .onConflict(MICA_ENTITIES.ID)
@@ -280,7 +277,7 @@ public class EntityStore {
                 .set(MICA_ENTITIES.NAME, name)
                 .set(MICA_ENTITIES.KIND, entity.kind())
                 .set(MICA_ENTITIES.DATA, data)
-                .set(MICA_ENTITIES.DOC, docBytes)
+                .set(MICA_ENTITIES.DOC, doc)
                 .set(MICA_ENTITIES.UPDATED_AT, updatedAt)
                 .where(entity.updatedAt().map(MICA_ENTITIES.UPDATED_AT::eq).orElseGet(DSL::noCondition))
                 .returning(MICA_ENTITIES.UPDATED_AT)
@@ -289,7 +286,7 @@ public class EntityStore {
 
         // TODO move into the controller
         var author = session.getUsername();
-        historyController.addEntry(tx, new EntityHistoryEntry(new EntityId(id), updatedAt, UPDATE, author), docBytes);
+        historyController.addEntry(tx, new EntityHistoryEntry(new EntityId(id), updatedAt, UPDATE, author), doc);
 
         return version;
     }

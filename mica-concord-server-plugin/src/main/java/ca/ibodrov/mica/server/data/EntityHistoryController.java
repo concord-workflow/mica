@@ -41,7 +41,7 @@ public class EntityHistoryController {
                 r.get(MICA_ENTITY_HISTORY.AUTHOR)));
     }
 
-    public void addEntry(DSLContext tx, EntityHistoryEntry entry, byte[] doc) {
+    public void addEntry(DSLContext tx, EntityHistoryEntry entry, String doc) {
         assert doc != null;
         tx.insertInto(MICA_ENTITY_HISTORY)
                 .set(MICA_ENTITY_HISTORY.ENTITY_ID, entry.entityId().id())
@@ -52,7 +52,7 @@ public class EntityHistoryController {
                 .execute();
     }
 
-    public Optional<byte[]> getHistoryDoc(EntityId entityId, Instant updatedAt) {
+    public Optional<String> getHistoryDoc(EntityId entityId, Instant updatedAt) {
         return dsl.select(MICA_ENTITY_HISTORY.DOC)
                 .from(MICA_ENTITY_HISTORY)
                 .where(MICA_ENTITY_HISTORY.ENTITY_ID.eq(entityId.id())

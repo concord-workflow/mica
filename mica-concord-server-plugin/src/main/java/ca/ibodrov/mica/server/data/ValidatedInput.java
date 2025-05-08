@@ -23,6 +23,7 @@ public record ValidatedInput(Set<ValidationMessage> messages) {
             throw new IllegalStateException("Input is valid");
         }
 
+        // TODO use path, combine messages for each path
         return new ValidationErrorsException()
                 .withErrors(messages.stream()
                         .sorted(comparing(ValidationMessage::getPath).thenComparing(ValidationMessage::getMessage))
