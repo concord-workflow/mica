@@ -21,4 +21,10 @@
         <dropColumn tableName="MICA_ENTITY_HISTORY" columnName="DOC"/>
         <renameColumn tableName="MICA_ENTITY_HISTORY" oldColumnName="DOC_TEXT" newColumnName="DOC"/>
     </changeSet>
+
+    <changeSet id="mica-0.0.27-010" author="ibodrov@gmail.com">
+        <sql>
+            create index ENTITY_DOC_FTS on MICA_ENTITIES using GIN (to_tsvector('english', DOC))
+        </sql>
+    </changeSet>
 </databaseChangeLog>
