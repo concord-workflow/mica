@@ -50,6 +50,7 @@ public class ValidateAllReport implements Report<ValidateAllReport.Options> {
         this.validator = Validator.getDefault(objectMapper, schemaFetcher);
     }
 
+    @Override
     public PartialEntity run(Options options) {
         // grab all "/mica/kind/v1" entities
         var report = entityFetchers.fetchAll(MICA_KIND_V1)
