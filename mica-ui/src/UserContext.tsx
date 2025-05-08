@@ -22,7 +22,7 @@ export const WithUserContext = ({ children }: PropsWithChildren) => {
                 const response = await fetch(`/api/mica/ui/whoami`);
                 const json = await response.json();
                 setCurrentUser({ username: json.username });
-            } catch (e) {
+            } catch (_e) {
                 redirectToLogin();
             }
         };
