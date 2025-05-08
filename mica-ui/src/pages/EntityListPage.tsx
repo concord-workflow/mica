@@ -190,7 +190,11 @@ const EntityListPage = () => {
                     <InputLabel>Kind</InputLabel>
                     <EntityKindSelect value={selectedKind} onChange={setSelectedKind} />
                 </FormControl>
-                <SearchField value={search} onChange={(value) => setSearch(value)} />
+                <SearchField
+                    placeholder="Filter by name"
+                    value={search}
+                    onChange={(value) => setSearch(value)}
+                />
             </ActionBar>
             <Box sx={{ mb: 2 }}>
                 <PathBreadcrumbs path={selectedPath} />

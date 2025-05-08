@@ -2,14 +2,15 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { IconButton, TextField } from '@mui/material';
 
 interface Props {
+    placeholder?: string;
     value: string;
     onChange: (value: string) => void;
 }
 
-const SearchField = ({ value, onChange }: Props) => {
+const SearchField = ({ placeholder = 'Search', value, onChange }: Props) => {
     return (
         <TextField
-            placeholder="Search"
+            placeholder={placeholder}
             type="search"
             size="small"
             value={value}
