@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.DELETE;
 import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.UPDATE;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.noCondition;
@@ -258,8 +257,6 @@ public class EntityStore {
                     "kind", kind,
                     "createdAt", objectMapper.convertValue(createdAt, String.class),
                     "updatedAt", objectMapper.convertValue(updatedAt, String.class));
-        } else {
-            doc = "n/a";
         }
 
         var data = serializeData(entity.data());

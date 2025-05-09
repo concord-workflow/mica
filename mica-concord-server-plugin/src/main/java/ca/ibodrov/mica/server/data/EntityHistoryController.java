@@ -42,13 +42,12 @@ public class EntityHistoryController {
     }
 
     public void addEntry(DSLContext tx, EntityHistoryEntry entry, String doc) {
-        assert doc != null;
         tx.insertInto(MICA_ENTITY_HISTORY)
                 .set(MICA_ENTITY_HISTORY.ENTITY_ID, entry.entityId().id())
                 .set(MICA_ENTITY_HISTORY.UPDATED_AT, entry.updatedAt())
                 .set(MICA_ENTITY_HISTORY.OPERATION_TYPE, MicaHistoryOperationType.valueOf(entry.operationType().name()))
                 .set(MICA_ENTITY_HISTORY.AUTHOR, entry.author())
-                .set(MICA_ENTITY_HISTORY.DOC, doc)
+                .set(MICA_ENTITY_HISTORY.DOC, doc != null ? doc : "n/a")
                 .execute();
     }
 
