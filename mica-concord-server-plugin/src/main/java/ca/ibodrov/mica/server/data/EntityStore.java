@@ -29,9 +29,6 @@ import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.noCondition;
 
-/**
- * TODO use name + kind as unique key
- */
 public class EntityStore {
 
     private static final TypeReference<LinkedHashMap<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
