@@ -44,7 +44,7 @@ public class AllEntityFetchers implements EntityFetchers {
      */
     @Override
     public Stream<EntityLike> fetch(URI uri, String entityKind) {
-        var request = new FetchRequest(Optional.of(uri), entityKind);
+        var request = new FetchRequest(Optional.of(uri), Optional.of(entityKind));
 
         var fetcher = fetchers.stream()
                 .filter(f -> f.isSupported(request))

@@ -270,7 +270,7 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                     projectName,
                     repoName,
                     ref,
-                    request.kind(),
+                    request.kind().orElseThrow(() -> new StoreException("selector.entityKind is required")),
                     path,
                     useFileNames,
                     namePrefix,

@@ -52,6 +52,11 @@
             <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
             <scope>provided</scope>
@@ -91,6 +96,7 @@
             <artifactId>pac4j-oidc</artifactId>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

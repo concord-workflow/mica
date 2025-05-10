@@ -16,10 +16,14 @@ public interface EntityFetcher {
 
     Cursor fetch(FetchRequest request);
 
-    record FetchRequest(Optional<URI> uri, String kind) {
+    record FetchRequest(Optional<URI> uri, Optional<String> kind) {
+
+        public static FetchRequest ofUri(URI uri) {
+            return new FetchRequest(Optional.of(uri), Optional.empty());
+        }
 
         public static FetchRequest ofKind(String kind) {
-            return new FetchRequest(Optional.empty(), kind);
+            return new FetchRequest(Optional.empty(), Optional.of(kind));
         }
     }
 

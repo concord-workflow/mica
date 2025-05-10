@@ -54,7 +54,7 @@ public class JsonStoreEntityFetcher implements EntityFetcher {
                 .flatMap(path -> {
                     var item = getItem(path, query);
                     var itemKind = getKind(path, item).orElse(query.defaultKind);
-                    if (!itemKind.equals(request.kind())) {
+                    if (request.kind().isPresent() && !itemKind.equals(request.kind().get())) {
                         return Stream.empty();
                     }
                     var entity = toEntityLike(path, itemKind, item);

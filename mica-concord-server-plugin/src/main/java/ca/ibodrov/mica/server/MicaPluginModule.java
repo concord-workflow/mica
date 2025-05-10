@@ -5,6 +5,7 @@ import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.data.jsonStore.JsonStoreEntityFetcher;
+import ca.ibodrov.mica.server.data.s3.S3EntityFetcher;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;
@@ -117,6 +118,7 @@ public class MicaPluginModule implements Module {
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(JsonStoreEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(S3EntityFetcher.class);
         binder.bind(EntityFetchers.class).to(AllEntityFetchers.class).in(SINGLETON);
     }
 

@@ -53,6 +53,7 @@
         <jooq.version>3.14.0</jooq.version>
         <node.version>v22.15.0</node.version>
         <npm.version>10.9.2</npm.version>
+        <aws.java.sdk.version>2.31.40</aws.java.sdk.version>
 
         <skipITs>true</skipITs>
     </properties>
@@ -63,6 +64,13 @@
                 <groupId>com.walmartlabs.concord</groupId>
                 <artifactId>concord-targetplatform</artifactId>
                 <version>${concord.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.java.sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

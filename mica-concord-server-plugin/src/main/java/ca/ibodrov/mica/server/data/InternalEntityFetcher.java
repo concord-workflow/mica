@@ -2,6 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -51,7 +52,8 @@ public class InternalEntityFetcher implements EntityFetcher {
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.KIND.likeRegex(request.kind()));
+                .where(MICA_ENTITIES.KIND.likeRegex(
+                        request.kind().orElseThrow(() -> new StoreException("selector.entityKind is required"))));
 
         return () -> step.fetch(this::toEntity).stream();
     }

@@ -12,6 +12,7 @@
     - [View Includes](#view-includes)
     - [Git Repository Support](#git-repository-support)
     - [Concord JSON Store Support](#concord-json-store-support)
+    - [S3 Support](#s3-support)
     - [Property Files Support](#property-files-support)
     - [Materialize View Data As Entities](#materialize-view-data-as-entities)
     - [Validate View Entities](#validate-view-entities)
@@ -482,7 +483,8 @@ Supported schemes:
 - `mica://internal` -- fetch data from the internal entity store (DB);
 - `concord+git://` -- fetch data from a Git repository. The repository must be
   added to a Concord project first;
-- `concord+jsonstore://` -- fetch data from a Concord JSON store.
+- `concord+jsonstore://` -- fetch data from a Concord JSON store;
+- `s3://` -- fetch data from AWS S3 buckets.
 
 By default, `includes` contain the URL of the internal entity store:
 
@@ -557,6 +559,34 @@ Supported parameters:
 
 - `defaultKind` -- optional, sets `kind` for JSON store entries without their
   own. Default is `/concord/json-store/item/v1`.
+
+### S3 Support
+
+Data can be fetched from AWS S3 buckets using the `s3` scheme:
+
+```yaml
+selector:
+  entityKind: /some/kind/v1
+  includes:
+    - s3://my-bucket
+```
+
+Mica will fetch all objects in the bucket and try to parse them as JSON. Object
+names will be used as entity names.
+
+To fetch a specific objects add the object key:
+
+```yaml
+selector:
+  entityKind: /some/kind/v1
+  includes:
+    - s3://my-bucket/foo.json
+```
+
+Supported parameters:
+
+- `defaultKind` -- sets `kind` for the resulting entities. Default is
+`/s3/object/v1`.
 
 ### Property Files Support
 
