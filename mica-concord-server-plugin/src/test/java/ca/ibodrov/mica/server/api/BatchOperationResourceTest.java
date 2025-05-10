@@ -1,10 +1,10 @@
 package ca.ibodrov.mica.server.api;
 
+import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.YamlMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -12,13 +12,11 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static ca.ibodrov.mica.api.model.BatchOperationRequest.deleteByNamePatterns;
-import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BatchOperationResourceTest extends AbstractDatabaseTest {
 
-    private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static YamlMapper yamlMapper;
     private static BatchOperationResource batchOperationResource;
 
@@ -28,6 +26,10 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
         batchOperationResource = new BatchOperationResource(entityStore);
     }
 
+    private static EntityVersion upsert(PartialEntity entity) {
+        return dsl().transactionResult(tx -> entityStore.upsert(tx.dsl(), entity, null).orElseThrow());
+    }
+
     @Test
     public void batchDeleteWithNamePatterns() {
         var fooEntity = parseYaml("""
@@ -35,21 +37,21 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
                 name: /foo
                 data: "foo!"
                 """);
-        var fooVersion1 = entityStore.upsert(session, fooEntity, null).orElseThrow();
+        var fooVersion1 = upsert(fooEntity);
 
         var barEntity = parseYaml("""
                 kind: /mica/record/v1
                 name: /bar
                 data: "bar!"
                 """);
-        var barVersion1 = entityStore.upsert(session, barEntity, null).orElseThrow();
+        var barVersion1 = upsert(barEntity);
 
         var bazEntity = parseYaml("""
                 kind: /mica/record/v1
                 name: /baz
                 data: "baz!"
                 """);
-        var bazVersion1 = entityStore.upsert(session, bazEntity, null).orElseThrow();
+        var bazVersion1 = upsert(bazEntity);
 
         // delete "/foo" and "/bar", but not "/baz"
         var result = batchOperationResource.apply(deleteByNamePatterns(List.of("/foo", "/bar")));
@@ -68,8 +70,8 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
         assertTrue(entityStore.getById(bazVersion1.id()).isPresent());
 
         // add "/foo" and "/bar" back
-        var fooVersion2 = entityStore.upsert(session, fooEntity, null).orElseThrow();
-        var barVersion2 = entityStore.upsert(session, barEntity, null).orElseThrow();
+        var fooVersion2 = upsert(fooEntity);
+        var barVersion2 = upsert(barEntity);
 
         // delete all "/ba.*" entities
         result = batchOperationResource.apply(deleteByNamePatterns(List.of("/ba.*")));

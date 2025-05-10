@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
@@ -213,14 +212,7 @@ public class EntityStore {
         return tx.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName).and(MICA_ENTITIES.KIND.eq(entityKind)));
     }
 
-    public Optional<EntityVersion> upsert(UserPrincipal session,
-                                          PartialEntity entity,
-                                          @Nullable String doc) {
-        return dsl.transactionResult(cfg -> upsert(cfg.dsl(), session, entity, doc));
-    }
-
     public Optional<EntityVersion> upsert(DSLContext tx,
-                                          UserPrincipal session,
                                           PartialEntity entity,
                                           @Nullable String doc) {
         var name = normalizeName(entity.name());

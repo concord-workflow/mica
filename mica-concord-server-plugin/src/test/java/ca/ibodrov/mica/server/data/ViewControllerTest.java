@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.Streams;
-import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,13 +26,11 @@ import java.util.Set;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
-import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static javax.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewControllerTest extends AbstractDatabaseTest {
 
-    private static final UserPrincipal session = new UserPrincipal("test", user("test"));
     private static ViewController viewController;
 
     @BeforeAll
@@ -98,7 +95,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
         var recordKind = "/test-record-kind-" + System.currentTimeMillis();
 
         // create entity kind
-        entityStore.upsert(session, new MicaKindV1.Builder()
+        upsert(new MicaKindV1.Builder()
                 .name(recordKind)
                 .schema(parseObject("""
                         properties:
@@ -106,7 +103,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                             type: integer
                         """))
                 .build()
-                .toPartialEntity(objectMapper), null);
+                .toPartialEntity(objectMapper));
 
         // create test records
         upsert(PartialEntity.create("/first/record", recordKind, Map.of("value", IntNode.valueOf(1))));
@@ -311,7 +308,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
     }
 
     private static void upsert(PartialEntity entity) {
-        entityStore.upsert(session, entity, null).orElseThrow();
+        dsl().transaction(tx -> entityStore.upsert(tx.dsl(), entity, null).orElseThrow());
     }
 
     private static String randomPathPrefix() {

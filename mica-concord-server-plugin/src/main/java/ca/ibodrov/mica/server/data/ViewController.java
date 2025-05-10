@@ -123,7 +123,7 @@ public class ViewController {
         return dsl.transactionResult(tx -> {
             var data = renderedView.data().stream().map(row -> {
                 var entity = objectMapper.convertValue(row, PartialEntity.class);
-                var version = entityStore.upsert(tx.dsl(), session, entity, null)
+                var version = entityStore.upsert(tx.dsl(), entity, null)
                         .orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
                 return entity.withVersion(version);
             });

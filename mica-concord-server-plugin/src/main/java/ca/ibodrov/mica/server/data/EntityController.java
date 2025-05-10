@@ -9,7 +9,6 @@ import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.jooq.DSLContext;
 
@@ -45,19 +44,6 @@ public class EntityController {
         this.objectMapper = requireNonNull(objectMapper);
         this.validator = Validator.getDefault(objectMapper,
                 new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper));
-    }
-
-    @VisibleForTesting
-    EntityVersion createOrUpdate(UserPrincipal session, PartialEntity entity) {
-        return dsl.transactionResult(tx -> createOrUpdate(tx.dsl(), session, entity, null, false));
-    }
-
-    @VisibleForTesting
-    EntityVersion createOrUpdate(UserPrincipal session,
-                                 PartialEntity entity,
-                                 @Nullable String doc,
-                                 boolean overwrite) {
-        return dsl.transactionResult(tx -> createOrUpdate(tx.dsl(), session, entity, doc, overwrite));
     }
 
     public EntityVersion createOrUpdate(DSLContext tx,
@@ -99,9 +85,9 @@ public class EntityController {
             }
         }
 
-        var newVersion = entityStore.upsert(tx, session, entity, doc);
+        var newVersion = entityStore.upsert(tx, entity, doc);
         if (newVersion.isEmpty() && overwrite) {
-            newVersion = entityStore.upsert(tx, session, entity.withoutUpdatedAt(), doc);
+            newVersion = entityStore.upsert(tx, entity.withoutUpdatedAt(), doc);
         }
 
         var version = newVersion.orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
@@ -120,7 +106,6 @@ public class EntityController {
             var tx = cfg.dsl();
             if (replace) {
                 entityStore.getVersion(tx, entity.name())
-                        // TODO deleteByVersion?
                         .ifPresent(version -> entityStore.deleteById(tx, version.id()));
             }
             return createOrUpdate(tx, session, entity, doc, overwrite);

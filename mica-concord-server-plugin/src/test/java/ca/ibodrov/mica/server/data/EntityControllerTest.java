@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.YamlMapper;
@@ -36,6 +37,21 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         new InitialDataLoader(dsl(), entityStore, objectMapper).load();
     }
 
+    private static void createOrUpdate(UserPrincipal session, PartialEntity entity) {
+        dsl().transaction(tx -> controller.createOrUpdate(tx.dsl(), session, entity, null, false));
+    }
+
+    private static EntityVersion createOrUpdate(UserPrincipal session,
+                                                PartialEntity entity,
+                                                String doc,
+                                                boolean overwrite) {
+        return dsl().transactionResult(tx -> controller.createOrUpdate(tx.dsl(), session, entity, doc, overwrite));
+    }
+
+    private static EntityVersion upsert(PartialEntity entity) {
+        return dsl().transactionResult(tx -> entityStore.upsert(tx.dsl(), entity, null).orElseThrow());
+    }
+
     @Test
     public void testUploadUnknownEntityKind() {
         var yaml = """
@@ -45,20 +61,20 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                   some text
                 """;
 
-        var error = assertThrows(ApiException.class, () -> controller.createOrUpdate(session, parseYaml(yaml)));
+        var error = assertThrows(ApiException.class, () -> createOrUpdate(session, parseYaml(yaml)));
         assertEquals(BAD_REQUEST, error.getStatus());
     }
 
     @Test
     public void testUploadBuiltInEntityKinds() {
-        controller.createOrUpdate(session, parseYaml("""
+        createOrUpdate(session, parseYaml("""
                 kind: /mica/record/v1
                 name: %s
                 data: |
                   some text
                 """.formatted(randomEntityName())));
 
-        controller.createOrUpdate(session, parseYaml("""
+        createOrUpdate(session, parseYaml("""
                 kind: /mica/kind/v1
                 name: %s
                 schema:
@@ -68,7 +84,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                       type: string
                 """.formatted(randomEntityName())));
 
-        controller.createOrUpdate(session, parseYaml("""
+        createOrUpdate(session, parseYaml("""
                 kind: /mica/view/v1
                 name: %s
                 selector:
@@ -86,7 +102,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 name: %s
                 randomProp: "foo"
                 """.formatted(randomEntityName()));
-        var error1 = assertThrows(ValidationErrorsException.class, () -> controller.createOrUpdate(session, entity1));
+        var error1 = assertThrows(ValidationErrorsException.class, () -> createOrUpdate(session, entity1));
         assertEquals(1, error1.getValidationErrors().size());
     }
 
@@ -100,7 +116,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName());
 
         var entity = parseYaml(doc);
-        var initialVersion = controller.createOrUpdate(session, entity, doc, false);
+        var initialVersion = createOrUpdate(session, entity, doc, false);
         var createdAt = initialVersion.updatedAt();
         var updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
 
@@ -120,7 +136,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         assertEquals(expected, updatedDoc);
 
         entity = parseYaml(updatedDoc);
-        var updatedVersion = controller.createOrUpdate(session, entity, updatedDoc, false);
+        var updatedVersion = createOrUpdate(session, entity, updatedDoc, false);
         updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
 
         expected = """
@@ -151,7 +167,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 """.formatted(randomEntityName());
 
         var entity = parseYaml(doc);
-        var initialVersion = controller.createOrUpdate(session, entity, doc, false);
+        var initialVersion = createOrUpdate(session, entity, doc, false);
 
         // fetch the created document
 
@@ -159,7 +175,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
         // modify and update the document as if it was done by a user
         var updatedDoc = createdDoc + "\n # updated by user1";
-        var updatedVersion = controller.createOrUpdate(session, parseYaml(updatedDoc), updatedDoc,
+        var updatedVersion = createOrUpdate(session, parseYaml(updatedDoc), updatedDoc,
                 false);
         assertEquals(initialVersion.id(), updatedVersion.id());
         assertNotEquals(initialVersion.updatedAt(), updatedVersion.updatedAt());
@@ -168,13 +184,13 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         // another user
         var updatedDocAlternative = createdDoc + "\n # updated by user2";
         var error = assertThrows(ApiException.class,
-                () -> controller.createOrUpdate(session, parseYaml(updatedDocAlternative),
+                () -> createOrUpdate(session, parseYaml(updatedDocAlternative),
                         updatedDocAlternative,
                         false));
         assertEquals(CONFLICT, error.getStatus());
 
         // overwrite the document
-        var overwrittenVersion = controller.createOrUpdate(session, parseYaml(updatedDocAlternative),
+        var overwrittenVersion = createOrUpdate(session, parseYaml(updatedDocAlternative),
                 updatedDocAlternative, true);
         assertEquals(initialVersion.id(), overwrittenVersion.id());
         assertNotEquals(initialVersion.updatedAt(), overwrittenVersion.updatedAt());
@@ -191,7 +207,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                   some text
                 """.formatted(namePrefix));
 
-        controller.createOrUpdate(session, entityFooBar);
+        createOrUpdate(session, entityFooBar);
 
         var entityFoo = parseYaml("""
                 kind: /mica/record/v1
@@ -200,7 +216,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                   some text
                 """.formatted(namePrefix));
 
-        var error = assertThrows(StoreException.class, () -> controller.createOrUpdate(session, entityFoo));
+        var error = assertThrows(StoreException.class, () -> createOrUpdate(session, entityFoo));
         assertTrue(error.getMessage().contains("is a folder"));
     }
 
@@ -215,33 +231,33 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                   hello!
                 """.formatted(namePrefix);
         var entityFoo = parseYaml(docFoo);
-        var initialVersion = controller.createOrUpdate(session, entityFoo, docFoo, false);
+        var initialVersion = createOrUpdate(session, entityFoo, docFoo, false);
 
         // grab the saved doc and try saving it again, there should be no changes
         var updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
         entityFoo = parseYaml(updatedDoc);
-        var updatedVersion = controller.createOrUpdate(session, entityFoo, updatedDoc, false);
+        var updatedVersion = createOrUpdate(session, entityFoo, updatedDoc, false);
         assertEquals(initialVersion, updatedVersion);
 
         // modify the saved doc and try saving it, there should be a new version
         var updatedDoc2 = updatedDoc.replace("hello!", "bye!");
         entityFoo = parseYaml(updatedDoc2);
         assertEquals("bye!\n", entityFoo.data().get("data").asText());
-        var updatedVersion2 = controller.createOrUpdate(session, entityFoo, updatedDoc2, false);
+        var updatedVersion2 = createOrUpdate(session, entityFoo, updatedDoc2, false);
         assertNotEquals(initialVersion, updatedVersion2);
         assertEquals(initialVersion.id(), updatedVersion2.id());
     }
 
     @Test
     public void nameAndKindAreReplacedInDoc() {
-        entityStore.upsert(session, parseYaml("""
+        upsert(parseYaml("""
                 name: /replacement/kind
                 kind: /mica/kind/v1
                 schema:
                   properties:
                     data:
                       type: string
-                """), null);
+                """));
 
         var doc = """
                 kind: /mica/record/v1
@@ -252,7 +268,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var entity = parseYaml(doc)
                 .withName("/replacement/name")
                 .withKind("/replacement/kind");
-        controller.createOrUpdate(session, entity, doc, false);
+        createOrUpdate(session, entity, doc, false);
 
         var updatedEntity = entityStore.getByName("/replacement/name")
                 .orElseThrow();

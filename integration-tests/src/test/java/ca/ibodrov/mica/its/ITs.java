@@ -904,7 +904,7 @@ public class ITs extends TestResources {
     }
 
     private static void upsert(PartialEntity entity) {
-        dsl.transaction(tx -> entityStore.upsert(tx.dsl(), session, entity, null).orElseThrow());
+        dsl.transaction(tx -> entityStore.upsert(tx.dsl(), entity, null).orElseThrow());
     }
 
     private static StartProcessResponse startConcordProcess(Map<String, Object> request)
