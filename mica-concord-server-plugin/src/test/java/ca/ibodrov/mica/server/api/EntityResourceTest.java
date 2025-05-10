@@ -3,6 +3,7 @@ package ca.ibodrov.mica.server.api;
 import ca.ibodrov.mica.api.model.EntityMetadata;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.data.EntityController;
+import ca.ibodrov.mica.server.data.EntityHistoryController;
 import ca.ibodrov.mica.server.data.EntityKindStore;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.walmartlabs.concord.common.DateTimeUtils;
@@ -30,13 +31,14 @@ public class EntityResourceTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         var entityKindStore = new EntityKindStore(entityStore);
-        var controller = new EntityController(dsl(), entityStore, entityKindStore, objectMapper);
+        var historyController = new EntityHistoryController(dsl());
+        var controller = new EntityController(dsl(), entityStore, entityKindStore, historyController, objectMapper);
         var validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
                 .buildValidatorFactory()
                 .getValidator();
 
-        entityResource = new EntityResource(entityStore, objectMapper);
+        entityResource = new EntityResource(entityStore, controller, objectMapper);
         entityUploadResource = new EntityUploadResource(controller, validator, objectMapper);
     }
 

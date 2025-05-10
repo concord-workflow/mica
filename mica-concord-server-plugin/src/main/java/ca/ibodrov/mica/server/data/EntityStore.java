@@ -2,9 +2,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.db.jooq.tables.records.MicaEntitiesRecord;
 import ca.ibodrov.mica.server.UuidGenerator;
-import ca.ibodrov.mica.server.data.EntityHistoryController.EntityHistoryEntry;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,8 +21,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
-import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.DELETE;
-import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.UPDATE;
 import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.noCondition;
@@ -37,18 +33,15 @@ public class EntityStore {
     private final DSLContext dsl;
     private final ObjectMapper objectMapper;
     private final UuidGenerator uuidGenerator;
-    private final EntityHistoryController historyController;
 
     @Inject
     public EntityStore(@MicaDB DSLContext dsl,
                        ObjectMapper objectMapper,
-                       UuidGenerator uuidGenerator,
-                       EntityHistoryController historyController) {
+                       UuidGenerator uuidGenerator) {
 
         this.dsl = requireNonNull(dsl);
         this.objectMapper = requireNonNull(objectMapper);
         this.uuidGenerator = requireNonNull(uuidGenerator);
-        this.historyController = requireNonNull(historyController);
     }
 
     public record ListEntitiesRequest(@Nullable String search,
@@ -144,7 +137,11 @@ public class EntityStore {
     }
 
     public Optional<String> getLatestEntityDoc(EntityId entityId) {
-        return dsl.select(MICA_ENTITIES.DOC)
+        return getLatestEntityDoc(dsl, entityId);
+    }
+
+    public Optional<String> getLatestEntityDoc(DSLContext tx, EntityId entityId) {
+        return tx.select(MICA_ENTITIES.DOC)
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.ID.eq(entityId.id()))
                 .orderBy(MICA_ENTITIES.UPDATED_AT.desc())
@@ -164,21 +161,15 @@ public class EntityStore {
                 .fetchOptional(Record1::value1);
     }
 
-    public Optional<EntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
-        return dsl.transactionResult(tx -> deleteById(tx.dsl(), session, entityId));
+    public Optional<EntityVersion> deleteById(EntityId entityId) {
+        return dsl.transactionResult(tx -> deleteById(tx.dsl(), entityId));
     }
 
-    public Optional<EntityVersion> deleteById(DSLContext tx, UserPrincipal session, EntityId entityId) {
+    public Optional<EntityVersion> deleteById(DSLContext tx, EntityId entityId) {
         var version = tx.deleteFrom(MICA_ENTITIES)
                 .where(MICA_ENTITIES.ID.eq(entityId.id()))
                 .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT, MICA_ENTITIES.DOC)
                 .fetchOptional();
-
-        if (version.isPresent()) {
-            var doc = version.map(MicaEntitiesRecord::getDoc).orElse("n/a");
-            historyController.addEntry(tx,
-                    new EntityHistoryEntry(entityId, getDatabaseInstant(), DELETE, session.getUsername()), doc);
-        }
 
         return version.map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)),
                 r.get(MICA_ENTITIES.UPDATED_AT)));
@@ -258,7 +249,7 @@ public class EntityStore {
 
         var data = serializeData(entity.data());
 
-        var version = tx.insertInto(MICA_ENTITIES)
+        return tx.insertInto(MICA_ENTITIES)
                 .set(MICA_ENTITIES.ID, id)
                 .set(MICA_ENTITIES.NAME, name)
                 .set(MICA_ENTITIES.KIND, entity.kind())
@@ -277,12 +268,6 @@ public class EntityStore {
                 .returning(MICA_ENTITIES.UPDATED_AT)
                 .fetchOptional()
                 .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt()));
-
-        // TODO move into the controller
-        var author = session.getUsername();
-        historyController.addEntry(tx, new EntityHistoryEntry(new EntityId(id), updatedAt, UPDATE, author), doc);
-
-        return version;
     }
 
     private Entity toEntity(Record6<UUID, String, String, Instant, Instant, JSONB> record) {

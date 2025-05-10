@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITY_HISTORY;
 import static java.util.Objects.requireNonNull;
+import static org.jooq.impl.DSL.currentInstant;
 
 public class EntityHistoryController {
 
@@ -36,19 +37,24 @@ public class EntityHistoryController {
 
         return query.fetch(r -> new EntityHistoryEntry(
                 new EntityId(r.get(MICA_ENTITY_HISTORY.ENTITY_ID)),
-                r.get(MICA_ENTITY_HISTORY.UPDATED_AT),
+                Optional.of(r.get(MICA_ENTITY_HISTORY.UPDATED_AT)),
                 OperationType.valueOf(r.get(MICA_ENTITY_HISTORY.OPERATION_TYPE).name()),
                 r.get(MICA_ENTITY_HISTORY.AUTHOR)));
     }
 
-    public void addEntry(DSLContext tx, EntityHistoryEntry entry, String doc) {
-        tx.insertInto(MICA_ENTITY_HISTORY)
+    public void addEntry(DSLContext tx, EntityHistoryEntry entry, Optional<String> doc) {
+        var operationType = MicaHistoryOperationType.valueOf(entry.operationType().name());
+        var query = tx.insertInto(MICA_ENTITY_HISTORY)
                 .set(MICA_ENTITY_HISTORY.ENTITY_ID, entry.entityId().id())
-                .set(MICA_ENTITY_HISTORY.UPDATED_AT, entry.updatedAt())
-                .set(MICA_ENTITY_HISTORY.OPERATION_TYPE, MicaHistoryOperationType.valueOf(entry.operationType().name()))
+                .set(MICA_ENTITY_HISTORY.OPERATION_TYPE, operationType)
                 .set(MICA_ENTITY_HISTORY.AUTHOR, entry.author())
-                .set(MICA_ENTITY_HISTORY.DOC, doc != null ? doc : "n/a")
-                .execute();
+                .set(MICA_ENTITY_HISTORY.DOC, doc.orElse("n/a"));
+
+        entry.updatedAt()
+                .ifPresentOrElse(updatedAt -> query.set(MICA_ENTITY_HISTORY.UPDATED_AT, updatedAt),
+                        () -> query.set(MICA_ENTITY_HISTORY.UPDATED_AT, currentInstant()));
+
+        query.execute();
     }
 
     public Optional<String> getHistoryDoc(EntityId entityId, Instant updatedAt) {
@@ -64,6 +70,9 @@ public class EntityHistoryController {
         DELETE
     }
 
-    public record EntityHistoryEntry(EntityId entityId, Instant updatedAt, OperationType operationType, String author) {
+    public record EntityHistoryEntry(EntityId entityId,
+            Optional<Instant> updatedAt,
+            OperationType operationType,
+            String author) {
     }
 }

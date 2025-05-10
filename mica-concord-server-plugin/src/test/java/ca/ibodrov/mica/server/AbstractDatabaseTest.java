@@ -28,7 +28,7 @@ public class AbstractDatabaseTest {
         var dsl = testDatabase.getJooqConfiguration().dsl();
         var entityHistoryController = new EntityHistoryController(dsl);
 
-        entityStore = new EntityStore(dsl, objectMapper, uuidGenerator, entityHistoryController);
+        entityStore = new EntityStore(dsl, objectMapper, uuidGenerator);
         new InitialDataLoader(dsl, entityStore, objectMapper).load();
     }
 

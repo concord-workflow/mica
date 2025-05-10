@@ -1,8 +1,10 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.server.data.EntityHistoryController.EntityHistoryEntry;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,7 +16,10 @@ import org.jooq.DSLContext;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.Objects;
+import java.util.Optional;
 
+import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.DELETE;
+import static ca.ibodrov.mica.server.data.EntityHistoryController.OperationType.UPDATE;
 import static java.util.Objects.requireNonNull;
 
 public class EntityController {
@@ -22,6 +27,7 @@ public class EntityController {
     private final DSLContext dsl;
     private final EntityStore entityStore;
     private final EntityKindStore entityKindStore;
+    private final EntityHistoryController historyController;
     private final ObjectMapper objectMapper;
     private final Validator validator;
 
@@ -29,10 +35,13 @@ public class EntityController {
     public EntityController(@MicaDB DSLContext dsl,
                             EntityStore entityStore,
                             EntityKindStore entityKindStore,
+                            EntityHistoryController historyController,
                             ObjectMapper objectMapper) {
+
         this.dsl = requireNonNull(dsl);
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
+        this.historyController = requireNonNull(historyController);
         this.objectMapper = requireNonNull(objectMapper);
         this.validator = Validator.getDefault(objectMapper,
                 new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper));
@@ -95,7 +104,11 @@ public class EntityController {
             newVersion = entityStore.upsert(tx, session, entity.withoutUpdatedAt(), doc);
         }
 
-        return newVersion.orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
+        var version = newVersion.orElseThrow(() -> ApiException.conflict("Version conflict: " + entity.name()));
+        var author = session.getUsername();
+        var historyEntry = new EntityHistoryEntry(version.id(), Optional.of(version.updatedAt()), UPDATE, author);
+        historyController.addEntry(tx, historyEntry, Optional.ofNullable(doc));
+        return version;
     }
 
     public EntityVersion put(UserPrincipal session,
@@ -108,9 +121,22 @@ public class EntityController {
             if (replace) {
                 entityStore.getVersion(tx, entity.name())
                         // TODO deleteByVersion?
-                        .ifPresent(version -> entityStore.deleteById(tx, session, version.id()));
+                        .ifPresent(version -> entityStore.deleteById(tx, version.id()));
             }
             return createOrUpdate(tx, session, entity, doc, overwrite);
+        });
+    }
+
+    public Optional<EntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
+        return dsl.transactionResult(cfg -> {
+            var tx = cfg.dsl();
+            var doc = entityStore.getLatestEntityDoc(tx, entityId);
+            var version = entityStore.deleteById(tx, entityId);
+            if (version.isPresent()) {
+                var historyEntry = new EntityHistoryEntry(entityId, Optional.empty(), DELETE, session.getUsername());
+                historyController.addEntry(tx, historyEntry, doc);
+            }
+            return version;
         });
     }
 

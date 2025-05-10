@@ -2,6 +2,7 @@ package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.server.YamlMapper;
+import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.EntityStore.ListEntitiesRequest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
@@ -34,11 +35,16 @@ public class EntityResource implements Resource {
     private static final Logger log = LoggerFactory.getLogger(EntityResource.class);
 
     private final EntityStore entityStore;
+    private final EntityController entityController;
     private final YamlMapper yamlMapper;
 
     @Inject
-    public EntityResource(EntityStore entityStore, ObjectMapper objectMapper) {
+    public EntityResource(EntityStore entityStore,
+                          EntityController entityController,
+                          ObjectMapper objectMapper) {
+
         this.entityStore = requireNonNull(entityStore);
+        this.entityController = requireNonNull(entityController);
         this.yamlMapper = new YamlMapper(objectMapper);
     }
 
@@ -122,7 +128,7 @@ public class EntityResource implements Resource {
     @Path("{id}")
     @Operation(summary = "Delete an existing entity by its ID", operationId = "deleteById")
     public EntityVersion deleteById(@Context UserPrincipal session, @PathParam("id") UUID entityId) {
-        return entityStore.deleteById(session, new EntityId(entityId))
+        return entityController.deleteById(session, new EntityId(entityId))
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
     }
 }
