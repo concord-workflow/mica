@@ -8,13 +8,23 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.walmartlabs.concord.common.secret.UsernamePassword;
+import com.walmartlabs.concord.common.validation.ConcordKey;
+import com.walmartlabs.concord.server.org.OrganizationManager;
+import com.walmartlabs.concord.server.org.secret.SecretManager;
+import com.walmartlabs.concord.server.org.secret.SecretType;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import javax.inject.Inject;
+import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -23,6 +33,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope.apiRequest;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static software.amazon.awssdk.core.async.AsyncResponseTransformer.toBlockingInputStream;
@@ -37,11 +48,25 @@ public class S3EntityFetcher implements EntityFetcher {
     private static final TypeReference<Map<String, JsonNode>> MAP_OF_JSON_NODES = new TypeReference<>() {
     };
 
+    private final OrganizationManager orgManager;
+    private final SecretManager secretManager;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public S3EntityFetcher(ObjectMapper objectMapper) {
+    public S3EntityFetcher(OrganizationManager orgManager,
+                           SecretManager secretManager,
+                           ObjectMapper objectMapper) {
+
+        this.orgManager = requireNonNull(orgManager);
+        this.secretManager = requireNonNull(secretManager);
         this.objectMapper = requireNonNull(objectMapper);
+    }
+
+    @VisibleForTesting
+    S3EntityFetcher(ObjectMapper objectMapper) {
+        this.orgManager = null;
+        this.secretManager = null;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -57,13 +82,18 @@ public class S3EntityFetcher implements EntityFetcher {
 
         var params = parseQueryParams(uri);
         var kind = Optional.ofNullable(params.get("defaultKind")).orElse(DEFAULT_ENTITY_KIND);
+        var region = Optional.ofNullable(params.get("region")).map(Region::of);
+        var secretRef = Optional.ofNullable(params.get("secretRef")).map(this::fetchCredentials);
 
         var bucketName = uri.getHost();
-        var objectName = uri.getPath();
+        var objectName = normalizeObjectName(uri.getPath());
 
-        var client = S3AsyncClient.builder()
-                .credentialsProvider(DefaultCredentialsProvider.create())
-                .build();
+        var clientBuilder = S3AsyncClient.builder();
+        secretRef.ifPresentOrElse(clientBuilder::credentialsProvider,
+                () -> clientBuilder.credentialsProvider(DefaultCredentialsProvider.create()));
+        region.ifPresent(clientBuilder::region);
+
+        var client = clientBuilder.build();
 
         if (objectName == null || objectName.isBlank()) {
             return () -> fetchAllEntities(client, bucketName, kind).onClose(client::close);
@@ -97,8 +127,52 @@ public class S3EntityFetcher implements EntityFetcher {
                     }).get();
 
             return PartialEntity.create(bucketName + "/" + objectName, kind, data);
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof NoSuchKeyException) {
+                throw new StoreException("Object not found: " + bucketName + "/" + objectName);
+            }
             throw new StoreException(e.getMessage());
+        } catch (InterruptedException e) {
+            throw new StoreException(e.getMessage());
+        }
+    }
+
+    private StaticCredentialsProvider fetchCredentials(String secretRef) {
+        secretRef = secretRef.trim();
+
+        if (secretRef.isBlank()) {
+            throw new StoreException("Invalid secretRef. Expected orgName/secretName format, got a blank value");
+        }
+
+        var idx = secretRef.indexOf("/");
+        if (idx <= 0 || idx + 1 >= secretRef.length()) {
+            throw new StoreException("Invalid secretRef. Expected orgName/secretName format, got: " + secretRef);
+        }
+
+        var orgName = secretRef.substring(0, idx);
+        if (!orgName.matches(ConcordKey.PATTERN)) {
+            throw new StoreException("Invalid secretRef. Expected an organization name, got: " + orgName);
+        }
+
+        var secretName = secretRef.substring(idx + 1);
+        if (!secretName.matches(ConcordKey.PATTERN)) {
+            throw new StoreException("Invalid secretRef. Expected a secret name, got: " + orgName);
+        }
+
+        try {
+            var org = requireNonNull(orgManager).assertAccess(orgName, false);
+            var secretContainer = requireNonNull(secretManager).getSecret(apiRequest(), org.getId(), secretName, null,
+                    SecretType.USERNAME_PASSWORD);
+            var secret = secretContainer.getSecret();
+            if (secret instanceof UsernamePassword credentials) {
+                return StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(credentials.getUsername(), new String(credentials.getPassword())));
+            } else {
+                throw new StoreException(
+                        "Invalid secretRef. Expected an username/password secret, got: " + secret.getClass());
+            }
+        } catch (WebApplicationException e) {
+            throw new StoreException("Can't fetch the secretRef. " + e.getMessage());
         }
     }
 
@@ -117,6 +191,18 @@ public class S3EntityFetcher implements EntityFetcher {
             result.put(key, value);
         }
         return result;
+    }
+
+    private static String normalizeObjectName(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+
+        if (s.startsWith("/")) {
+            return s.substring(1);
+        }
+
+        return s;
     }
 
     @VisibleForTesting

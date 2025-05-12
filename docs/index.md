@@ -159,7 +159,7 @@ data:
 
 Equals:
 
-```
+```shell
 curl 'http://localhost:8080/api/mica/v1/view/render/ActiveClients'
 ```
 
@@ -456,7 +456,7 @@ Parameters can be used in:
 
 To pass the parameters, use the `parameters` field in the request body:
 
-```
+```shell
 curl -i --json '{"viewName": "/views/ActiveClients", "parameters": {"clientId": "foo"}}' 'http://localhost:8080/api/mica/v1/view/render'
 ```
 
@@ -566,7 +566,6 @@ Data can be fetched from AWS S3 buckets using the `s3` scheme:
 
 ```yaml
 selector:
-  entityKind: /some/kind/v1
   includes:
     - s3://my-bucket
 ```
@@ -578,15 +577,51 @@ To fetch a specific objects add the object key:
 
 ```yaml
 selector:
-  entityKind: /some/kind/v1
   includes:
     - s3://my-bucket/foo.json
 ```
 
 Supported parameters:
 
-- `defaultKind` -- sets `kind` for the resulting entities. Default is
-`/s3/object/v1`.
+- `defaultKind` -- optional, sets `kind` for the resulting entities. Default is `/s3/object/v1`;
+- `region` -- optional, use specific AWS region. If not set then the region specified in
+  the `AWS_REGION` environment variable will be used;
+- `secretRef` -- optional, use AWS credentials from a Concord secret. If not set then
+  the `DefaultCredentialsProvider` will be used. See below for an example.
+
+Example of using Concord secrets for authentication:
+
+```yaml
+selector:
+  includes:
+    - s3://my-bucket/foo.json?region=us-east-1&secretRef=Default/myAwsCredentials
+```
+
+Mica will look for a secret named `myAwsCredentials` in the Concord organization `Default`.
+The secret must be of a `USERNAME_PASSWORD` type. It can be created using
+[Concord API](https://concord.walmartlabs.com/docs/api/secret.html#create-a-secret)
+or using Concord UI. Here is an example of using API to create the secret:
+
+```shell
+export AWS_ACCESS_KEY_ID=
+export AWS_SECRET_ACCESS_KEY=
+
+curl -H 'Authorization: Bearer <token>' \
+-F name=myAwsCredentials \
+-F type=username_password \
+-F username=${AWS_ACCESS_KEY_ID} \
+-F password=${AWS_SECRET_ACCESS_KEY} \
+http://localhost:8080/api/v1/org/Default/secret
+```
+
+```json
+{"id":"0196c48b-cec2-79fd-9d49-8980a13694a5","result":"CREATED","ok":true}
+```
+
+The user that renders the view must have `READER` access to the created secret.
+The access level can be set using
+[Concord API](https://concord.walmartlabs.com/docs/api/secret.html#update-access-rules)
+or in the Concord UI.
 
 ### Property Files Support
 
@@ -684,7 +719,7 @@ data:
 
 The view can be rendered as a flat properties file:
 
-```yaml
+```shell
 curl -i --json '{"viewName": "/examples/properties/effective-properties" }' 'http://localhost:8080/api/mica/v1/view/renderProperties'
 ```
 
@@ -700,7 +735,7 @@ _This section is a work in progress._
 
 Mica provides an option to save (materialize) the rendered view data as entities:
 
-```
+```shell
 curl -i --json '{"viewName": "/examples/materialize/v1-to-v2"}' 'http://localhost:8080/api/mica/v1/view/materialize'
 ```
 
