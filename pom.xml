@@ -54,6 +54,7 @@
         <node.version>v22.15.0</node.version>
         <npm.version>10.9.2</npm.version>
         <aws.java.sdk.version>2.31.40</aws.java.sdk.version>
+        <testcontainers.version>1.21.0</testcontainers.version>
 
         <skipITs>true</skipITs>
     </properties>
@@ -123,6 +124,16 @@
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
                 <version>8.23</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>localstack</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${testcontainers.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

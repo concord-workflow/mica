@@ -30,16 +30,24 @@ import com.walmartlabs.concord.server.org.project.ProjectManager;
 import com.walmartlabs.concord.server.org.project.RepositoryEntry;
 import com.walmartlabs.concord.server.org.secret.SecretManager;
 import com.walmartlabs.concord.server.org.secret.SecretVisibility;
-import com.walmartlabs.concord.server.process.ProcessSecurityContext;
-import com.walmartlabs.concord.server.security.UserPrincipal;
 import com.walmartlabs.concord.server.security.UserSecurityContext;
 import com.walmartlabs.concord.server.user.UserManager;
 import com.walmartlabs.concord.server.user.UserType;
 import org.eclipse.jgit.api.Git;
 import org.intellij.lang.annotations.Language;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import javax.validation.ConstraintViolationException;
 import java.io.ByteArrayInputStream;
@@ -55,11 +63,11 @@ import java.util.UUID;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
-import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
 /**
  * Requires up-to-date version of mica-concord-task JAR in the local Maven
@@ -69,16 +77,19 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ITs extends TestResources {
 
-    private static final UserPrincipal session = new UserPrincipal("test", user("test"));
+    static OrganizationManager orgManager;
+    static ProjectManager projectManager;
+    static UserSecurityContext securityContext;
+    static EntityStore entityStore;
+    static ViewResource viewResource;
+    static ObjectMapper objectMapper;
+    static DSLContext dsl;
+    static UUID adminId;
+    static S3Client s3Client;
 
-    private static OrganizationManager orgManager;
-    private static ProjectManager projectManager;
-    private static UserSecurityContext securityContext;
-    private static EntityStore entityStore;
-    private static ViewResource viewResource;
-    private static ObjectMapper objectMapper;
-    private static DSLContext dsl;
-    private static UUID adminId;
+    static LocalStackContainer localStack = new LocalStackContainer(
+            DockerImageName.parse("localstack/localstack:s3-latest"))
+            .withServices(S3);
 
     @BeforeAll
     public static void setUp() {
@@ -95,6 +106,22 @@ public class ITs extends TestResources {
         adminId = injector.getInstance(UserManager.class)
                 .getId("admin", null, UserType.LOCAL)
                 .orElseThrow();
+
+        localStack.start();
+
+        s3Client = S3Client.builder()
+                .endpointOverride(localStack.getEndpointOverride(S3))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(
+                                localStack.getAccessKey(),
+                                localStack.getSecretKey())))
+                .region(Region.of(localStack.getRegion()))
+                .build();
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        localStack.stop();
     }
 
     /**
@@ -682,6 +709,63 @@ public class ITs extends TestResources {
         var item = data.get(0);
         assertEquals(itemPath, item.get("name").asText());
         assertEquals("foo", item.get("items").get(0).asText());
+    }
+
+    @Test
+    public void viewsCanUseS3Entities() throws Exception {
+        var bucketName = "testbucket" + System.currentTimeMillis();
+        s3Client.createBucket(CreateBucketRequest.builder()
+                .bucket(bucketName)
+                .build());
+
+        s3Client.putObject(PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key("test.json")
+                .build(), RequestBody.fromString("""
+                        {
+                            "foo": {
+                                "bar": "baz"
+                            }
+                        }
+                        """));
+
+        var orgName = "testOrg_" + System.currentTimeMillis();
+        var secretName = "testSecret_" + System.currentTimeMillis();
+
+        securityContext.runAs(adminId, () -> {
+            var org = orgManager.createOrGet(orgName);
+
+            var injector = micaServer.getServer().getInjector();
+            var secretManager = injector.getInstance(SecretManager.class);
+            secretManager.createUsernamePassword(org.orgId(),
+                    null,
+                    secretName,
+                    null,
+                    localStack.getAccessKey(),
+                    localStack.getSecretKey().toCharArray(),
+                    SecretVisibility.PRIVATE,
+                    "concord");
+            return null;
+        });
+
+        var includeUri = "s3://%s/test.json?region=%s&secretRef=%s/%s&endpoint=%s"
+                .formatted(bucketName, localStack.getRegion(), orgName, secretName,
+                        localStack.getEndpointOverride(S3));
+
+        upsert(new MicaViewV1.Builder()
+                .name("/acme/views/s3-single-demo")
+                .selector(byEntityKind(".*")
+                        .withIncludes(List.of(includeUri)))
+                .data(jsonPath("$"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        var result = securityContext.runAs(adminId,
+                () -> viewResource.render(RenderRequest.of("/acme/views/s3-single-demo")));
+        var data = result.data().get("data");
+        assertEquals(1, data.size());
+        var item = data.get(0);
+        assertEquals("baz", item.get("foo").get("bar").asText());
     }
 
     @Test

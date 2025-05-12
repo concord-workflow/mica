@@ -79,21 +79,28 @@ public class S3EntityFetcher implements EntityFetcher {
     @Override
     public Cursor fetch(FetchRequest request) {
         var uri = request.uri().orElseThrow(() -> new StoreException("s3:// URI is required"));
-
         var params = parseQueryParams(uri);
-        var kind = Optional.ofNullable(params.get("defaultKind")).orElse(DEFAULT_ENTITY_KIND);
-        var region = Optional.ofNullable(params.get("region")).map(Region::of);
+
+        var clientBuilder = S3AsyncClient.builder();
+
+        // credentials
         var secretRef = Optional.ofNullable(params.get("secretRef")).map(this::fetchCredentials);
+        secretRef.ifPresentOrElse(clientBuilder::credentialsProvider,
+                () -> clientBuilder.credentialsProvider(DefaultCredentialsProvider.create()));
+
+        // region
+        var region = Optional.ofNullable(params.get("region")).map(Region::of);
+        region.ifPresent(clientBuilder::region);
+
+        // endpoint
+        var endpoint = Optional.ofNullable(params.get("endpoint")).map(URI::create);
+        endpoint.ifPresent(clientBuilder::endpointOverride);
+
+        var client = clientBuilder.build();
 
         var bucketName = uri.getHost();
         var objectName = normalizeObjectName(uri.getPath());
-
-        var clientBuilder = S3AsyncClient.builder();
-        secretRef.ifPresentOrElse(clientBuilder::credentialsProvider,
-                () -> clientBuilder.credentialsProvider(DefaultCredentialsProvider.create()));
-        region.ifPresent(clientBuilder::region);
-
-        var client = clientBuilder.build();
+        var kind = Optional.ofNullable(params.get("defaultKind")).orElse(DEFAULT_ENTITY_KIND);
 
         if (objectName == null || objectName.isBlank()) {
             return () -> fetchAllEntities(client, bucketName, kind).onClose(client::close);
