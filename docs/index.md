@@ -588,7 +588,8 @@ Supported parameters:
   the `AWS_REGION` environment variable will be used;
 - `secretRef` -- optional, use AWS credentials from a Concord secret. If not set then
   the `DefaultCredentialsProvider` will be used. See below for an example;
-- `endpoint` -- optional, overrides the S3 endpoint URI.
+- `endpoint` -- optional, overrides the S3 endpoint URI. The only allowed values are `localhost`
+  or `127.0.0.1`. Useful only for local testing.
 
 Example of using Concord secrets for authentication:
 

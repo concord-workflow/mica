@@ -93,7 +93,7 @@ public class S3EntityFetcher implements EntityFetcher {
         region.ifPresent(clientBuilder::region);
 
         // endpoint
-        var endpoint = Optional.ofNullable(params.get("endpoint")).map(URI::create);
+        var endpoint = Optional.ofNullable(params.get("endpoint")).map(S3EntityFetcher::parseEndpoint);
         endpoint.ifPresent(clientBuilder::endpointOverride);
 
         var client = clientBuilder.build();
@@ -210,6 +210,20 @@ public class S3EntityFetcher implements EntityFetcher {
         }
 
         return s;
+    }
+
+    private static URI parseEndpoint(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+
+        var uri = URI.create(s);
+        var host = uri.getHost();
+        if (host.equals("127.0.0.1") || host.equals("localhost")) {
+            return uri;
+        }
+
+        throw new StoreException("Invalid endpoint. Only localhost or 127.0.0.1 are allowed as S3 endpoint overrides.");
     }
 
     @VisibleForTesting
