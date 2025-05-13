@@ -1,0 +1,36 @@
+name: Publish Helm Chart
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Helm Setup
+        uses: azure/setup-helm@v4.3.0
+
+      - name: Lint Helm Charts
+        run: |
+          helm lint charts/mica-standalone/
+
+      - name: Package Helm Charts
+        run: |
+          helm package charts/mica-standalone/ --version ${GITHUB_REF_NAME}
+
+      - name: Login to GitHub Container Registry
+        run: |
+          helm registry login --username ${GITHUB_ACTOR} --password ${{ secrets.GITHUB_TOKEN }} ghcr.io
+
+      - name: Publish Helm Charts
+        run: |
+          helm push mica-standalone-${GITHUB_REF_NAME}.tgz oci://ghcr.io/${GITHUB_REPOSITORY}          
