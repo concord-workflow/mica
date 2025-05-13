@@ -58,8 +58,7 @@ public class ViewController {
         this.objectMapper = requireNonNull(objectMapper);
         var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
         this.viewInterpolator = new ViewInterpolator(objectMapper, schemaFetcher);
-        requireNonNull(jsonPathEvaluator);
-        this.viewRenderer = new ViewRenderer(jsonPathEvaluator, objectMapper);
+        this.viewRenderer = new ViewRenderer(requireNonNull(jsonPathEvaluator), objectMapper);
         this.validator = Validator.getDefault(objectMapper, schemaFetcher);
         this.dsl = requireNonNull(dsl);
     }
@@ -103,14 +102,14 @@ public class ViewController {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var viewEntity = validateView(request.view());
         var view = interpolateView(viewEntity, parameters);
-        RenderOverrides overrides = RenderOverrides.none();
+        var overrides = RenderOverrides.none();
         var entities = select(view);
         var renderedView = viewRenderer.render(view, overrides, entities);
         var validation = validateResult(renderedView);
         return buildEntity(renderedView, renderedView.data(), validation);
     }
 
-    public PartialEntity materialize(UserPrincipal session, RenderRequest request) {
+    public PartialEntity materialize(RenderRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
         var entities = select(view);

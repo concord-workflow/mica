@@ -81,7 +81,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Materialize a view", description = "Render a view and save the result as entities", operationId = "materialize")
     @Validate
     @WithTimer
-    public PartialEntity materialize(@Context UserPrincipal session, @Valid RenderRequest request) {
-        return controller.materialize(session, request);
+    public PartialEntity materialize(@Valid RenderRequest request) {
+        return controller.materialize(request);
     }
 }

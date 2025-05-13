@@ -27,7 +27,7 @@ const ProfileDialog = ({ open, onClose, user }: Props) => {
             <DialogTitle>{user.username}</DialogTitle>
             <DialogContent>
                 <List>
-                    <ListSubheader>ID</ListSubheader>
+                    <ListSubheader>User ID</ListSubheader>
                     {user.userId && (
                         <ListItem secondaryAction={<CopyToClipboardButton text={user.userId} />}>
                             {user.userId}
