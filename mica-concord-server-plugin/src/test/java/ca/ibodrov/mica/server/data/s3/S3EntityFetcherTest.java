@@ -6,7 +6,7 @@ import com.walmartlabs.concord.common.ObjectMapperProvider;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.net.URI;
 
@@ -27,7 +27,7 @@ public class S3EntityFetcherTest {
     public void testIterator() {
         var bucketName = System.getenv("TEST_BUCKET");
 
-        var client = S3AsyncClient.builder()
+        var client = S3Client.builder()
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
 

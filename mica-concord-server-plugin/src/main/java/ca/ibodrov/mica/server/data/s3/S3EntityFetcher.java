@@ -16,8 +16,9 @@ import com.walmartlabs.concord.server.org.secret.SecretType;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -29,14 +30,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope.apiRequest;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static software.amazon.awssdk.core.async.AsyncResponseTransformer.toBlockingInputStream;
 
 public class S3EntityFetcher implements EntityFetcher {
 
@@ -80,26 +79,31 @@ public class S3EntityFetcher implements EntityFetcher {
     public Cursor fetch(FetchRequest request) {
         var uri = request.uri().orElseThrow(() -> new StoreException("s3:// URI is required"));
         var params = parseQueryParams(uri);
+
         var client = createClient(params);
 
         var bucketName = uri.getHost();
         var objectName = normalizeObjectName(uri.getPath());
         var kind = Optional.ofNullable(params.get("defaultKind")).orElse(DEFAULT_ENTITY_KIND);
+        var batchSize = Optional.ofNullable(params.get("batchSize")).map(Integer::parseInt).orElse(DEFAULT_BATCH_SIZE);
 
         if (objectName == null || objectName.isBlank()) {
-            return () -> fetchAllEntities(client, bucketName, kind).onClose(client::close);
+            return () -> fetchAllEntities(client, bucketName, kind, batchSize).onClose(client::close);
         } else {
-            return () -> Stream.of(fetchEntity(client, bucketName, objectName, kind)).onClose(client::close);
+            return () -> {
+                var entity = fetchEntity(client, bucketName, objectName, kind);
+                return Stream.of(entity).onClose(client::close);
+            };
         }
     }
 
-    private Stream<EntityLike> fetchAllEntities(S3AsyncClient client, String bucketName, String kind) {
-        var iterator = new S3ObjectIterator(client, bucketName, DEFAULT_BATCH_SIZE);
+    private Stream<EntityLike> fetchAllEntities(S3Client client, String bucketName, String kind, int batchSize) {
+        var iterator = new S3ObjectIterator(client, bucketName, batchSize);
         var objects = StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
         return objects.map(object -> fetchEntity(client, bucketName, object.key(), kind));
     }
 
-    private EntityLike fetchEntity(S3AsyncClient client, String bucketName, String objectName, String kind) {
+    private EntityLike fetchEntity(S3Client client, String bucketName, String objectName, String kind) {
         var getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(objectName)
@@ -107,29 +111,23 @@ public class S3EntityFetcher implements EntityFetcher {
                 .build();
 
         try {
-            var data = client.getObject(getObjectRequest, toBlockingInputStream())
-                    .thenApply(response -> {
-                        try {
-                            return objectMapper.readValue(response, MAP_OF_JSON_NODES);
-                        } catch (IOException e) {
-                            throw new StoreException("Can't parse S3 object %s/%s as JSON: %s".formatted(bucketName,
-                                    objectName, e.getMessage()));
-                        }
-                    }).get();
-
-            return PartialEntity.create(bucketName + "/" + objectName, kind, data);
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof NoSuchKeyException) {
-                throw new StoreException("Object not found: " + bucketName + "/" + objectName);
+            var response = client.getObject(getObjectRequest, ResponseTransformer.toInputStream());
+            try {
+                var data = objectMapper.readValue(response, MAP_OF_JSON_NODES);
+                return PartialEntity.create(bucketName + "/" + objectName, kind, data);
+            } catch (IOException e) {
+                throw new StoreException("Can't parse S3 object %s/%s as JSON: %s".formatted(bucketName,
+                        objectName, e.getMessage()));
             }
-            throw new StoreException(e.getMessage());
-        } catch (InterruptedException e) {
+        } catch (NoSuchKeyException e) {
+            throw new StoreException("Object not found: " + bucketName + "/" + objectName);
+        } catch (Exception e) {
             throw new StoreException(e.getMessage());
         }
     }
 
-    private S3AsyncClient createClient(Map<String, String> params) {
-        var builder = S3AsyncClient.builder();
+    private S3Client createClient(Map<String, String> params) {
+        var builder = S3Client.builder();
 
         // credentials
         Optional.ofNullable(params.get("secretRef"))
@@ -236,7 +234,7 @@ public class S3EntityFetcher implements EntityFetcher {
     @VisibleForTesting
     static class S3ObjectIterator implements Iterator<S3Object> {
 
-        private final S3AsyncClient client;
+        private final S3Client client;
         private final String bucketName;
         private final int batchSize;
 
@@ -244,7 +242,7 @@ public class S3EntityFetcher implements EntityFetcher {
         private Iterator<S3Object> currentBatch;
         private boolean lastBatch;
 
-        S3ObjectIterator(S3AsyncClient client, String bucketName, int batchSize) {
+        S3ObjectIterator(S3Client client, String bucketName, int batchSize) {
             this.client = client;
             this.bucketName = bucketName;
             this.batchSize = batchSize;
@@ -278,7 +276,7 @@ public class S3EntityFetcher implements EntityFetcher {
                 requestBuilder.continuationToken(nextContinuationToken);
             }
 
-            var response = client.listObjectsV2(requestBuilder.build()).join();
+            var response = client.listObjectsV2(requestBuilder.build());
 
             currentBatch = response.contents().iterator();
             nextContinuationToken = response.nextContinuationToken();
