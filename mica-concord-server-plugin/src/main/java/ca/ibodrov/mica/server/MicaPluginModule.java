@@ -20,6 +20,7 @@ import com.google.inject.Module;
 import com.typesafe.config.Config;
 import com.walmartlabs.concord.config.ConfigModule;
 import com.walmartlabs.concord.server.boot.FilterChainConfigurator;
+import com.walmartlabs.concord.server.boot.filters.AuthenticationHandler;
 import com.walmartlabs.concord.server.sdk.rest.Component;
 
 import javax.inject.Named;
@@ -69,6 +70,10 @@ public class MicaPluginModule implements Module {
         }
         binder.install(new ConfigModule("ca.ibodrov.mica.server", config));
 
+        // authentication handlers
+
+        newSetBinder(binder, AuthenticationHandler.class).addBinding().to(MicaAuthenticationHandler.class);
+
         // servlets
 
         newSetBinder(binder, HttpServlet.class).addBinding().to(SwaggerServlet.class).in(SINGLETON);
@@ -102,7 +107,16 @@ public class MicaPluginModule implements Module {
         bindJaxRsResource(binder, WhoamiResource.class);
 
         // reports
+
         newSetBinder(binder, Report.class).addBinding().to(ValidateAllReport.class);
+
+        // entity fetchers
+
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(JsonStoreEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(S3EntityFetcher.class);
+        binder.bind(EntityFetchers.class).to(AllEntityFetchers.class).in(SINGLETON);
 
         // other beans
 
@@ -114,12 +128,6 @@ public class MicaPluginModule implements Module {
         binder.bind(ViewCache.class).toInstance(ViewCache.inMemory());
 
         binder.bind(InitialDataLoader.class).asEagerSingleton();
-
-        newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
-        newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
-        newSetBinder(binder, EntityFetcher.class).addBinding().to(JsonStoreEntityFetcher.class);
-        newSetBinder(binder, EntityFetcher.class).addBinding().to(S3EntityFetcher.class);
-        binder.bind(EntityFetchers.class).to(AllEntityFetchers.class).in(SINGLETON);
     }
 
     private static Config loadDefaultConfig() {
