@@ -1,5 +1,5 @@
-import { useCurrentUser } from '../UserContext.tsx';
-import { redirectToLogout } from '../api/common.ts';
+import { useCurrentUser } from '../../UserContext.tsx';
+import { redirectToLogout } from '../../api/common.ts';
 import ProfileDialog from './ProfileDialog.tsx';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LogoutIcon from '@mui/icons-material/Logout';

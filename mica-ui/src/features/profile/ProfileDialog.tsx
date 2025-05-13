@@ -1,6 +1,8 @@
-import { CurrentUser } from '../UserContext.tsx';
-import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
+import { CurrentUser } from '../../UserContext.tsx';
+import CopyToClipboardButton from '../../components/CopyToClipboardButton.tsx';
 import GroupIcon from '@mui/icons-material/Group';
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
+import SecurityIcon from '@mui/icons-material/Security';
 import {
     Button,
     Dialog,
@@ -34,10 +36,35 @@ const ProfileDialog = ({ open, onClose, user }: Props) => {
                     {!user.userId && <ListItem>n/a</ListItem>}
                 </List>
                 <List>
+                    <ListSubheader>OIDC Groups</ListSubheader>
+                    {user.oidcGroups &&
+                        user.oidcGroups.length > 0 &&
+                        user.oidcGroups.sort().map((group) => (
+                            <ListItem key={group}>
+                                <ListItemIcon>
+                                    <GroupOutlinedIcon />
+                                </ListItemIcon>
+                                {group}
+                            </ListItem>
+                        ))}
+                    {!user.oidcGroups ||
+                        (user.oidcGroups.length === 0 && (
+                            <ListItem>No OIDC groups assigned</ListItem>
+                        ))}
+                </List>
+                <List>
                     <ListSubheader>Roles</ListSubheader>
                     {user.roles &&
                         user.roles.length > 0 &&
-                        user.roles.sort().map((role) => <ListItem key={role}>{role}</ListItem>)}
+                        user.roles.sort().map((role) => (
+                            <ListItem key={role}>
+                                {' '}
+                                <ListItemIcon>
+                                    <SecurityIcon />
+                                </ListItemIcon>
+                                {role}
+                            </ListItem>
+                        ))}
                     {!user.roles ||
                         (user.roles.length === 0 && <ListItem>No roles assigned</ListItem>)}
                 </List>

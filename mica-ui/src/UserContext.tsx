@@ -6,6 +6,7 @@ import React, { PropsWithChildren, useContext, useEffect, useState } from 'react
 export interface CurrentUser {
     userId?: string;
     username?: string;
+    oidcGroups?: Array<string>;
     roles?: Array<string>;
     teams?: Array<{
         orgName: string;
