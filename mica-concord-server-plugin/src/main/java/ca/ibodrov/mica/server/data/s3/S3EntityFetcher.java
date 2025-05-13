@@ -80,23 +80,7 @@ public class S3EntityFetcher implements EntityFetcher {
     public Cursor fetch(FetchRequest request) {
         var uri = request.uri().orElseThrow(() -> new StoreException("s3:// URI is required"));
         var params = parseQueryParams(uri);
-
-        var clientBuilder = S3AsyncClient.builder();
-
-        // credentials
-        var secretRef = Optional.ofNullable(params.get("secretRef")).map(this::fetchCredentials);
-        secretRef.ifPresentOrElse(clientBuilder::credentialsProvider,
-                () -> clientBuilder.credentialsProvider(DefaultCredentialsProvider.create()));
-
-        // region
-        var region = Optional.ofNullable(params.get("region")).map(Region::of);
-        region.ifPresent(clientBuilder::region);
-
-        // endpoint
-        var endpoint = Optional.ofNullable(params.get("endpoint")).map(S3EntityFetcher::parseEndpoint);
-        endpoint.ifPresent(clientBuilder::endpointOverride);
-
-        var client = clientBuilder.build();
+        var client = createClient(params);
 
         var bucketName = uri.getHost();
         var objectName = normalizeObjectName(uri.getPath());
@@ -142,6 +126,29 @@ public class S3EntityFetcher implements EntityFetcher {
         } catch (InterruptedException e) {
             throw new StoreException(e.getMessage());
         }
+    }
+
+    private S3AsyncClient createClient(Map<String, String> params) {
+        var builder = S3AsyncClient.builder();
+
+        // credentials
+        Optional.ofNullable(params.get("secretRef"))
+                .map(this::fetchCredentials)
+                .ifPresentOrElse(
+                        builder::credentialsProvider,
+                        () -> builder.credentialsProvider(DefaultCredentialsProvider.create()));
+
+        // region
+        Optional.ofNullable(params.get("region"))
+                .map(Region::of)
+                .ifPresent(builder::region);
+
+        // endpoint
+        Optional.ofNullable(params.get("endpoint"))
+                .map(S3EntityFetcher::parseEndpoint)
+                .ifPresent(builder::endpointOverride);
+
+        return builder.build();
     }
 
     private StaticCredentialsProvider fetchCredentials(String secretRef) {
