@@ -484,6 +484,18 @@ The view selects all active clients, picks their `id` and `validationUrl`
 properties, flattens the result (so it a simple list of client entries instead
 of a list of lists) and adds the `status` field to each object.
 
+The `jsonPatch` operations can be applied conditionally:
+
+```yaml
+data:
+  jsonPatch:
+    - op: remove
+      path: /data/foo/bar/baz
+      ifMatches:
+        path: $.name
+        value: /entity-a
+```
+
 ### Parametrized Views
 
 Views can declare parameters:

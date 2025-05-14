@@ -443,6 +443,53 @@ public class ViewRendererTest {
     }
 
     @Test
+    public void jsonPatchFilterWorks() {
+        var entityA = parseYaml("""
+                kind: /mica/record/v1
+                name: /entity-a
+                data:
+                  someValue: "hi!"
+                  foo:
+                    bar:
+                      baz: "qux"
+                      abc: "xyz"
+                """);
+
+        var entityB = parseYaml("""
+                kind: /mica/record/v1
+                name: /entity-b
+                data:
+                  someValue: "bye!"
+                  foo:
+                    bar:
+                      baz: "qux"
+                      abc: "xyz"
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: /mica/record/v1
+                data:
+                  jsonPath: $
+                  jsonPatch:
+                    - op: remove
+                      path: /data/foo/bar/baz
+                      ifMatches:
+                        path: $.name
+                        value: /entity-a
+                """);
+
+        var result = renderer.render(view, Stream.of(entityA, entityB));
+        assertNotNull(result);
+        assertEquals(2, result.data().size());
+        assertNull(result.data().get(0).get("data").get("foo").get("bar").get("baz"));
+        assertEquals("xyz", result.data().get(0).get("data").get("foo").get("bar").get("abc").asText());
+        assertEquals("qux", result.data().get(1).get("data").get("foo").get("bar").get("baz").asText());
+    }
+
+    @Test
     public void viewsMustReturnAllEntityFields() {
         var foo = parseYaml("""
                 id: 88eccc0c-99e1-11ee-b9d1-0242ac120002

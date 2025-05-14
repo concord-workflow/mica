@@ -15,6 +15,7 @@ import com.flipkart.zjsonpatch.InvalidJsonPatchException;
 import com.flipkart.zjsonpatch.JsonPatch;
 import com.flipkart.zjsonpatch.JsonPatchApplicationException;
 import com.google.common.collect.ImmutableList;
+import com.jayway.jsonpath.JsonPathException;
 
 import java.util.List;
 import java.util.Optional;
@@ -82,7 +83,8 @@ public class ViewRenderer {
         if (mergeBy.isPresent()) {
             data = data.stream()
                     .collect(groupingBy(
-                            node -> jsonPathEvaluator.apply(entityNames.build().toString(), node, mergeBy.get())
+                            node -> jsonPathEvaluator
+                                    .applyInApiCall(entityNames.build().toString(), node, mergeBy.get())
                                     .orElse(NullNode.getInstance())))
                     .entrySet().stream()
                     .flatMap(entry -> {
@@ -107,6 +109,7 @@ public class ViewRenderer {
         var patch = view.data().jsonPatch().filter(p -> !p.isNull());
         if (patch.isPresent()) {
             var patchData = patch.get();
+
             try {
                 JsonPatch.validate(patchData);
             } catch (InvalidJsonPatchException e) {
@@ -156,13 +159,13 @@ public class ViewRenderer {
 
     private Optional<JsonNode> applyAllJsonPaths(String entityName, JsonNode data, JsonNode jsonPath) {
         if (jsonPath.isTextual()) {
-            return jsonPathEvaluator.apply(entityName, data, jsonPath.asText());
+            return jsonPathEvaluator.applyInApiCall(entityName, data, jsonPath.asText());
         } else if (jsonPath.isArray()) {
             var result = data;
             for (int i = 0; i < jsonPath.size(); i++) {
                 var node = jsonPath.get(i);
                 String jsonPath1 = node.asText();
-                var output = jsonPathEvaluator.apply(entityName, result, jsonPath1);
+                var output = jsonPathEvaluator.applyInApiCall(entityName, result, jsonPath1);
                 if (output.isEmpty()) {
                     return Optional.empty();
                 }
@@ -176,6 +179,43 @@ public class ViewRenderer {
     }
 
     private JsonNode applyJsonPatch(JsonNode node, JsonNode patchData) {
+        if (!patchData.isArray()) {
+            throw new ViewProcessorException(
+                    "jsonPatch must be a list of JSON patch operations. Got %s".formatted(patchData.getNodeType()));
+        }
+
+        // filter out operations that do not apply to the current node
+        var effectivePatchData = objectMapper.createArrayNode();
+        patchData.forEach(op -> {
+            var ifMatches = op.get("ifMatches");
+
+            if (ifMatches != null) {
+                var matchPath = ifMatches.get("path");
+                if (matchPath == null) {
+                    throw new ViewProcessorException("JSON path is required in ifMatches.path");
+                }
+
+                var matchValue = ifMatches.get("value");
+                if (matchValue == null) {
+                    throw new ViewProcessorException("Value is required in ifMatches.value");
+                }
+
+                try {
+                    var actualValue = jsonPathEvaluator.apply(node, matchPath.asText());
+                    actualValue.ifPresent(v -> {
+                        if (matchValue.equals(v)) {
+                            effectivePatchData.add(op);
+                        }
+                    });
+                } catch (JsonPathException e) {
+                    throw new ViewProcessorException(
+                            "Error while applying a JSON patch operation %s: %s".formatted(op, e.getMessage()));
+                }
+            } else {
+                effectivePatchData.add(op);
+            }
+        });
+
         if (!node.isContainerNode()) {
             throw new ViewProcessorException(
                     "JSON patch can only be applied to arrays of objects and array of arrays. The data is an array of %ss"
@@ -183,7 +223,7 @@ public class ViewRenderer {
         }
 
         try {
-            return JsonPatch.apply(patchData, node);
+            return JsonPatch.apply(effectivePatchData, node);
         } catch (JsonPatchApplicationException e) {
             throw new ViewProcessorException(
                     "Error while applying data.jsonPatch: " + e.getMessage());

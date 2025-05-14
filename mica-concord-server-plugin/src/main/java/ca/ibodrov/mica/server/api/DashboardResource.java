@@ -61,7 +61,7 @@ public class DashboardResource implements Resource {
 
     private List<JsonNode> parseRow(String entityName, JsonNode row, TableLayout table) {
         return table.columns().stream()
-                .map(col -> jsonPathEvaluator.apply(entityName, row, col.jsonPath())
+                .map(col -> jsonPathEvaluator.applyInApiCall(entityName, row, col.jsonPath())
                         .orElse(NullNode.getInstance()))
                 .toList();
     }

@@ -30,17 +30,25 @@ public class JsonPathEvaluator {
                 .build());
     }
 
-    public Optional<JsonNode> apply(String entityName,
-                                    JsonNode data,
-                                    String jsonPath) {
+    public Optional<JsonNode> applyInApiCall(String entityName,
+                                             JsonNode data,
+                                             String jsonPath) {
+        try {
+            return apply(data, jsonPath);
+        } catch (JsonPathException e) {
+            throw ApiException
+                    .badRequest("Error while processing entity '%s'. %s".formatted(entityName, e.getMessage()));
+        }
+    }
+
+    public Optional<JsonNode> apply(JsonNode data, String jsonPath) {
         Object result;
         try {
             result = parseContext.parse(data).read(jsonPath);
         } catch (PathNotFoundException e) {
             return Optional.empty();
         } catch (IllegalArgumentException | JsonPathException e) {
-            throw ApiException.badRequest(
-                    "Error while processing entity '%s'. %s (%s)".formatted(entityName, e.getMessage(), jsonPath));
+            throw new JsonPathException("%s (%s)".formatted(e.getMessage(), jsonPath));
         }
         if (result == null || result instanceof NullNode) {
             return Optional.empty();
