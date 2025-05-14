@@ -22,8 +22,6 @@ import RenderView from '../features/views/RenderView.tsx';
 import ViewParameters from '../features/views/ViewParameters.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import HttpIcon from '@mui/icons-material/Http';
-import LinkIcon from '@mui/icons-material/Link';
 import PreviewIcon from '@mui/icons-material/Preview';
 import ShareIcon from '@mui/icons-material/Share';
 import {
@@ -32,12 +30,16 @@ import {
     CircularProgress,
     Container,
     Dialog,
+    DialogActions,
     DialogContent,
     DialogTitle,
     Divider,
     FormControl,
     Grid,
     Link,
+    List,
+    ListItem,
+    ListSubheader,
     Paper,
     Table,
     TableBody,
@@ -150,48 +152,76 @@ const MetadataItem = ({ label, children }: MetadataItemProps) => (
     </>
 );
 
-const CopyPermalinkButton = ({ entityId }: { entityId: string | undefined }) => {
-    if (!entityId) {
-        return <></>;
-    }
-    return (
-        <Typography variant="h6">
-            <CopyToClipboardButton
-                text={`${window.location.protocol}//${window.location.host}/mica/entity/${entityId}/details`}
-                tooltipText="Copy permalink"
-                Icon={LinkIcon}
-            />
-        </Typography>
-    );
-};
+interface ShareButtonProps {
+    entityId: string | undefined;
+    entityName: string | undefined;
+    entityKind: string | undefined;
+}
 
-const ShareButton = ({ entityName }: { entityName: string | undefined }) => {
+const ShareButton = ({ entityId, entityName, entityKind }: ShareButtonProps) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+
     if (!entityName) {
         return <></>;
     }
-    return (
-        <Typography variant="h6">
-            <CopyToClipboardButton
-                text={`${window.location.protocol}//${window.location.host}/mica/redirect?type=entityByName&entityName=${entityName}`}
-                tooltipText="Copy human-readable link"
-                Icon={ShareIcon}
-            />
-        </Typography>
-    );
-};
 
-const RenderWithCurlButton = ({ entityId }: { entityId: string | undefined }) => {
-    if (!entityId) {
-        return <></>;
-    }
+    const permaLink = `${window.location.protocol}//${window.location.host}/mica/entity/${entityId}/details`;
+    const humanLink = `${window.location.protocol}//${window.location.host}/mica/redirect?type=entityByName&entityName=${entityName}`;
+    const curl = `curl -H 'Authorization: Bearer your_token' ${window.location.protocol}//${window.location.host}/api/mica/v1/view/render/${entityId}`;
+
     return (
-        <Typography variant="h6">
-            <CopyToClipboardButton
-                text={`curl -H 'Authorization: your_token' ${window.location.protocol}//${window.location.host}/api/mica/v1/view/render/${entityId}`}
-                tooltipText="Copy curl command to render the view. Parametrized views might require a POST request."
-                Icon={HttpIcon}
-            />
-        </Typography>
+        <>
+            <Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg">
+                <DialogTitle>Share</DialogTitle>
+                <DialogContent>
+                    <List>
+                        <ListSubheader>Permalink</ListSubheader>
+                        <ListItem
+                            sx={{ fontFamily: 'Fira Mono', fontSize: '14px' }}
+                            secondaryAction={
+                                <CopyToClipboardButton
+                                    text={permaLink}
+                                    tooltipText="Copy permalink"
+                                />
+                            }>
+                            {permaLink}
+                        </ListItem>
+                        <ListSubheader sx={{ mt: 4 }}>Human-readable link</ListSubheader>
+                        <ListItem
+                            sx={{ fontFamily: 'Fira Mono', fontSize: '14px' }}
+                            secondaryAction={
+                                <CopyToClipboardButton
+                                    text={humanLink}
+                                    tooltipText="Copy human-readable link"
+                                />
+                            }>
+                            {humanLink}
+                        </ListItem>
+                        {entityKind == MICA_VIEW_KIND && (
+                            <>
+                                <ListSubheader sx={{ mt: 4 }}>Render with cURL</ListSubheader>
+                                <ListItem
+                                    sx={{ fontFamily: 'Fira Mono', fontSize: '14px' }}
+                                    secondaryAction={
+                                        <CopyToClipboardButton
+                                            text={curl}
+                                            tooltipText="Copy curl command to render the view. Parametrized views might require a POST request."
+                                        />
+                                    }>
+                                    {curl}
+                                </ListItem>
+                            </>
+                        )}
+                    </List>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpen(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+            <Button variant="outlined" startIcon={<ShareIcon />} onClick={() => setOpen(true)}>
+                Share
+            </Button>
+        </>
     );
 };
 
@@ -319,21 +349,13 @@ const EntityDetailsPage = () => {
                 </Grid>
                 <Grid>
                     <FormControl>
-                        <CopyPermalinkButton entityId={entityId} />
+                        <ShareButton
+                            entityId={data?.id}
+                            entityName={data?.name}
+                            entityKind={data?.kind}
+                        />
                     </FormControl>
                 </Grid>
-                <Grid>
-                    <FormControl>
-                        <ShareButton entityName={data?.name} />
-                    </FormControl>
-                </Grid>
-                {data.kind == MICA_VIEW_KIND && (
-                    <Grid>
-                        <FormControl>
-                            <RenderWithCurlButton entityId={entityId} />
-                        </FormControl>
-                    </Grid>
-                )}
                 {data.kind === MICA_DASHBOARD_KIND && (
                     <Grid>
                         <FormControl>
