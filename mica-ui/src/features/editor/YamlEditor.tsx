@@ -1,4 +1,4 @@
-import { MONACO_OPTIONS } from './options.ts';
+import { MONACO_OPTIONS, modeToTheme } from './options.ts';
 import { Alert, useColorScheme } from '@mui/material';
 import { useDebounce } from '@uidotdev/usehooks';
 import { editor } from 'monaco-editor';
@@ -55,21 +55,6 @@ const Markers = ({ markers }: { markers: editor.IMarker[] }) => {
             {markers.length >= MAX_MARKERS && <div>...and other warning(s)</div>}
         </Alert>
     );
-};
-
-type ColorScheme = 'system' | 'light' | 'dark' | undefined;
-
-const modeToTheme = (mode: ColorScheme): string => {
-    switch (mode) {
-        case 'system':
-            return 'vs';
-        case 'light':
-            return 'vs';
-        case 'dark':
-            return 'vs-dark';
-        default:
-            return 'vs';
-    }
 };
 
 interface Props {

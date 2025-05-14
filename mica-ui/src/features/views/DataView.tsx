@@ -1,4 +1,5 @@
-import { MONACO_OPTIONS } from '../editor/options.ts';
+import { MONACO_OPTIONS, modeToTheme } from '../editor/options.ts';
+import { useColorScheme } from '@mui/material';
 import { editor } from 'monaco-editor';
 
 import Editor from '@monaco-editor/react';
@@ -17,6 +18,7 @@ const VIEW_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
 };
 
 const DataView = ({ data }: Props) => {
+    const { mode, systemMode } = useColorScheme();
     const value = React.useMemo(() => JSON.stringify(data, null, 2), [data]);
     return (
         <Editor
@@ -24,6 +26,7 @@ const DataView = ({ data }: Props) => {
             height="100%"
             defaultLanguage="yaml"
             options={VIEW_OPTIONS}
+            theme={modeToTheme(mode === 'system' ? systemMode : mode)}
             value={value}
         />
     );
