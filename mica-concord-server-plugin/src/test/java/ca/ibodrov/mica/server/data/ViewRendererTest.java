@@ -242,6 +242,61 @@ public class ViewRendererTest {
     }
 
     @Test
+    public void mergeOfEmptyValues() {
+        var entityA = parseYaml("""
+                kind: Item
+                name: item-a
+                someValue: 123
+                stringValue: "foo"
+                arrayValue: [0, 1, 2]
+                anotherArrayValue: ['h', 'i', '!']
+                objectValue:
+                  foo: "bar"
+                anotherObjectValue:
+                  abc: "xyz"
+                """);
+
+        var entityB = parseYaml("""
+                kind: Item
+                name: item-b
+                someValue: null
+                stringValue: ""
+                arrayValue: [3, 4, 5]
+                anotherArrayValue: null
+                objectValue:
+                  baz: "qux"
+                anotherObjectValue: null
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: test
+                selector:
+                  entityKind: Item
+                data:
+                  jsonPath: $.['someValue', 'stringValue', 'arrayValue', 'objectValue']
+                  merge: true
+                """);
+
+        var result = renderer.render(view, Stream.of(entityA, entityB));
+        assertNotNull(result);
+        assertEquals(1, result.data().size());
+
+        var expected = """
+                - someValue: null
+                  stringValue: ""
+                  arrayValue:
+                  - 3
+                  - 4
+                  - 5
+                  objectValue:
+                    foo: "bar"
+                    baz: "qux"
+                """;
+        assertEquals(expected, toYaml(result.data()));
+    }
+
+    @Test
     public void mergeByWorksAsIntended() {
         var entityA = parseYaml("""
                 kind: /event/weather

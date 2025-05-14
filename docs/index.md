@@ -334,6 +334,69 @@ the rendered view will contain the object with keys merged from both entities:
 }
 ```
 
+The result is order-dependent. Entities are merged in the order of their appearance in `selector.namePatterns`.
+Entities whose names are later in the list of name patterns have priority over entities that are matched earlier.
+For example, for the given view definition:
+
+```yaml
+kind: /mica/view/v1
+name: /views/order-of-entities
+selector:
+  entityKind: /mica/record/v1
+  namePatterns:
+    - /entity-a
+    - /entity-b
+data:
+  jsonPath: $
+  merge: true
+```
+
+and the following entities:
+
+```yaml
+kind: /mica/record/v1
+name: /entity-a
+data:
+  numberValue: 123
+  stringValue: "hello"
+  arrayValue: [1, 2, 3]
+  anotherArrayValue: ['h', 'i', '!']
+  objectValue:
+    foo: "bar"
+  anotherObjectValue:
+    abc: "xyz"
+```
+
+```yaml
+kind: /mica/record/v1
+name: /entity-b
+data:
+  numberValue: null
+  stringValue: ""
+  arrayValue: [2, 3, 4]
+  anotherArrayValue: null
+  objectValue:
+    baz: "qux"
+  anotherObjectValue: null
+```
+
+the `data` in the rendered view should look like this:
+
+```yaml
+- numberValue: null
+  stringValue: ""
+  arrayValue: [2, 3, 4]
+  objectValue:
+    foo: "bar"
+    baz: "qux"
+```
+
+The merge rules are:
+- non-null "primitive" values (string, number, boolean) merged with a `null` value results in a `null` value;
+- merging a "non-primitive" value (array, object) with a `null` *removes* the key;
+- array values are overwritten -- last one wins;
+- object keys are merged, last value wins.
+
 ### Group By Key and Merge
 
 To group entities by a key and merge them into a single object, use the
