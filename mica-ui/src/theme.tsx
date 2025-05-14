@@ -3,6 +3,10 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import { PropsWithChildren } from 'react';
 
 const theme = createTheme({
+    colorSchemes: {
+        light: true,
+        dark: true,
+    },
     typography: {
         fontFamily: ['Fira Sans', 'Arial', 'sans-serif'].join(','),
     },

@@ -9,11 +9,20 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    Divider,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
     List,
     ListItem,
     ListSubheader,
+    Radio,
+    RadioGroup,
+    useColorScheme,
 } from '@mui/material';
 import ListItemIcon from '@mui/material/ListItemIcon';
+
+import React from 'react';
 
 interface Props {
     open: boolean;
@@ -22,10 +31,29 @@ interface Props {
 }
 
 const ProfileDialog = ({ open, onClose, user }: Props) => {
+    const { mode, setMode } = useColorScheme();
+
+    const handleThemeChange = React.useCallback(
+        (ev: React.ChangeEvent<HTMLInputElement>) => {
+            const mode = ev.target.value as 'system' | 'light' | 'dark';
+            setMode(mode);
+        },
+        [setMode],
+    );
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth={true}>
             <DialogTitle>{user.username}</DialogTitle>
             <DialogContent>
+                <FormControl>
+                    <FormLabel>Theme</FormLabel>
+                    <RadioGroup row={true} value={mode} onChange={handleThemeChange}>
+                        <FormControlLabel value="system" control={<Radio />} label="System" />
+                        <FormControlLabel value="light" control={<Radio />} label="Light" />
+                        <FormControlLabel value="dark" control={<Radio />} label="Dark" />
+                    </RadioGroup>
+                </FormControl>
+                <Divider sx={{ mt: 1, mb: 1 }} />
                 <List>
                     <ListSubheader>User ID</ListSubheader>
                     {user.userId && (

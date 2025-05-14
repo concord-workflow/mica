@@ -1,5 +1,5 @@
 import { MONACO_OPTIONS } from './options.ts';
-import { Alert } from '@mui/material';
+import { Alert, useColorScheme } from '@mui/material';
 import { useDebounce } from '@uidotdev/usehooks';
 import { editor } from 'monaco-editor';
 import { MonacoYaml, configureMonacoYaml } from 'monaco-yaml';
@@ -57,6 +57,21 @@ const Markers = ({ markers }: { markers: editor.IMarker[] }) => {
     );
 };
 
+type ColorScheme = 'system' | 'light' | 'dark' | undefined;
+
+const modeToTheme = (mode: ColorScheme): string => {
+    switch (mode) {
+        case 'system':
+            return 'vs';
+        case 'light':
+            return 'vs';
+        case 'dark':
+            return 'vs-dark';
+        default:
+            return 'vs';
+    }
+};
+
 interface Props {
     isLoading: boolean;
     isFetching: boolean;
@@ -73,6 +88,8 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
     const monacoYaml = React.useRef<MonacoYaml>();
 
     const [markers, setMarkers] = React.useState<editor.IMarker[]>([]);
+
+    const { mode, systemMode } = useColorScheme();
 
     React.useEffect(() => {
         if (!monaco) {
@@ -112,6 +129,7 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
                 height="100%"
                 defaultLanguage="yaml"
                 options={MONACO_OPTIONS}
+                theme={modeToTheme(mode === 'system' ? systemMode : mode)}
                 value={value}
                 onChange={onChange}
                 onValidate={setMarkers}

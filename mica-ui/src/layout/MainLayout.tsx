@@ -38,7 +38,6 @@ const MainLayout = ({ children }: PropsWithChildren) => {
             <Box
                 component="main"
                 sx={{
-                    backgroundColor: (theme) => theme.palette.grey[100],
                     height: '100vh',
                     overflow: 'auto',
                     display: 'flex',
