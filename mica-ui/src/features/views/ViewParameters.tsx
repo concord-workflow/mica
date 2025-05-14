@@ -1,5 +1,14 @@
-import { ObjectSchemaNode } from '../../api/schema.ts';
-import { Box, TextField, Typography } from '@mui/material';
+import { JsonNode, ObjectSchemaNode } from '../../api/schema.ts';
+import {
+    Box,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Select,
+    SelectChangeEvent,
+    TextField,
+    Typography,
+} from '@mui/material';
 
 import React from 'react';
 
@@ -30,6 +39,49 @@ const StringField = ({ name, value, onChange, required }: StringFieldProps) => {
     );
 };
 
+interface EnumStringFieldProps extends StringFieldProps {
+    enumValues: Array<string>;
+}
+
+const EnumStringField = ({ name, value, onChange, required, enumValues }: EnumStringFieldProps) => {
+    const handleOnChange = React.useCallback(
+        (ev: SelectChangeEvent) => {
+            onChange(name, ev.target.value);
+        },
+        [name, onChange],
+    );
+
+    return (
+        <FormControl size="small" fullWidth={true} required={required}>
+            <InputLabel
+                id={`${name}-select-label`}
+                sx={(theme) => ({ bgcolor: theme.palette.background.default })}>
+                {name}
+            </InputLabel>
+            <Select
+                labelId={`${name}-select-label`}
+                name={name}
+                value={value}
+                onChange={handleOnChange}>
+                <MenuItem value={''}>-</MenuItem>
+                {enumToStrings(enumValues).map((v) => (
+                    <MenuItem key={v} value={v}>
+                        {v}
+                    </MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    );
+};
+
+const toString = (v: JsonNode): string | null => (v === null ? null : v.toString());
+const onlyUnique = (v: string, idx: number, arr: Array<string>): boolean => arr.indexOf(v) === idx;
+const enumToStrings = (v: Array<JsonNode>): Array<string> =>
+    v
+        .map(toString)
+        .filter((v) => v !== null)
+        .filter(onlyUnique);
+
 interface ParameterFieldProps {
     name: string;
     property: ObjectSchemaNode | undefined;
@@ -45,6 +97,18 @@ const ParameterField = ({ name, property, required, values, onChange }: Paramete
 
     switch (property.type) {
         case 'string':
+            if (property.enum && property.enum.length > 0) {
+                return (
+                    <EnumStringField
+                        name={name}
+                        value={values[name] ?? ''}
+                        required={required}
+                        onChange={onChange}
+                        enumValues={enumToStrings(property.enum)}
+                    />
+                );
+            }
+
             return (
                 <StringField
                     name={name}

@@ -6,6 +6,7 @@ parameters:
       type: string
     recordKey:
       type: string
+      enum: ["x", "y"]
   required:
     - recordName
     - recordKey
