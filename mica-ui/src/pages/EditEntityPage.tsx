@@ -101,7 +101,7 @@ const EditEntityPage = () => {
     // load the entity
     const { entityId } = useParams<RouteParams>();
     const hasUnsavedChanges = localStorage.getItem(`dirty-${entityId}`) !== null;
-    console.log('hasUnsavedChanges', hasUnsavedChanges);
+
     const {
         data: serverValue,
         isLoading,

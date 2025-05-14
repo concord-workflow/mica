@@ -121,6 +121,14 @@ const YamlEditor = ({ isLoading, isFetching, isSaving, entityKind, value, onChan
         });
     }, [monaco, debouncedEntityKind]);
 
+    React.useEffect(() => {
+        return () => {
+            if (monacoYaml.current) {
+                monacoYaml.current.dispose();
+            }
+        };
+    }, []);
+
     return (
         <ErrorBoundary fallback={<b>Something went wrong while trying to render the editor.</b>}>
             <Markers markers={markers} />
