@@ -5,6 +5,7 @@ import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.data.jsonStore.JsonStoreEntityFetcher;
+import ca.ibodrov.mica.server.data.s3.S3ClientManager;
 import ca.ibodrov.mica.server.data.s3.S3EntityFetcher;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
@@ -123,8 +124,9 @@ public class MicaPluginModule implements Module {
         binder.bind(BuiltinSchemas.class).in(SINGLETON);
         binder.bind(EntityKindStore.class).in(SINGLETON);
         binder.bind(EntityStore.class).in(SINGLETON);
-        binder.bind(UuidGenerator.class).in(SINGLETON);
         binder.bind(JsonPathEvaluator.class).in(SINGLETON);
+        binder.bind(S3ClientManager.class).in(SINGLETON);
+        binder.bind(UuidGenerator.class).in(SINGLETON);
         binder.bind(ViewCache.class).toInstance(ViewCache.inMemory());
 
         binder.bind(InitialDataLoader.class).asEagerSingleton();
