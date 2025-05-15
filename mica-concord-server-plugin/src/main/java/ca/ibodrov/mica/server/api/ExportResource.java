@@ -2,20 +2,14 @@ package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.DataExport;
 import ca.ibodrov.mica.db.MicaDB;
-import ca.ibodrov.mica.db.jooq.tables.records.MicaEntitiesRecord;
 import com.walmartlabs.concord.db.MainDB;
-import com.walmartlabs.concord.server.jooq.tables.records.JsonStoreDataRecord;
-import com.walmartlabs.concord.server.jooq.tables.records.OrganizationsRecord;
-import com.walmartlabs.concord.server.jooq.tables.records.ProjectsRecord;
-import com.walmartlabs.concord.server.jooq.tables.records.RepositoriesRecord;
 import com.walmartlabs.concord.server.sdk.metrics.WithTimer;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.security.Roles;
 import com.walmartlabs.concord.server.security.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.jooq.Configuration;
-import org.jooq.DSLContext;
+import org.jooq.*;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -83,45 +77,17 @@ public class ExportResource implements Resource {
                 micaDsl.selectFrom(MICA_ENTITY_HISTORY).fetchMaps());
     }
 
-    private static Map<String, Object> toSerializableMap(OrganizationsRecord r) {
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> toSerializableMap(TableRecord<?> r) {
         var m = r.intoMap();
-        if (r.getMeta() != null) {
-            m.put("meta", r.getMeta().data());
-        }
-        return m;
-    }
-
-    private static Map<String, Object> toSerializableMap(ProjectsRecord r) {
-        var m = r.intoMap();
-        if (r.getProjectCfg() != null) {
-            m.put("project_cfg", r.getProjectCfg().data());
-        }
-        if (r.getMeta() != null) {
-            m.put("meta", r.getMeta().data());
-        }
-        return m;
-    }
-
-    private static Map<String, Object> toSerializableMap(JsonStoreDataRecord r) {
-        var m = r.intoMap();
-        if (r.getItemData() != null) {
-            m.put("item_data", r.getItemData().data());
-        }
-        return m;
-    }
-
-    private static Map<String, Object> toSerializableMap(RepositoriesRecord r) {
-        var m = r.intoMap();
-        if (r.getMeta() != null) {
-            m.put("meta", r.getMeta().data());
-        }
-        return m;
-    }
-
-    private static Map<String, Object> toSerializableMap(MicaEntitiesRecord r) {
-        var m = r.intoMap();
-        if (r.getData() != null) {
-            m.put("data", r.getData().data());
+        for (var field : r.fields()) {
+            if ("jsonb".equals(field.getDataType().getTypeName())) {
+                var jsonbField = (Field<JSONB>) field;
+                var jsonb = r.get(jsonbField);
+                if (jsonb != null) {
+                    m.put(jsonbField.getName(), r.get(jsonbField).data());
+                }
+            }
         }
         return m;
     }

@@ -51,7 +51,7 @@ public class ExampleMicaServer {
 
                 server.start();
 
-//                createExampleResources(server);
+                createExampleResources(server);
 
                 log.info("""
                         ==============================================================
@@ -96,7 +96,9 @@ public class ExampleMicaServer {
             var jsonStoreName = "example-store";
 
             var orgManager = injector.getInstance(OrganizationManager.class);
-            orgManager.createOrUpdate(new OrganizationEntry(orgName, OrganizationVisibility.PUBLIC));
+            var orgEntry = new OrganizationEntry(null, orgName, null, OrganizationVisibility.PUBLIC,
+                    Map.of("foo", "bar"), Map.of("baz", "qux"));
+            orgManager.createOrUpdate(orgEntry);
 
             var jsonStoreManager = injector.getInstance(JsonStoreManager.class);
             jsonStoreManager.createOrUpdate(orgName, JsonStoreRequest.builder()
