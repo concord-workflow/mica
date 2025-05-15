@@ -68,17 +68,20 @@ public class ImportResource implements Resource {
         concordDsl.transaction(cfg -> {
             var tx = cfg.dsl();
 
+            dataExport.concordUsers()
+                    .forEach(r -> upsert(tx, USERS, r));
+
             dataExport.concordOrganizations()
                     .forEach(r -> upsert(tx, ORGANIZATIONS, r));
 
             dataExport.concordProjects()
                     .forEach(r -> upsert(tx, PROJECTS, r));
 
-            dataExport.concordRepositories()
-                    .forEach(r -> upsert(tx, REPOSITORIES, r));
-
             dataExport.concordSecrets()
                     .forEach(r -> upsert(tx, SECRETS, r));
+
+            dataExport.concordRepositories()
+                    .forEach(r -> upsert(tx, REPOSITORIES, r));
 
             dataExport.concordProjectSecrets()
                     .forEach(r -> insert(tx, PROJECT_SECRETS, r));
@@ -91,9 +94,6 @@ public class ImportResource implements Resource {
 
             dataExport.concordJsonStoreData()
                     .forEach(r -> upsert(tx, JSON_STORE_DATA, r));
-
-            dataExport.concordUsers()
-                    .forEach(r -> upsert(tx, USERS, r));
 
             dataExport.concordTeams()
                     .forEach(r -> upsert(tx, TEAMS, r));
