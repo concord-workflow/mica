@@ -102,6 +102,8 @@ public class MicaPluginModule implements Module {
         bindJaxRsResource(binder, EntityListResource.class);
         bindJaxRsResource(binder, EntityResource.class);
         bindJaxRsResource(binder, EntityUploadResource.class);
+        bindJaxRsResource(binder, ExportResource.class);
+        bindJaxRsResource(binder, ImportResource.class);
         bindJaxRsResource(binder, ReportResource.class);
         bindJaxRsResource(binder, SystemResource.class);
         bindJaxRsResource(binder, ViewResource.class);

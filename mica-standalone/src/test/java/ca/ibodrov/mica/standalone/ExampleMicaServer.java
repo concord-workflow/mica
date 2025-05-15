@@ -51,7 +51,7 @@ public class ExampleMicaServer {
 
                 server.start();
 
-                createExampleResources(server);
+//                createExampleResources(server);
 
                 log.info("""
                         ==============================================================
