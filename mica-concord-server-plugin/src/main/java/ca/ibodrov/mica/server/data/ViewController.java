@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.jooq.DSLContext;
 
 import javax.inject.Inject;

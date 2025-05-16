@@ -7,6 +7,7 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.RenderRequest;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.exceptions.ApiException;
+import ca.ibodrov.mica.server.reports.ValidateAllReport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
@@ -36,8 +37,10 @@ public class ViewControllerTest extends AbstractDatabaseTest {
     @BeforeAll
     public static void setUp() {
         var entityKindStore = new EntityKindStore(entityStore);
-        var entityFetchers = new AllEntityFetchers(
-                Set.<EntityFetcher>of(new InternalEntityFetcher(dsl(), objectMapper)));
+        var internalEntityFetcher = new InternalEntityFetcher(dsl(), objectMapper);
+        var reportEntityFetcher = new ReportEntityFetcher(
+                new ValidateAllReport(entityKindStore, internalEntityFetcher, objectMapper));
+        var entityFetchers = new EntityFetchers(Set.of(internalEntityFetcher, reportEntityFetcher));
         var jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
         viewController = new ViewController(dsl(),
                 entityStore,
@@ -305,6 +308,52 @@ public class ViewControllerTest extends AbstractDatabaseTest {
         var values = Streams.stream(result.data().get("data").iterator()).map(it -> it.get("value").asInt())
                 .toArray(Integer[]::new);
         assertArrayEquals(new Integer[] { 2, 1 }, values);
+    }
+
+    @Test
+    public void renderValidateAllReport() {
+        var pathPrefix = randomPathPrefix();
+
+        var fooDoc = parseObject("""
+                name: %s/foo
+                kind: %s/record
+                x: 1
+                y: 2
+                z: 3
+                """.formatted(pathPrefix, pathPrefix));
+
+        // create entity kind
+        upsert(new MicaKindV1.Builder()
+                .name(pathPrefix + "/kind")
+                .schema(parseObject("""
+                        properties:
+                            x:
+                              type: number
+                            y:
+                              type: number
+                        """))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        // create test record
+
+        upsert(PartialEntity.create(pathPrefix + "/first", pathPrefix + "/kind",
+                Map.of("x", IntNode.valueOf(1),
+                        "y", IntNode.valueOf(2),
+                        "z", IntNode.valueOf(3))));
+
+        // create the report view
+
+        upsert(new MicaViewV1.Builder()
+                .name(pathPrefix + "/view")
+                .selector(byEntityKind(".*")
+                        .withIncludes(List.of("mica+report://validateAll?reportUnevaluatedProperties=true")))
+                .data(jsonPath("$"))
+                .build()
+                .toPartialEntity(objectMapper));
+
+        var result = viewController.getCachedOrRenderAsEntity(RenderRequest.of(pathPrefix + "/view"));
+        assertEquals(1, result.data().get("data").size());
     }
 
     private static void upsert(PartialEntity entity) {

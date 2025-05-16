@@ -16,7 +16,7 @@ import static ca.ibodrov.mica.server.data.BuiltinSchemas.STANDARD_PROPERTIES_REF
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ReportControllerTest {
+public class ReportEntityFetcherTest {
 
     private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
     private static final YamlMapper yamlMapper = new YamlMapper(objectMapper);

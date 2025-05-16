@@ -28,11 +28,11 @@ public class ApiException extends WebApplicationException {
     }
 
     public ApiException(Status status, ApiError error) {
-        this(status, error, null);
+        this(error.message(), null, status, error);
     }
 
-    public ApiException(Status status, ApiError error, Throwable cause) {
-        super(cause, Response.status(status)
+    public ApiException(String message, Throwable cause, Status status, ApiError error) {
+        super(message, cause, Response.status(status)
                 .type(APPLICATION_JSON)
                 .entity(error)
                 .build());

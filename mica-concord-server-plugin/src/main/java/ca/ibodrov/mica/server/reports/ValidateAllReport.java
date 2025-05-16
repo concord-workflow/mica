@@ -1,10 +1,7 @@
 package ca.ibodrov.mica.server.reports;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.server.data.EntityFetchers;
-import ca.ibodrov.mica.server.data.EntityKindStore;
-import ca.ibodrov.mica.server.data.EntityKindStoreSchemaFetcher;
-import ca.ibodrov.mica.server.data.Validator;
+import ca.ibodrov.mica.server.data.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,6 +17,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static ca.ibodrov.mica.api.kinds.MicaKindV1.MICA_KIND_V1;
 import static java.util.Objects.requireNonNull;
@@ -38,13 +36,14 @@ public class ValidateAllReport implements Report<ValidateAllReport.Options> {
     private final ObjectMapper objectMapper;
     private final Validator validator;
 
+    // Inject only specific entity fetchers to avoid cyclic dependencies
     @Inject
     public ValidateAllReport(EntityKindStore entityKindStore,
-                             EntityFetchers entityFetchers,
+                             InternalEntityFetcher internalEntityFetcher,
                              ObjectMapper objectMapper) {
 
         this.entityKindStore = requireNonNull(entityKindStore);
-        this.entityFetchers = requireNonNull(entityFetchers);
+        this.entityFetchers = new EntityFetchers(Set.of(requireNonNull(internalEntityFetcher)));
         this.objectMapper = requireNonNull(objectMapper);
         var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
         this.validator = Validator.getDefault(objectMapper, schemaFetcher);

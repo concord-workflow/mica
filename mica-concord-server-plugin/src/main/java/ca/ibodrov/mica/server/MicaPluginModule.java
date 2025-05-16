@@ -118,8 +118,9 @@ public class MicaPluginModule implements Module {
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(JsonStoreEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(ReportEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(S3EntityFetcher.class);
-        binder.bind(EntityFetchers.class).to(AllEntityFetchers.class).in(SINGLETON);
+        binder.bind(EntityFetchers.class).in(SINGLETON);
 
         // other beans
 
