@@ -37,6 +37,7 @@ public class EntityListResource implements Resource {
         this.dsl = requireNonNull(dsl);
     }
 
+    // TODO move to EntityStore?
     @GET
     public ListResponse list(@NotEmpty @QueryParam("path") String path,
                              @Nullable @QueryParam("entityKind") String entityKind,
@@ -53,11 +54,15 @@ public class EntityListResource implements Resource {
         var searchCondition = Optional.ofNullable(nonBlank(search))
                 .map(s -> (Condition) MICA_ENTITIES.NAME.likeIgnoreCase("%" + s + "%")).orElse(noCondition());
 
+        // this method should NOT return "deleted" entities
+        var notDeleted = MICA_ENTITIES.DELETED_AT.isNull();
+
         var result = new HashMap<String, Entry>();
         dsl.select(MICA_ENTITIES.ID, MICA_ENTITIES.NAME, MICA_ENTITIES.KIND).from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.NAME.like(namePrefix + "%")
                         .and(entityKindCondition)
-                        .and(searchCondition))
+                        .and(searchCondition)
+                        .and(notDeleted))
                 .limit(applySearch ? SEARCH_LIMIT : null)
                 .forEach(record -> {
                     if (applySearch) {

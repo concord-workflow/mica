@@ -11,6 +11,7 @@ import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.jooq.Delete;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,7 +128,7 @@ public class EntityResource implements Resource {
     @DELETE
     @Path("{id}")
     @Operation(summary = "Delete an existing entity by its ID", operationId = "deleteById")
-    public EntityVersion deleteById(@Context UserPrincipal session, @PathParam("id") UUID entityId) {
+    public DeletedEntityVersion deleteById(@Context UserPrincipal session, @PathParam("id") UUID entityId) {
         return entityController.deleteById(session, new EntityId(entityId))
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
     }

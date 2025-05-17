@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

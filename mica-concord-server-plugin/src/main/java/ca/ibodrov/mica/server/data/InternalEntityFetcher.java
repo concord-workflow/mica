@@ -45,6 +45,8 @@ public class InternalEntityFetcher implements EntityFetcher {
 
     @Override
     public Cursor fetch(FetchRequest request) {
+        var kind = request.kind().orElseThrow(() -> new StoreException("selector.entityKind is required"));
+
         var step = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -52,8 +54,8 @@ public class InternalEntityFetcher implements EntityFetcher {
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.KIND.likeRegex(
-                        request.kind().orElseThrow(() -> new StoreException("selector.entityKind is required"))));
+                .where(MICA_ENTITIES.DELETED_AT.isNull()
+                        .and(MICA_ENTITIES.KIND.likeRegex(kind)));
 
         return () -> step.fetch(this::toEntity).stream();
     }

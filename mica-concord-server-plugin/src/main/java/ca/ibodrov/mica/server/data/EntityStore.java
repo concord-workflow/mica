@@ -22,12 +22,15 @@ import java.util.stream.Stream;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
+import static org.jooq.impl.DSL.currentInstant;
 import static org.jooq.impl.DSL.noCondition;
 
 public class EntityStore {
 
     private static final TypeReference<LinkedHashMap<String, JsonNode>> PROPERTIES_TYPE = new TypeReference<>() {
     };
+
+    private static final int MAX_NAME_PATTERNS = 32;
 
     private final DSLContext dsl;
     private final ObjectMapper objectMapper;
@@ -65,6 +68,9 @@ public class EntityStore {
         var entityKind = request.entityKind();
         var entityKindCondition = entityKind != null ? MICA_ENTITIES.KIND.eq(entityKind) : noCondition();
 
+        // search should NOT return "deleted" entities
+        var notDeleted = MICA_ENTITIES.DELETED_AT.isNull();
+
         var query = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -74,7 +80,8 @@ public class EntityStore {
                 .where(searchCondition
                         .and(entityNameStartsWithCondition)
                         .and(nameCondition)
-                        .and(entityKindCondition));
+                        .and(entityKindCondition)
+                        .and(notDeleted));
 
         var orderBy = request.orderBy();
         if (orderBy != null) {
@@ -92,6 +99,8 @@ public class EntityStore {
     }
 
     public Optional<Entity> getById(EntityId entityId, @Nullable Instant updatedAt) {
+        // not adding the "DELETED_AT is not null" condition
+        // this method should be able to retrieve "deleted" entities
         var query = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -113,6 +122,7 @@ public class EntityStore {
     }
 
     public Optional<Entity> getByName(DSLContext tx, String entityName) {
+        // this method should NOT return "deleted" entities
         return tx.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
@@ -120,7 +130,7 @@ public class EntityStore {
                 MICA_ENTITIES.UPDATED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.NAME.eq(entityName))
+                .where(MICA_ENTITIES.DELETED_AT.isNull().and(MICA_ENTITIES.NAME.eq(entityName)))
                 .fetchOptional(this::toEntity);
     }
 
@@ -129,9 +139,10 @@ public class EntityStore {
     }
 
     public Optional<EntityVersion> getVersion(DSLContext tx, String entityName) {
+        // this method should NOT return "deleted" entities
         return tx.select(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.NAME.eq(entityName))
+                .where(MICA_ENTITIES.DELETED_AT.isNull().and(MICA_ENTITIES.NAME.eq(entityName)))
                 .fetchOptional(r -> new EntityVersion(new EntityId(r.value1()), r.value2()));
     }
 
@@ -140,9 +151,10 @@ public class EntityStore {
     }
 
     public Optional<String> getLatestEntityDoc(DSLContext tx, EntityId entityId) {
+        // this method should NOT return "deleted" entities
         return tx.select(MICA_ENTITIES.DOC)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(entityId.id()))
+                .where(MICA_ENTITIES.DELETED_AT.isNull().and(MICA_ENTITIES.ID.eq(entityId.id())))
                 .orderBy(MICA_ENTITIES.UPDATED_AT.desc())
                 .limit(1)
                 .fetchOptional(Record1::value1);
@@ -153,29 +165,31 @@ public class EntityStore {
     }
 
     public Optional<String> getEntityDoc(DSLContext tx, EntityVersion version) {
+        // this method should NOT return "deleted" entities
         return tx.select(MICA_ENTITIES.DOC)
                 .from(MICA_ENTITIES)
-                .where(MICA_ENTITIES.ID.eq(version.id().id())
+                .where(MICA_ENTITIES.DELETED_AT.isNull()
+                        .and(MICA_ENTITIES.ID.eq(version.id().id()))
                         .and(MICA_ENTITIES.UPDATED_AT.eq(version.updatedAt())))
                 .fetchOptional(Record1::value1);
     }
 
-    public Optional<EntityVersion> deleteById(EntityId entityId) {
-        return dsl.transactionResult(tx -> deleteById(tx.dsl(), entityId));
-    }
-
-    public Optional<EntityVersion> deleteById(DSLContext tx, EntityId entityId) {
-        var version = tx.deleteFrom(MICA_ENTITIES)
+    public Optional<DeletedEntityVersion> deleteById(DSLContext tx, EntityId entityId) {
+        var version = tx.update(MICA_ENTITIES)
+                .set(MICA_ENTITIES.DELETED_AT, currentInstant())
                 .where(MICA_ENTITIES.ID.eq(entityId.id()))
-                .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT, MICA_ENTITIES.DOC)
+                .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT, MICA_ENTITIES.DELETED_AT, MICA_ENTITIES.DOC)
                 .fetchOptional();
 
-        return version.map(r -> new EntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)),
-                r.get(MICA_ENTITIES.UPDATED_AT)));
+        return version.map(r -> new DeletedEntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)),
+                r.get(MICA_ENTITIES.UPDATED_AT),
+                r.get(MICA_ENTITIES.DELETED_AT)));
     }
 
-    public List<EntityVersionAndName> deleteByNamePatterns(List<String> namePatterns) {
+    public List<DeletedEntityVersionAndName> deleteByNamePatterns(List<String> namePatterns) {
         assert namePatterns != null && !namePatterns.isEmpty();
+        assert namePatterns.size() <= MAX_NAME_PATTERNS;
+
         return dsl.transactionResult(cfg -> {
             var tx = cfg.dsl();
 
@@ -187,6 +201,8 @@ public class EntityStore {
                 query = query.or(MICA_ENTITIES.NAME.likeRegex(namePatterns.get(i)));
             }
 
+            var deletedAt = getDatabaseInstant(tx);
+
             return query
                     .forUpdate()
                     .skipLocked()
@@ -195,21 +211,26 @@ public class EntityStore {
                         var id = r.value1();
                         var name = r.value2();
                         var updatedAt = r.value3();
-                        var rows = tx.deleteFrom(MICA_ENTITIES)
+                        var rows = tx.update(MICA_ENTITIES)
+                                .set(MICA_ENTITIES.DELETED_AT, deletedAt)
                                 .where(MICA_ENTITIES.ID.eq(id)
                                         .and(MICA_ENTITIES.UPDATED_AT.eq(updatedAt)))
                                 .execute();
                         if (rows == 0) {
                             return Stream.empty();
                         }
-                        return Stream.of(new EntityVersionAndName(new EntityId(id), updatedAt, name));
+                        return Stream.of(new DeletedEntityVersionAndName(new EntityId(id), updatedAt, deletedAt, name));
                     })
                     .toList();
         });
     }
 
     public boolean isNameAndKindExists(DSLContext tx, String entityName, String entityKind) {
-        return tx.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.eq(entityName).and(MICA_ENTITIES.KIND.eq(entityKind)));
+        // this method should NOT return "deleted" entities
+        return tx.fetchExists(MICA_ENTITIES,
+                MICA_ENTITIES.DELETED_AT.isNull()
+                        .and(MICA_ENTITIES.NAME.eq(entityName)
+                                .and(MICA_ENTITIES.KIND.eq(entityKind))));
     }
 
     public Optional<EntityVersion> upsert(DSLContext tx,
@@ -224,7 +245,7 @@ public class EntityStore {
         var id = entity.id().map(EntityId::id)
                 .orElseGet(uuidGenerator::generate);
         var kind = entity.kind();
-        var updatedAt = getDatabaseInstant();
+        var updatedAt = getDatabaseInstant(tx);
         var createdAt = entity.createdAt().orElse(updatedAt);
 
         // find and replace "id", "name", "createdAt" and "updatedAt" properties in the
@@ -275,12 +296,15 @@ public class EntityStore {
     }
 
     private boolean isNameUsedAsPathElsewhere(DSLContext tx, String name) {
+        // this method should NOT return "deleted" entities
         var path = name + "/";
-        return tx.fetchExists(MICA_ENTITIES, MICA_ENTITIES.NAME.startsWith(path));
+        return tx.fetchExists(MICA_ENTITIES,
+                MICA_ENTITIES.DELETED_AT.isNull()
+                        .and(MICA_ENTITIES.NAME.startsWith(path)));
     }
 
-    private Instant getDatabaseInstant() {
-        return dsl.select(DSL.currentTimestamp()).fetchOne(r -> r.value1().toInstant());
+    private Instant getDatabaseInstant(DSLContext tx) {
+        return tx.select(DSL.currentTimestamp()).fetchOne(r -> r.value1().toInstant());
     }
 
     public static Entity toEntity(ObjectMapper objectMapper,

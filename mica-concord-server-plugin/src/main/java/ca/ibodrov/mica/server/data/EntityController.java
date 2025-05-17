@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.data;
 
+import ca.ibodrov.mica.api.model.DeletedEntityVersion;
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
@@ -9,6 +10,7 @@ import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.jooq.DSLContext;
 
@@ -46,11 +48,40 @@ public class EntityController {
                 new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper));
     }
 
-    public EntityVersion createOrUpdate(DSLContext tx,
-                                        UserPrincipal session,
-                                        PartialEntity entity,
-                                        @Nullable String doc,
-                                        boolean overwrite) {
+    public EntityVersion put(UserPrincipal session,
+                             PartialEntity entity,
+                             String doc,
+                             boolean overwrite,
+                             boolean replace) {
+        return dsl.transactionResult(cfg -> {
+            var tx = cfg.dsl();
+            if (replace) {
+                entityStore.getVersion(tx, entity.name())
+                        .ifPresent(version -> entityStore.deleteById(tx, version.id()));
+            }
+            return createOrUpdate(tx, session, entity, doc, overwrite);
+        });
+    }
+
+    public Optional<DeletedEntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
+        return dsl.transactionResult(cfg -> {
+            var tx = cfg.dsl();
+            var doc = entityStore.getLatestEntityDoc(tx, entityId);
+            var version = entityStore.deleteById(tx, entityId);
+            if (version.isPresent()) {
+                var historyEntry = new EntityHistoryEntry(entityId, Optional.empty(), DELETE, session.getUsername());
+                historyController.addEntry(tx, historyEntry, doc);
+            }
+            return version;
+        });
+    }
+
+    @VisibleForTesting
+    EntityVersion createOrUpdate(DSLContext tx,
+                                 UserPrincipal session,
+                                 PartialEntity entity,
+                                 @Nullable String doc,
+                                 boolean overwrite) {
 
         var kind = validateKind(tx, entity.kind());
 
@@ -95,34 +126,6 @@ public class EntityController {
         var historyEntry = new EntityHistoryEntry(version.id(), Optional.of(version.updatedAt()), UPDATE, author);
         historyController.addEntry(tx, historyEntry, Optional.ofNullable(doc));
         return version;
-    }
-
-    public EntityVersion put(UserPrincipal session,
-                             PartialEntity entity,
-                             String doc,
-                             boolean overwrite,
-                             boolean replace) {
-        return dsl.transactionResult(cfg -> {
-            var tx = cfg.dsl();
-            if (replace) {
-                entityStore.getVersion(tx, entity.name())
-                        .ifPresent(version -> entityStore.deleteById(tx, version.id()));
-            }
-            return createOrUpdate(tx, session, entity, doc, overwrite);
-        });
-    }
-
-    public Optional<EntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
-        return dsl.transactionResult(cfg -> {
-            var tx = cfg.dsl();
-            var doc = entityStore.getLatestEntityDoc(tx, entityId);
-            var version = entityStore.deleteById(tx, entityId);
-            if (version.isPresent()) {
-                var historyEntry = new EntityHistoryEntry(entityId, Optional.empty(), DELETE, session.getUsername());
-                historyController.addEntry(tx, historyEntry, doc);
-            }
-            return version;
-        });
     }
 
     private String validateKind(DSLContext tx, String kind) {

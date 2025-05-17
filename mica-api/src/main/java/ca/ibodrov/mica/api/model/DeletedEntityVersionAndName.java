@@ -4,11 +4,12 @@ import java.time.Instant;
 
 import static java.util.Objects.requireNonNull;
 
-public record EntityVersionAndName(EntityId id, Instant updatedAt, String name) {
+public record DeletedEntityVersionAndName(EntityId id, Instant updatedAt, Instant deletedAt, String name) {
 
-    public EntityVersionAndName {
+    public DeletedEntityVersionAndName {
         requireNonNull(id);
         requireNonNull(updatedAt);
+        requireNonNull(deletedAt);
         requireNonNull(name);
     }
 }
