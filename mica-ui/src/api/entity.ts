@@ -92,11 +92,24 @@ export interface PartialEntity {
     [key: string]: JsonNode;
 }
 
+export interface EntityVersionAndName {
+    id: string;
+    updatedAt: string;
+    name: string;
+}
+
 export enum OrderBy {
     NAME = 'NAME',
 }
 
-export const STANDARD_ENTITY_PROPERTIES = ['id', 'name', 'kind', 'createdAt', 'updatedAt'];
+export const STANDARD_ENTITY_PROPERTIES = [
+    'id',
+    'name',
+    'kind',
+    'createdAt',
+    'updatedAt',
+    'deletedAt',
+];
 
 export const getEntity = (id: string): Promise<Entity> =>
     doFetch(`/api/mica/v1/entity/${id}`).then(handleJsonResponse<Entity>);

@@ -287,7 +287,7 @@ const EditEntityPage = () => {
                         <PageTitle help={HELP}>
                             {selectedName && (
                                 <>
-                                    <PathBreadcrumbs path={selectedName}>
+                                    <PathBreadcrumbs prefix="/entity" path={selectedName}>
                                         {selectedId && (
                                             <>
                                                 &nbsp;

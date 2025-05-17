@@ -8,14 +8,13 @@ import com.walmartlabs.concord.server.sdk.rest.Resource;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record3;
+import org.jooq.Record4;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.validation.constraints.NotEmpty;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
+import java.time.Instant;
 import java.util.*;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
@@ -37,11 +36,11 @@ public class EntityListResource implements Resource {
         this.dsl = requireNonNull(dsl);
     }
 
-    // TODO move to EntityStore?
     @GET
     public ListResponse list(@NotEmpty @QueryParam("path") String path,
                              @Nullable @QueryParam("entityKind") String entityKind,
-                             @Nullable @QueryParam("search") String search) {
+                             @Nullable @QueryParam("search") String search,
+                             @QueryParam("deleted") @DefaultValue("false") boolean deleted) {
 
         assert path != null;
 
@@ -54,27 +53,34 @@ public class EntityListResource implements Resource {
         var searchCondition = Optional.ofNullable(nonBlank(search))
                 .map(s -> (Condition) MICA_ENTITIES.NAME.likeIgnoreCase("%" + s + "%")).orElse(noCondition());
 
-        // this method should NOT return "deleted" entities
-        var notDeleted = MICA_ENTITIES.DELETED_AT.isNull();
+        var deletedCondition = deleted ? MICA_ENTITIES.DELETED_AT.isNotNull() : MICA_ENTITIES.DELETED_AT.isNull();
 
-        var result = new HashMap<String, Entry>();
-        dsl.select(MICA_ENTITIES.ID, MICA_ENTITIES.NAME, MICA_ENTITIES.KIND).from(MICA_ENTITIES)
+        var result = new HashMap<String, List<Entry>>();
+        dsl.select(MICA_ENTITIES.ID, MICA_ENTITIES.NAME, MICA_ENTITIES.KIND, MICA_ENTITIES.DELETED_AT)
+                .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.NAME.like(namePrefix + "%")
                         .and(entityKindCondition)
                         .and(searchCondition)
-                        .and(notDeleted))
+                        .and(deletedCondition))
                 .limit(applySearch ? SEARCH_LIMIT : null)
                 .forEach(record -> {
                     if (applySearch) {
                         var entry = asSearchResult(record);
-                        result.put(entry.getKey(), entry.getValue());
+                        var entries = result.computeIfAbsent(entry.getKey(), key -> new ArrayList<>());
+                        if (!entries.contains(entry.getValue())) {
+                            entries.add(entry.getValue());
+                        }
                     } else {
                         var entry = asTreeEntry(record, namePrefix);
-                        result.put(entry.getKey(), entry.getValue());
+                        var entries = result.computeIfAbsent(entry.getKey(), key -> new ArrayList<>());
+                        if (!entries.contains(entry.getValue())) {
+                            entries.add(entry.getValue());
+                        }
                     }
                 });
 
         var data = result.values().stream()
+                .flatMap(Collection::stream)
                 .sorted(EntityListResource::compare)
                 .toList();
 
@@ -95,26 +101,29 @@ public class EntityListResource implements Resource {
         return e1.name().compareTo(e2.name());
     }
 
-    private static Map.Entry<String, Entry> asTreeEntry(Record3<UUID, String, String> record, String namePrefix) {
+    private static Map.Entry<String, Entry> asTreeEntry(Record4<UUID, String, String, Instant> record,
+                                                        String namePrefix) {
         var relativePath = record.value2().substring(namePrefix.length());
         if (relativePath.contains("/")) {
             var name = relativePath.split("/")[0];
-            return Map.entry(name, new Entry(Type.FOLDER, Optional.empty(), name, Optional.empty()));
+            return Map.entry(name, new Entry(Type.FOLDER, Optional.empty(), name, Optional.empty(), Optional.empty()));
         } else {
             return Map.entry(relativePath,
                     new Entry(Type.FILE,
                             Optional.of(new EntityId(record.value1())),
                             relativePath,
-                            Optional.of(record.value3())));
+                            Optional.of(record.value3()),
+                            Optional.ofNullable(record.value4())));
         }
     }
 
-    private static Map.Entry<String, Entry> asSearchResult(Record3<UUID, String, String> record) {
+    private static Map.Entry<String, Entry> asSearchResult(Record4<UUID, String, String, Instant> record) {
         return Map.entry(record.value2(),
                 new Entry(Type.FILE,
                         Optional.of(new EntityId(record.value1())),
                         record.value2(),
-                        Optional.of(record.value3())));
+                        Optional.of(record.value3()),
+                        Optional.ofNullable(record.value4())));
     }
 
     public enum Type {
@@ -123,7 +132,8 @@ public class EntityListResource implements Resource {
     }
 
     @JsonInclude(Include.NON_ABSENT)
-    public record Entry(Type type, Optional<EntityId> entityId, String name, Optional<String> entityKind) {
+    public record Entry(Type type, Optional<EntityId> entityId, String name, Optional<String> entityKind,
+            Optional<Instant> deletedAt) {
     }
 
     public record ListResponse(List<Entry> data) {

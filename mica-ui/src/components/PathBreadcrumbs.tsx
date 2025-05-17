@@ -9,7 +9,11 @@ const InlineHomeIcon = styled(HomeIcon)(() => ({
     top: '3px',
 }));
 
-const PathBreadcrumbs = ({ path, children }: PropsWithChildren<{ path: string }>) => {
+const PathBreadcrumbs = ({
+    prefix,
+    path,
+    children,
+}: PropsWithChildren<{ prefix: string; path: string }>) => {
     const parts = React.useMemo(() => {
         const items = path.split('/').filter((part) => part.length > 0);
         return items.map((part, index) => {
@@ -24,19 +28,19 @@ const PathBreadcrumbs = ({ path, children }: PropsWithChildren<{ path: string }>
                     &nbsp;
                     <Link
                         component={RouterLink}
-                        to={`/entity?path=/${items.slice(0, index + 1).join('/')}`}>
+                        to={`${prefix}?path=/${items.slice(0, index + 1).join('/')}`}>
                         {'/'}
                         {part}
                     </Link>
                 </React.Fragment>
             );
         });
-    }, [path, children]);
+    }, [prefix, path, children]);
 
     return (
         <>
             <Tooltip title="Back to /">
-                <Link component={RouterLink} to={`/entity?path=/`}>
+                <Link component={RouterLink} to={`${prefix}?path=/`}>
                     <InlineHomeIcon fontSize="small" />
                 </Link>
             </Tooltip>

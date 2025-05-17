@@ -6,6 +6,7 @@ import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.data.EntityController;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.walmartlabs.concord.server.sdk.metrics.WithTimer;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
@@ -80,7 +81,10 @@ public class EntityUploadResource implements Resource {
                 object = object.put("kind", entityKind);
             }
             entity = yamlMapper.convertValue(object, PartialEntity.class);
-        } catch (IOException e) {
+        } catch (IllegalArgumentException | IOException e) {
+            if (e.getCause() instanceof InvalidFormatException ex) {
+                throw ApiException.badRequest("Error parsing YAML: " + ex.getMessage());
+            }
             throw ApiException.badRequest("Error parsing YAML: " + e.getMessage());
         }
 

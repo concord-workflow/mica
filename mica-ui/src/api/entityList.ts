@@ -10,15 +10,23 @@ export interface Entry {
     entityId?: string;
     name: string;
     entityKind?: string;
+    deletedAt?: string;
 }
 
 export interface ListResponse {
     data: Array<Entry>;
 }
 
-export const list = (path: string, entityKind?: string, search?: string): Promise<ListResponse> =>
+export const ENTITY_SEARCH_LIMIT = 100;
+
+export const list = (
+    path: string,
+    entityKind?: string,
+    search?: string,
+    deleted?: boolean,
+): Promise<ListResponse> =>
     doFetch(
         `/api/mica/ui/entityList?path=${encodeURIComponent(path)}&entityKind=${
             entityKind ? encodeURIComponent(entityKind) : ''
-        }&search=${search ? encodeURIComponent(search) : ''}`,
+        }&search=${search ? encodeURIComponent(search) : ''}&deleted=${deleted ? 'true' : ''}`,
     ).then(handleJsonResponse<ListResponse>);

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record6;
+import org.jooq.Record7;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -45,6 +46,8 @@ public class InternalEntityFetcher implements EntityFetcher {
 
     @Override
     public Cursor fetch(FetchRequest request) {
+        // this method should NOT return "deleted" entities
+
         var kind = request.kind().orElseThrow(() -> new StoreException("selector.entityKind is required"));
 
         var step = dsl.select(MICA_ENTITIES.ID,
@@ -52,6 +55,7 @@ public class InternalEntityFetcher implements EntityFetcher {
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT,
+                MICA_ENTITIES.DELETED_AT, // should be null
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.DELETED_AT.isNull()
@@ -60,7 +64,7 @@ public class InternalEntityFetcher implements EntityFetcher {
         return () -> step.fetch(this::toEntity).stream();
     }
 
-    private EntityLike toEntity(Record6<UUID, String, String, Instant, Instant, JSONB> record) {
+    private EntityLike toEntity(Record7<UUID, String, String, Instant, Instant, Instant, JSONB> record) {
         return EntityStore.toEntity(objectMapper, record);
     }
 }

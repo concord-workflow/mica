@@ -106,6 +106,7 @@ public class EntityStore {
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT,
+                MICA_ENTITIES.DELETED_AT,
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.ID.eq(entityId.id()));
@@ -128,6 +129,7 @@ public class EntityStore {
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
                 MICA_ENTITIES.UPDATED_AT,
+                MICA_ENTITIES.DELETED_AT, // should be null
                 MICA_ENTITIES.DATA)
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.DELETED_AT.isNull().and(MICA_ENTITIES.NAME.eq(entityName)))
@@ -258,6 +260,11 @@ public class EntityStore {
                     "kind", kind,
                     "createdAt", objectMapper.convertValue(createdAt, String.class),
                     "updatedAt", objectMapper.convertValue(updatedAt, String.class));
+
+            var deletedAt = entity.deletedAt();
+            if (deletedAt.isPresent()) {
+                doc = inplaceUpdate(doc, "deletedAt", objectMapper.convertValue(deletedAt.get(), String.class));
+            }
         }
 
         var data = serializeData(entity.data());
@@ -283,7 +290,7 @@ public class EntityStore {
                 .map(row -> new EntityVersion(new EntityId(id), row.getUpdatedAt()));
     }
 
-    private Entity toEntity(Record6<UUID, String, String, Instant, Instant, JSONB> record) {
+    private Entity toEntity(Record7<UUID, String, String, Instant, Instant, Instant, JSONB> record) {
         return toEntity(objectMapper, record);
     }
 
@@ -308,11 +315,12 @@ public class EntityStore {
     }
 
     public static Entity toEntity(ObjectMapper objectMapper,
-                                  Record6<UUID, String, String, Instant, Instant, JSONB> record) {
+                                  Record7<UUID, String, String, Instant, Instant, Instant, JSONB> record) {
         var id = new EntityId(record.value1());
         try {
-            var data = objectMapper.readValue(record.value6().data(), PROPERTIES_TYPE);
-            return new Entity(id, record.value2(), record.value3(), record.value4(), record.value5(), data);
+            var data = objectMapper.readValue(record.value7().data(), PROPERTIES_TYPE);
+            return new Entity(id, record.value2(), record.value3(), record.value4(), record.value5(),
+                    Optional.ofNullable(record.value6()), data);
         } catch (IOException e) {
             throw new StoreException("JSON deserialization error, most likely a bug: " + e.getMessage(), e);
         }

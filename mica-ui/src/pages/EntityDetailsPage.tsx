@@ -26,6 +26,7 @@ import PreviewIcon from '@mui/icons-material/Preview';
 import ShareIcon from '@mui/icons-material/Share';
 import {
     Alert,
+    Box,
     Button,
     CircularProgress,
     Container,
@@ -133,7 +134,10 @@ interface MetadataGridProps {
 const MetadataGrid = ({ sx, children }: MetadataGridProps) => {
     return (
         <>
-            <Grid container sx={{ fontFamily: 'Fira Mono', fontSize: 12, ...sx }}>
+            <Grid
+                container={true}
+                spacing={1}
+                sx={{ fontFamily: 'Fira Mono', fontSize: 12, ...sx }}>
                 {children}
             </Grid>
         </>
@@ -147,7 +151,9 @@ interface MetadataItemProps {
 
 const MetadataItem = ({ label, children }: MetadataItemProps) => (
     <>
-        <Grid size={2}>{label}</Grid>
+        <Grid size={2} sx={{ minHeight: '28px' }}>
+            {label}
+        </Grid>
         <Grid size={10}>{children}</Grid>
     </>
 );
@@ -329,6 +335,8 @@ const EntityDetailsPage = () => {
         );
     }
 
+    const deleted = data['deletedAt'] !== undefined;
+
     return (
         <PageContainer>
             <DeleteEntityConfirmation
@@ -342,7 +350,14 @@ const EntityDetailsPage = () => {
                 <Grid flex={1}>
                     <PageTitle help={HELP}>
                         <>
-                            <PathBreadcrumbs path={data.name} />
+                            <PathBreadcrumbs prefix="/entity" path={data.name} />
+                            {deleted && (
+                                <Box
+                                    component={'span'}
+                                    sx={(theme) => ({ ml: 1, color: theme.palette.error.main })}>
+                                    (deleted)
+                                </Box>
+                            )}
                             <CopyToClipboardButton text={data.name} />
                         </>
                     </PageTitle>
@@ -381,20 +396,22 @@ const EntityDetailsPage = () => {
                     </Grid>
                 )}
                 {showPreview && <PreviewDialog data={data} onClose={() => setShowPreview(false)} />}
-                <Grid>
-                    <FormControl>
-                        <Tooltip title="Permanently delete this entity. This action cannot be undone.">
-                            <Button
-                                startIcon={<DeleteIcon />}
-                                variant="outlined"
-                                color="error"
-                                onClick={handleDelete}
-                                disabled={isFetching}>
-                                Delete
-                            </Button>
-                        </Tooltip>
-                    </FormControl>
-                </Grid>
+                {!deleted && (
+                    <Grid>
+                        <FormControl>
+                            <Tooltip title="Permanently delete this entity. This action cannot be undone.">
+                                <Button
+                                    startIcon={<DeleteIcon />}
+                                    variant="outlined"
+                                    color="error"
+                                    onClick={handleDelete}
+                                    disabled={isFetching}>
+                                    Delete
+                                </Button>
+                            </Tooltip>
+                        </FormControl>
+                    </Grid>
+                )}
                 <Grid>
                     <FormControl>
                         <Button
@@ -425,6 +442,11 @@ const EntityDetailsPage = () => {
                 <MetadataItem label="Updated">
                     {new Date(data.updatedAt).toLocaleString()}
                 </MetadataItem>
+                {deleted && (
+                    <MetadataItem label="Deleted">
+                        {new Date(data['deletedAt'] as string).toLocaleString()}
+                    </MetadataItem>
+                )}
             </MetadataGrid>
 
             <Divider />

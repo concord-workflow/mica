@@ -16,6 +16,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -43,10 +45,26 @@ public class BatchOperationResource implements Resource {
 
         var namePatterns = request.namePatterns()
                 .orElseThrow(() -> ApiException.badRequest("Missing 'namePatterns'"));
+
         if (namePatterns.isEmpty()) {
             throw new IllegalArgumentException("Empty 'namePatterns'");
         }
+
+        var invalidNamePatterns = namePatterns.stream().filter(BatchOperationResource::isNotValidRegex).toList();
+        if (!invalidNamePatterns.isEmpty()) {
+            throw ApiException.badRequest("Invalid 'namePatterns': " + String.join(", ", invalidNamePatterns));
+        }
+
         var deletedEntities = entityStore.deleteByNamePatterns(namePatterns);
         return new BatchOperationResult(Optional.of(deletedEntities));
+    }
+
+    private static boolean isNotValidRegex(String pattern) {
+        try {
+            Pattern.compile(pattern);
+            return false;
+        } catch (PatternSyntaxException e) {
+            return true;
+        }
     }
 }

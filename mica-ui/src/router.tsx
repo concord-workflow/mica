@@ -1,6 +1,7 @@
 import App from './App.tsx';
 import ApiPage from './pages/ApiPage.tsx';
 import DashboardPage from './pages/DashboardPage.tsx';
+import DeletedEntityListPage from './pages/DeletedEntityListPage.tsx';
 import EditEntityPage from './pages/EditEntityPage.tsx';
 import EntityDetailsPage from './pages/EntityDetailsPage.tsx';
 import EntityListPage from './pages/EntityListPage.tsx';
@@ -30,6 +31,10 @@ export const createRouter = () =>
                     {
                         path: 'entity',
                         element: <EntityListPage />,
+                    },
+                    {
+                        path: 'trash',
+                        element: <DeletedEntityListPage />,
                     },
                     {
                         path: 'entity/:entityId/details',

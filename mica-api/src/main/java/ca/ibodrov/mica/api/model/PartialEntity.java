@@ -24,11 +24,13 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
         @ValidName String kind,
         @NotNull Optional<Instant> createdAt,
         @NotNull Optional<Instant> updatedAt,
+        @NotNull Optional<Instant> deletedAt,
         @JsonProperty("__data") @JsonAnySetter @JsonAnyGetter @NotNull Map<String, JsonNode> data)
         implements EntityLike {
 
     public static PartialEntity create(String name, String kind, Map<String, JsonNode> data) {
-        return new PartialEntity(Optional.empty(), name, kind, Optional.empty(), Optional.empty(), data);
+        return new PartialEntity(Optional.empty(), name, kind, Optional.empty(), Optional.empty(), Optional.empty(),
+                data);
     }
 
     public PartialEntity {
@@ -47,15 +49,15 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
 
     public PartialEntity withVersion(EntityVersion version) {
         return new PartialEntity(Optional.of(version.id()), name(), kind(), createdAt(),
-                Optional.of(version.updatedAt()), data());
+                Optional.of(version.updatedAt()), deletedAt(), data());
     }
 
     public PartialEntity withName(String name) {
-        return new PartialEntity(id, name, kind, createdAt, updatedAt, data);
+        return new PartialEntity(id, name, kind, createdAt, updatedAt, deletedAt, data);
     }
 
     public PartialEntity withKind(String kind) {
-        return new PartialEntity(id, name, kind, createdAt, updatedAt, data);
+        return new PartialEntity(id, name, kind, createdAt, updatedAt, deletedAt, data);
     }
 
     public Optional<EntityVersion> version() {
@@ -63,6 +65,6 @@ public record PartialEntity(@NotNull Optional<EntityId> id,
     }
 
     public PartialEntity withoutUpdatedAt() {
-        return new PartialEntity(id, name, kind, createdAt, Optional.empty(), data);
+        return new PartialEntity(id, name, kind, createdAt, Optional.empty(), deletedAt, data);
     }
 }

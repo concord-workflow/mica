@@ -11,6 +11,7 @@ import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @implNote the changes in fields and annotations here must be synchronized
@@ -22,6 +23,7 @@ public record Entity(@NotNull EntityId id,
         @ValidName String kind,
         @NotNull Instant createdAt,
         @NotNull Instant updatedAt,
+        @NotNull Optional<Instant> deletedAt,
         @JsonProperty("__data") @JsonAnySetter @JsonAnyGetter @NotNull Map<String, JsonNode> data)
         implements EntityLike {
 
