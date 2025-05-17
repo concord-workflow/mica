@@ -98,6 +98,13 @@ export interface EntityVersionAndName {
     name: string;
 }
 
+export interface DeletedEntityVersionAndName {
+    id: string;
+    updatedAt: string;
+    name: string;
+    deletedAt: string;
+}
+
 export enum OrderBy {
     NAME = 'NAME',
 }

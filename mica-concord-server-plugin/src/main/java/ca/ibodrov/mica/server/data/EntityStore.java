@@ -195,9 +195,14 @@ public class EntityStore {
         return dsl.transactionResult(cfg -> {
             var tx = cfg.dsl();
 
+            var notDeleted = MICA_ENTITIES.DELETED_AT.isNull();
+            var notSystemEntities = MICA_ENTITIES.NAME.startsWith("/mica/").not();
+
             var query = tx.select(MICA_ENTITIES.ID, MICA_ENTITIES.NAME, MICA_ENTITIES.UPDATED_AT)
                     .from(MICA_ENTITIES)
-                    .where(MICA_ENTITIES.NAME.likeRegex(namePatterns.get(0)));
+                    .where(notDeleted
+                            .and(notSystemEntities
+                                    .and(MICA_ENTITIES.NAME.likeRegex(namePatterns.get(0)))));
 
             for (int i = 1; i < namePatterns.size(); i++) {
                 query = query.or(MICA_ENTITIES.NAME.likeRegex(namePatterns.get(i)));

@@ -12,4 +12,8 @@ public record DeletedEntityVersion(@NotNull EntityId id, @NotNull Instant update
         requireNonNull(updatedAt);
         requireNonNull(deletedAt);
     }
+
+    public EntityVersion asVersion() {
+        return new EntityVersion(this.id(), this.updatedAt());
+    }
 }

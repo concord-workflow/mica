@@ -1,5 +1,6 @@
 package ca.ibodrov.mica.server.api;
 
+import ca.ibodrov.mica.api.model.Entity;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static ca.ibodrov.mica.api.model.BatchOperationRequest.deleteByNamePatterns;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,10 +66,11 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
         assertEquals("/bar", deletedEntities.get(1).name());
         assertEquals(barVersion1.id(), deletedEntities.get(1).id());
 
-        // "/foo" and "/bar" should be gone, but "/baz" should still be there
-        assertTrue(entityStore.getById(fooVersion1.id()).isEmpty());
-        assertTrue(entityStore.getById(barVersion1.id()).isEmpty());
-        assertTrue(entityStore.getById(bazVersion1.id()).isPresent());
+        // "/foo" and "/bar" should be marked as deleted, but "/baz" should still be as
+        // is was
+        assertTrue(entityStore.getById(fooVersion1.id()).flatMap(Entity::deletedAt).isPresent());
+        assertTrue(entityStore.getById(barVersion1.id()).flatMap(Entity::deletedAt).isPresent());
+        assertTrue(entityStore.getById(bazVersion1.id()).flatMap(Entity::deletedAt).isEmpty());
 
         // add "/foo" and "/bar" back
         var fooVersion2 = upsert(fooEntity);

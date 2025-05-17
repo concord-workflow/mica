@@ -61,7 +61,7 @@ const EntityTableRow = ({ pathPrefix, row, search, handleDelete, selectedPath }:
                 )}
             </TableCell>
             <TableCell align="right">
-                {handleDelete && row.type === EntryType.FILE && (
+                {handleDelete && (
                     <RowMenu>
                         <MenuItem onClick={() => handleDelete(row)}>
                             <ListItemIcon>

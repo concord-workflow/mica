@@ -87,10 +87,12 @@ const EntityListPage = () => {
                     onClose={() => setOpenUpload(false)}
                 />
             )}
-            {selectedEntry?.entityId && (
+            {selectedEntry && (
                 <DeleteEntityConfirmation
+                    type={selectedEntry.type}
                     entityId={selectedEntry.entityId}
                     entityName={selectedEntry.name}
+                    entityPath={selectedPath === '/' ? '' : selectedPath}
                     open={openDeleteConfirmation}
                     onSuccess={handleSuccessfulDelete}
                     onClose={handleCancelDelete}

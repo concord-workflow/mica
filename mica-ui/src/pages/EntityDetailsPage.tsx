@@ -5,6 +5,7 @@ import {
     STANDARD_ENTITY_PROPERTIES,
     getEntity,
 } from '../api/entity.ts';
+import { EntryType } from '../api/entityList.ts';
 import { ApiError } from '../api/error.ts';
 import { ObjectSchemaNode } from '../api/schema.ts';
 import ActionBar from '../components/ActionBar.tsx';
@@ -339,13 +340,16 @@ const EntityDetailsPage = () => {
 
     return (
         <PageContainer>
-            <DeleteEntityConfirmation
-                entityId={data.id}
-                entityName={data.name}
-                open={openDeleteConfirmation}
-                onSuccess={() => navigate('/entity')}
-                onClose={() => setOpenDeleteConfirmation(false)}
-            />
+            {!deleted && (
+                <DeleteEntityConfirmation
+                    type={EntryType.FILE}
+                    entityId={data.id}
+                    entityName={data.name}
+                    open={openDeleteConfirmation}
+                    onSuccess={() => navigate('/entity')}
+                    onClose={() => setOpenDeleteConfirmation(false)}
+                />
+            )}
             <Grid container spacing={1}>
                 <Grid flex={1}>
                     <PageTitle help={HELP}>

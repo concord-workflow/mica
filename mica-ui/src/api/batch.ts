@@ -1,5 +1,8 @@
 import { doFetch, handleJsonResponse } from './common.ts';
-import { EntityVersionAndName } from './entity.ts';
+import { DeletedEntityVersionAndName } from './entity.ts';
+import { ApiError } from './error.ts';
+
+import { UseMutationOptions, useMutation } from '@tanstack/react-query';
 
 export enum BatchOperation {
     DELETE = 'DELETE',
@@ -11,7 +14,7 @@ export interface BatchOperationRequest {
 }
 
 export interface BatchOperationResult {
-    deletedEntities?: Array<EntityVersionAndName>;
+    deletedEntities?: Array<DeletedEntityVersionAndName>;
 }
 
 export const apply = (request: BatchOperationRequest): Promise<BatchOperationResult> =>
@@ -22,3 +25,11 @@ export const apply = (request: BatchOperationRequest): Promise<BatchOperationRes
         },
         body: JSON.stringify(request),
     }).then(handleJsonResponse<BatchOperationResult>);
+
+export const useApplyBatchOperation = (
+    options?: UseMutationOptions<BatchOperationResult, ApiError, BatchOperationRequest>,
+) =>
+    useMutation<BatchOperationResult, ApiError, BatchOperationRequest>({
+        mutationFn: (request) => apply(request),
+        ...options,
+    });

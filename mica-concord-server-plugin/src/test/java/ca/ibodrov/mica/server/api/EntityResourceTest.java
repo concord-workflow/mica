@@ -158,7 +158,7 @@ public class EntityResourceTest extends AbstractDatabaseTest {
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).anyMatch(createdVersion::equals));
 
         var deletedVersion = entityResource.deleteById(session, createdVersion.id().id());
-        assertEquals(createdVersion, deletedVersion);
+        assertEquals(createdVersion, deletedVersion.asVersion());
 
         entityList = entityResource.listEntities(null, null, "/someRecord", null, null);
         assertTrue(entityList.data().stream().map(EntityMetadata::toVersion).noneMatch(createdVersion::equals));

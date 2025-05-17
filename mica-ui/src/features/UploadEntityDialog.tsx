@@ -1,7 +1,6 @@
 import { usePutPartialYaml } from '../api/upload.ts';
 import ReadableApiError from '../components/ReadableApiError.tsx';
 import EntityKindSelect from './EntityKindSelect.tsx';
-import { LoadingButton } from '@mui/lab';
 import {
     Alert,
     Box,
@@ -94,13 +93,9 @@ const UploadEntityDialog = ({ open, onSuccess, onClose }: Props) => {
                 <Button variant="contained" color="primary" onClick={onClose}>
                     Cancel
                 </Button>
-                <LoadingButton
-                    loading={isPending}
-                    variant="text"
-                    color="error"
-                    onClick={handleUpload}>
+                <Button loading={isPending} variant="text" color="error" onClick={handleUpload}>
                     Upload
-                </LoadingButton>
+                </Button>
             </DialogActions>
         </Dialog>
     );
