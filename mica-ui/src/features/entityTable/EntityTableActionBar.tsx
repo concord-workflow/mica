@@ -47,7 +47,7 @@ const EntityTableActionBar = ({
                 <InputLabel>Kind</InputLabel>
                 <EntityKindSelect value={selectedKind} onChange={handleKindSelect} />
             </FormControl>
-            <SearchField placeholder="Filter by name" value={search} onChange={handleSearch} />
+            <SearchField placeholder="Find by name" value={search} onChange={handleSearch} />
         </ActionBar>
     );
 };

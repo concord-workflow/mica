@@ -65,7 +65,7 @@ const EntityTable = ({
                         </TableCell>
                     </TableRow>
                 )}
-                {data && data.length < 1 && (
+                {data && search === '' && data.length < 1 && (
                     <TableRow>
                         <TableCell colSpan={3} align="center">
                             <Typography variant="caption">
