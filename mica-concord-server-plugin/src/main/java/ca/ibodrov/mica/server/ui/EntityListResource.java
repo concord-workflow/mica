@@ -2,12 +2,12 @@ package ca.ibodrov.mica.server.ui;
 
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.db.MicaDB;
+import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Record3;
 import org.jooq.Record4;
 
 import javax.annotation.Nullable;
@@ -34,6 +34,28 @@ public class EntityListResource implements Resource {
     @Inject
     public EntityListResource(@MicaDB DSLContext dsl) {
         this.dsl = requireNonNull(dsl);
+    }
+
+    @GET
+    @Path("canBeDeleted")
+    public CanBeDeletedResponse canBeDeleted(@NotEmpty @QueryParam("entityId") EntityId entityId) {
+        var record = dsl.select(MICA_ENTITIES.NAME, MICA_ENTITIES.DELETED_AT)
+                .from(MICA_ENTITIES)
+                .where(MICA_ENTITIES.ID.eq(entityId.id()))
+                .fetchOptional()
+                .orElseThrow(() -> ApiException.notFound("Entity ID not found: " + entityId.toExternalForm()));
+
+        if (record.component1().startsWith("/mica/")) {
+            // do not delete "system" entities
+            return new CanBeDeletedResponse(false, Optional.of("System entities cannot be deleted."));
+        }
+
+        // check if already "deleted"
+        if (record.component2() == null) {
+            return new CanBeDeletedResponse(false, Optional.of("Already deleted"));
+        }
+
+        return new CanBeDeletedResponse(true, Optional.empty());
     }
 
     @GET
@@ -124,6 +146,9 @@ public class EntityListResource implements Resource {
                         record.value2(),
                         Optional.of(record.value3()),
                         Optional.ofNullable(record.value4())));
+    }
+
+    public record CanBeDeletedResponse(boolean canBeDeleted, Optional<String> whyNot) {
     }
 
     public enum Type {

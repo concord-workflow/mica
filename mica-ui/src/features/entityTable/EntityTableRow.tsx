@@ -1,20 +1,9 @@
 import { Entry, EntryType } from '../../api/entityList.ts';
-import RowMenu from '../../components/RowMenu.tsx';
 import entityKindToIcon from '../../components/entityKindToIcon.tsx';
 import highlightSubstring from '../../components/highlight.tsx';
-import DeleteIcon from '@mui/icons-material/Delete';
+import EntityTableRowMenu from './EntityTableRowMenu.tsx';
 import FolderIcon from '@mui/icons-material/Folder';
-import {
-    Box,
-    Link,
-    ListItemText,
-    MenuItem,
-    TableCell,
-    TableRow,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import ListItemIcon from '@mui/material/ListItemIcon';
+import { Box, Link, TableCell, TableRow, Tooltip, Typography } from '@mui/material';
 
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -61,16 +50,7 @@ const EntityTableRow = ({ pathPrefix, row, search, handleDelete, selectedPath }:
                 )}
             </TableCell>
             <TableCell align="right">
-                {handleDelete && (
-                    <RowMenu>
-                        <MenuItem onClick={() => handleDelete(row)}>
-                            <ListItemIcon>
-                                <DeleteIcon fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText>Delete</ListItemText>
-                        </MenuItem>
-                    </RowMenu>
-                )}
+                {handleDelete && <EntityTableRowMenu handleDelete={handleDelete} row={row} />}
             </TableCell>
         </TableRow>
     );

@@ -64,6 +64,16 @@ public class EntityController {
     }
 
     public Optional<DeletedEntityVersion> deleteById(UserPrincipal session, EntityId entityId) {
+        var existingEntity = entityStore.getById(entityId);
+        if (existingEntity.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (existingEntity.get().name().startsWith("/mica/")) {
+            // do not delete "system" entities
+            throw ApiException.badRequest("A system entity (name starting with /mica/**) cannot be deleted.");
+        }
+
         return dsl.transactionResult(cfg -> {
             var tx = cfg.dsl();
             var doc = entityStore.getLatestEntityDoc(tx, entityId);

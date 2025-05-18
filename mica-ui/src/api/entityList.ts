@@ -19,6 +19,16 @@ export interface ListResponse {
 
 export const ENTITY_SEARCH_LIMIT = 100;
 
+export interface CanBeDeletedResponse {
+    canBeDeleted: boolean;
+    whyNot?: string;
+}
+
+export const canBeDeleted = (entityId: string): Promise<CanBeDeletedResponse> =>
+    doFetch(`/api/mica/ui/entityList/canBeDeleted?entityId=${encodeURIComponent(entityId)}`).then(
+        handleJsonResponse<CanBeDeletedResponse>,
+    );
+
 export const list = (
     path: string,
     entityKind?: string,
