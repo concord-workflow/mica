@@ -14,6 +14,7 @@ import {
 
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 interface Props {
     type: EntryType;
@@ -91,7 +92,10 @@ const DeleteEntityConfirmation = ({
                     <>
                         Are you sure you want to delete entity <b>{entityName}</b> (ID: {entityId})?
                         This action cannot be undone (but you can find deleted entities in{' '}
-                        <Link>Trash</Link>).
+                        <Link component={RouterLink} to="/trash">
+                            Trash
+                        </Link>
+                        ).
                     </>
                 )}
                 {type === EntryType.FOLDER && (
@@ -101,7 +105,10 @@ const DeleteEntityConfirmation = ({
                             {entityPath}/{entityName}/**
                         </b>
                         ? This action cannot be undone (but you can find deleted entities in{' '}
-                        <Link>Trash</Link>).
+                        <Link component={RouterLink} to="/trash">
+                            Trash
+                        </Link>
+                        ).
                     </>
                 )}
             </DialogContent>
