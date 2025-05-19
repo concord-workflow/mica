@@ -5,6 +5,7 @@ import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.walmartlabs.concord.server.sdk.metrics.WithTimer;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import org.jooq.DSLContext;
 
@@ -27,6 +28,7 @@ import static org.jooq.impl.DSL.*;
 @Produces(APPLICATION_JSON)
 public class EntityListResource implements Resource {
 
+    private static final int LIST_LIMIT = 500;
     private static final int SEARCH_LIMIT = 100;
 
     private final DSLContext dsl;
@@ -59,6 +61,7 @@ public class EntityListResource implements Resource {
     }
 
     @GET
+    @WithTimer
     public ListResponse list(@NotEmpty @QueryParam("path") String path,
                              @Nullable @QueryParam("entityKind") String entityKind,
                              @Nullable @QueryParam("search") String search,
@@ -94,7 +97,8 @@ public class EntityListResource implements Resource {
                 .where(MICA_ENTITIES.NAME.like(path + "%")
                         .and(MICA_ENTITIES.NAME.notLike(path + "%/%"))
                         .and(entityKindCondition)
-                        .and(deletedCondition));
+                        .and(deletedCondition))
+                .limit(LIST_LIMIT);
 
         var files = filesQuery.stream()
                 .map(r -> new Entry(
@@ -112,7 +116,8 @@ public class EntityListResource implements Resource {
                 .from(MICA_ENTITIES)
                 .where(MICA_ENTITIES.NAME.like(path + "%/%")
                         .and(entityKindCondition)
-                        .and(deletedCondition));
+                        .and(deletedCondition))
+                .limit(LIST_LIMIT);
 
         var folders = foldersQuery.stream()
                 .map(r -> new Entry(

@@ -1,4 +1,4 @@
-import { ENTITY_SEARCH_LIMIT, Entry } from '../../api/entityList.ts';
+import { ENTITY_LIST_LIMIT, ENTITY_SEARCH_LIMIT, Entry } from '../../api/entityList.ts';
 import EntityTableRow from './EntityTableRow.tsx';
 import {
     CircularProgress,
@@ -51,6 +51,14 @@ const EntityTable = ({
                             selectedPath={selectedPath}
                         />
                     ))}
+                {data && search === '' && data.length >= ENTITY_LIST_LIMIT && (
+                    <TableRow>
+                        <TableCell colSpan={3} align="center">
+                            More than {ENTITY_LIST_LIMIT} results, please use the "Kind" filter or
+                            the "Filter by name" feature.
+                        </TableCell>
+                    </TableRow>
+                )}
                 {data && search !== '' && data.length >= ENTITY_SEARCH_LIMIT && (
                     <TableRow>
                         <TableCell colSpan={3} align="center">

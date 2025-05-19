@@ -18,6 +18,7 @@ export interface ListResponse {
 }
 
 export const ENTITY_SEARCH_LIMIT = 100;
+export const ENTITY_LIST_LIMIT = 500;
 
 export interface CanBeDeletedResponse {
     canBeDeleted: boolean;
@@ -39,4 +40,20 @@ export const list = (
         `/api/mica/ui/entityList?path=${encodeURIComponent(path)}&entityKind=${
             entityKind ? encodeURIComponent(entityKind) : ''
         }&search=${search ? encodeURIComponent(search) : ''}&deleted=${deleted ? 'true' : ''}`,
-    ).then(handleJsonResponse<ListResponse>);
+    )
+        .then(handleJsonResponse<ListResponse>)
+        .then((resp) => {
+            return {
+                data: resp.data.sort((a, b) => {
+                    if (a.type === EntryType.FOLDER && b.type === EntryType.FILE) {
+                        return -1;
+                    }
+
+                    if (a.type === EntryType.FILE && b.type == EntryType.FOLDER) {
+                        return 1;
+                    }
+
+                    return a.name.localeCompare(b.name);
+                }),
+            };
+        });
