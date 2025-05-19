@@ -17,6 +17,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 
 public class ExampleMicaServer {
 
@@ -28,6 +29,10 @@ public class ExampleMicaServer {
         var authServerUri = assertEnv("MICA_AUTH_SERVER_URI");
         var oidcClientId = assertEnv("MICA_OIDC_CLIENT_ID");
         var oidcSecret = assertEnv("MICA_OIDC_SECRET");
+
+        var generateRandomData = Optional.ofNullable(System.getenv("GENERATE_RANDOM_DATA"))
+                .map(Boolean::parseBoolean)
+                .orElse(false);
 
         try (var db = new PostgreSQLContainer<>("postgres:15-alpine")) {
             db.start();
@@ -52,6 +57,9 @@ public class ExampleMicaServer {
                 server.start();
 
                 createExampleResources(server);
+                if (generateRandomData) {
+                    server.getInjector().getInstance(RandomDataGenerator.class).generate(100000);
+                }
 
                 log.info("""
                         ==============================================================
