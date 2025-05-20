@@ -27,7 +27,10 @@ public class UserPrincipalContextProvider extends HttpFilter {
         var principal = UserPrincipal.getCurrent();
         if (principal == null) {
             res.sendError(UNAUTHORIZED.getStatusCode());
-            req.getSession(false).invalidate();
+            var session = req.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
             return;
         }
 
