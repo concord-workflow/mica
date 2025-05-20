@@ -187,17 +187,34 @@ public class ImportResource implements Resource {
     public record ImportResponse(boolean ok) {
     }
 
-    @SuppressWarnings("unchecked")
     private static boolean exists(DSLContext tx, TableRecord<?> r) {
         var table = r.getTable();
 
+        // check the primary key first
+
         var pk = table.getPrimaryKey();
-        if (pk == null) {
-            throw new IllegalStateException(table + " doesn't have a primary key");
+        if (pk != null && exists(tx, table, r, pk)) {
+            return true;
         }
 
+        // check if there are other unique keys we should consider
+
+        for (var uk : table.getKeys()) {
+            if (!uk.isPrimary() && exists(tx, table, r, uk)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean exists(DSLContext tx,
+                                  Table<? extends TableRecord<?>> table,
+                                  TableRecord<?> r,
+                                  UniqueKey<?> uk) {
         Condition condition = null;
-        for (var field : pk.getFields()) {
+        for (var field : uk.getFields()) {
             var val = r.get(field);
             var fieldCondition = ((Field<Object>) field).eq(val);
             condition = condition == null ? fieldCondition : condition.and(fieldCondition);
