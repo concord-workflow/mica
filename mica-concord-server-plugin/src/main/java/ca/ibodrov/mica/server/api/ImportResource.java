@@ -128,6 +128,8 @@ public class ImportResource implements Resource {
     }
 
     private void doImport(DataExport dataExport) {
+        log.info("doImport -> start");
+
         concordDsl.transaction(cfg -> {
             var tx = cfg.dsl();
 
@@ -182,6 +184,8 @@ public class ImportResource implements Resource {
             Optional.ofNullable(dataExport.micaEntityHistory()).orElse(List.of())
                     .forEach(r -> upsert(tx, MICA_ENTITY_HISTORY, r));
         });
+
+        log.info("doImport -> done");
     }
 
     public record ImportResponse(boolean ok) {
