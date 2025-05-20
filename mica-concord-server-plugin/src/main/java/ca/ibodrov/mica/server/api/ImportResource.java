@@ -21,7 +21,9 @@ import javax.ws.rs.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static ca.ibodrov.mica.db.jooq.tables.MicaEntities.MICA_ENTITIES;
 import static ca.ibodrov.mica.db.jooq.tables.MicaEntityHistory.MICA_ENTITY_HISTORY;
@@ -129,43 +131,43 @@ public class ImportResource implements Resource {
         concordDsl.transaction(cfg -> {
             var tx = cfg.dsl();
 
-            dataExport.concordUsers()
+            Optional.ofNullable(dataExport.concordUsers()).orElse(List.of())
                     .forEach(r -> upsert(tx, USERS, r));
 
-            dataExport.concordOrganizations()
+            Optional.ofNullable(dataExport.concordOrganizations()).orElse(List.of())
                     .forEach(r -> upsert(tx, ORGANIZATIONS, r));
 
-            dataExport.concordProjects()
+            Optional.ofNullable(dataExport.concordProjects()).orElse(List.of())
                     .forEach(r -> upsert(tx, PROJECTS, r));
 
-            dataExport.concordSecrets()
+            Optional.ofNullable(dataExport.concordSecrets()).orElse(List.of())
                     .forEach(r -> upsert(tx, SECRETS, r));
 
-            dataExport.concordRepositories()
+            Optional.ofNullable(dataExport.concordRepositories()).orElse(List.of())
                     .forEach(r -> upsert(tx, REPOSITORIES, r));
 
-            dataExport.concordProjectSecrets()
+            Optional.ofNullable(dataExport.concordProjectSecrets()).orElse(List.of())
                     .forEach(r -> insert(tx, PROJECT_SECRETS, r));
 
-            dataExport.concordJsonStores()
+            Optional.ofNullable(dataExport.concordJsonStores()).orElse(List.of())
                     .forEach(r -> upsert(tx, JSON_STORES, r));
 
-            dataExport.concordJsonStoreQueries()
+            Optional.ofNullable(dataExport.concordJsonStoreQueries()).orElse(List.of())
                     .forEach(r -> upsert(tx, JSON_STORE_QUERIES, r));
 
-            dataExport.concordJsonStoreData()
+            Optional.ofNullable(dataExport.concordJsonStoreData()).orElse(List.of())
                     .forEach(r -> upsert(tx, JSON_STORE_DATA, r));
 
-            dataExport.concordTeams()
+            Optional.ofNullable(dataExport.concordTeams()).orElse(List.of())
                     .forEach(r -> upsert(tx, TEAMS, r));
 
-            dataExport.concordProjectTeamAccess()
+            Optional.ofNullable(dataExport.concordProjectTeamAccess()).orElse(List.of())
                     .forEach(r -> upsert(tx, PROJECT_TEAM_ACCESS, r));
 
-            dataExport.concordSecretTeamAccess()
+            Optional.ofNullable(dataExport.concordSecretTeamAccess()).orElse(List.of())
                     .forEach(r -> upsert(tx, SECRET_TEAM_ACCESS, r));
 
-            dataExport.concordJsonStoreTeamAccess()
+            Optional.ofNullable(dataExport.concordJsonStoreTeamAccess()).orElse(List.of())
                     .forEach(r -> upsert(tx, JSON_STORE_TEAM_ACCESS, r));
         });
 
@@ -173,11 +175,11 @@ public class ImportResource implements Resource {
             var tx = cfg.dsl();
 
             tx.truncateTable(MICA_ENTITIES).execute();
-            dataExport.micaEntities()
+            Optional.ofNullable(dataExport.micaEntities()).orElse(List.of())
                     .forEach(r -> upsert(tx, MICA_ENTITIES, r));
 
             tx.truncateTable(MICA_ENTITY_HISTORY).execute();
-            dataExport.micaEntityHistory()
+            Optional.ofNullable(dataExport.micaEntityHistory()).orElse(List.of())
                     .forEach(r -> upsert(tx, MICA_ENTITY_HISTORY, r));
         });
     }
