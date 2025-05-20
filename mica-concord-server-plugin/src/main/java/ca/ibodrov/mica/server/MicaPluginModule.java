@@ -22,6 +22,7 @@ import com.typesafe.config.Config;
 import com.walmartlabs.concord.config.ConfigModule;
 import com.walmartlabs.concord.server.boot.FilterChainConfigurator;
 import com.walmartlabs.concord.server.boot.filters.AuthenticationHandler;
+import com.walmartlabs.concord.server.sdk.ScheduledTask;
 import com.walmartlabs.concord.server.sdk.rest.Component;
 
 import javax.inject.Named;
@@ -121,6 +122,10 @@ public class MicaPluginModule implements Module {
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ReportEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(S3EntityFetcher.class);
         binder.bind(EntityFetchers.class).in(SINGLETON);
+
+        // tasks
+
+        newSetBinder(binder, ScheduledTask.class).addBinding().to(EntityHistoryCleaner.class);
 
         // other beans
 
