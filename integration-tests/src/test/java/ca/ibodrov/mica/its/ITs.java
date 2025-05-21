@@ -876,6 +876,65 @@ public class ITs extends TestResources {
     }
 
     @Test
+    public void uploadWithReplace() throws Exception {
+        // upload the initial version
+
+        @Language("yaml")
+        var initialDoc = """
+                name: /test/upload-replace
+                kind: /mica/record/v1
+                data: |
+                  initial doc
+                """;
+        var uploadInitial = startConcordProcess(Map.of(
+                "initial-file.yml", initialDoc.strip().getBytes(),
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upload
+                                src: ${workDir}/initial-file.yml
+                        """.strip().getBytes()));
+        assertFinished(uploadInitial);
+
+        // grab the uploaded entity and the doc
+
+        var uploadedEntity = entityStore.getByName("/test/upload-replace").orElseThrow();
+        var uploadedInitialDoc = entityStore.getEntityDoc(uploadedEntity.version()).orElseThrow();
+
+        // upload the updated doc with replace
+
+        var updatedDoc = uploadedInitialDoc.replace("initial", "updated");
+        var uploadUpdated = startConcordProcess(Map.of(
+                "updated-file.yml", updatedDoc.strip().getBytes(),
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upload
+                                replace: true
+                                src: ${workDir}/updated-file.yml
+                        """.strip().getBytes()));
+        assertFinished(uploadUpdated);
+
+        // grab the updated doc
+
+        var uploadedUpdatedDoc = entityStore.getLatestEntityDoc(uploadedEntity.id()).orElseThrow();
+        assertTrue(uploadedUpdatedDoc.contains("updated doc"));
+
+        // check the entity
+
+        var updatedEntity = entityStore.getById(uploadedEntity.id()).orElseThrow();
+        assertTrue(updatedEntity.deletedAt().isEmpty());
+    }
+
+    @Test
     public void nameAndKindCanBeReplacedWhenUploadingAndItWorksWithMasking() throws Exception {
         upsert(new MicaKindV1.Builder()
                 .name("/acme/config")

@@ -151,9 +151,10 @@ public class MicaTask implements Task {
     }
 
     private TaskResult upload(Variables input) throws IOException, ApiException {
-        var kind = input.assertString("kind");
         var src = input.assertString("src");
-        var name = input.assertString("name");
+
+        var kind = input.getString("kind");
+        var name = input.getString("name");
 
         var str = Files.readString(Path.of(src));
         str = hideSensitiveData(input, str);
