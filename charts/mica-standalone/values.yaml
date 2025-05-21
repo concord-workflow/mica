@@ -143,6 +143,8 @@ mica:
     createExtensions: true
   sharedSecret: "NGIxZ3MzY3IzdA==" # must be a base64 encoded string
   defaultAdminToken: "" # auto-generated if empty
+#  git:
+#    defaultAuthToken: ""
   oidc:
     authServerUri: "https://example.okta.com"
     clientId: "foobar"

@@ -7,6 +7,12 @@ metadata:
 data:
   extra.conf: |-
     mica {
+      git {
+        {{- if .Values.mica.git.defaultAuthToken }}
+        oauth = "{{ .Values.mica.git.defaultAuthToken }}"
+        {{- end }}
+      }
+
       oidc {
         teamMapping = {
           {{- range $teamId, $team := .Values.mica.oidc.teamMapping }}
