@@ -176,11 +176,30 @@ public class EntityStore {
                 .fetchOptional(Record1::value1);
     }
 
+    /**
+     * Removes the entity row. To only mark the entry as "deleted" and not actually
+     * remove it use {@link #deleteById(DSLContext, EntityId)}.
+     */
+    public Optional<EntityVersion> killById(DSLContext tx, EntityId entityId) {
+        var version = tx.deleteFrom(MICA_ENTITIES)
+                .where(MICA_ENTITIES.ID.eq(entityId.id()))
+                .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT)
+                .fetchOptional();
+
+        return version.map(r -> new EntityVersion(
+                new EntityId(r.get(MICA_ENTITIES.ID)),
+                r.get(MICA_ENTITIES.UPDATED_AT)));
+    }
+
+    /**
+     * Marks the entity row as "deleted". To remove the entry completely use
+     * {@link #killById(DSLContext, EntityId)}.
+     */
     public Optional<DeletedEntityVersion> deleteById(DSLContext tx, EntityId entityId) {
         var version = tx.update(MICA_ENTITIES)
                 .set(MICA_ENTITIES.DELETED_AT, currentInstant())
                 .where(MICA_ENTITIES.ID.eq(entityId.id()))
-                .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT, MICA_ENTITIES.DELETED_AT, MICA_ENTITIES.DOC)
+                .returning(MICA_ENTITIES.ID, MICA_ENTITIES.UPDATED_AT, MICA_ENTITIES.DELETED_AT)
                 .fetchOptional();
 
         return version.map(r -> new DeletedEntityVersion(new EntityId(r.get(MICA_ENTITIES.ID)),

@@ -69,7 +69,7 @@ public class InitialDataLoader {
             var tx = cfg.dsl();
 
             entityStore.getByName(tx, entity.name())
-                    .flatMap(existingEntity -> entityStore.deleteById(tx, existingEntity.id()))
+                    .flatMap(existingEntity -> entityStore.killById(tx, existingEntity.id()))
                     .ifPresent(deleted -> log.info("Removed old version of {}: {}", entity.name(), deleted));
 
             entityStore.upsert(tx, entity, doc);

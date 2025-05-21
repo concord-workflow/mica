@@ -334,7 +334,28 @@ public class EntityControllerTest extends AbstractDatabaseTest {
                 .orElseThrow();
 
         assertEquals(initialFoo.name(), replacementFoo.name());
+    }
 
+    @Test
+    public void putWithReplaceDoesNotDeleteEntities() {
+        // create the initial "foo"
+        String entityName = "/test_put_%s/foo".formatted(UUID.randomUUID());
+        var initialDoc = """
+                kind: /mica/record/v1
+                name: %s
+                data: |
+                  initial entity
+                """.formatted(entityName);
+
+        var initialVersion = createOrUpdate(parseYaml(initialDoc), initialDoc, false);
+        var updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
+
+        updatedDoc = updatedDoc.replace("initial", "updated");
+        var replacedVersion = controller.put(session, parseYaml(updatedDoc), updatedDoc, false, true);
+        assertEquals(initialVersion.id(), replacedVersion.id());
+
+        var replacedEntity = entityStore.getById(replacedVersion.id()).orElseThrow();
+        assertTrue(replacedEntity.deletedAt().isEmpty());
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {

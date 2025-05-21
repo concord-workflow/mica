@@ -57,7 +57,7 @@ public class EntityController {
             var tx = cfg.dsl();
             if (replace) {
                 entityStore.getVersion(tx, entity.name())
-                        .ifPresent(version -> entityStore.deleteById(tx, version.id()));
+                        .ifPresent(version -> entityStore.killById(tx, version.id()));
             }
             return createOrUpdate(tx, session, entity, doc, overwrite);
         });
