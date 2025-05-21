@@ -1,6 +1,13 @@
 import { getHistoryDoc } from '../../api/history.ts';
-import { MONACO_OPTIONS } from '../editor/options.ts';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { MONACO_OPTIONS, modeToTheme } from '../editor/options.ts';
+import {
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    useColorScheme,
+} from '@mui/material';
 
 import Editor from '@monaco-editor/react';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +20,8 @@ interface Props {
 }
 
 const ViewHistoryEntryPopup = ({ open, onClose, entityId, updatedAt }: Props) => {
+    const { mode, systemMode } = useColorScheme();
+
     const { data, isFetching } = useQuery({
         queryKey: ['history', entityId, updatedAt, 'doc'],
         queryFn: () => getHistoryDoc(entityId, updatedAt),
@@ -33,6 +42,7 @@ const ViewHistoryEntryPopup = ({ open, onClose, entityId, updatedAt }: Props) =>
                         readOnly: true,
                         renderValidationDecorations: 'off',
                     }}
+                    theme={modeToTheme(mode === 'system' ? systemMode : mode)}
                     value={data}
                 />
             </DialogContent>
