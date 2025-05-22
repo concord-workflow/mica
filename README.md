@@ -1,6 +1,6 @@
 # mica
 
-A configuration management system for ck8s.
+A configuration management system.
 
 ## Prerequisites
 

@@ -8,15 +8,14 @@
     <packaging>pom</packaging>
 
     <name>Mica</name>
-    <description>An inventory management system for ck8s</description>
+    <description>A configuration management system</description>
     <url>https://github.com/concord-workflow/mica</url>
 
     <licenses>
         <license>
-            <name />
-            <url />
-            <distribution />
-            <comments>Intentionally left blank.</comments>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
         </license>
     </licenses>
 
@@ -320,6 +319,37 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.3.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>2.5.0</version>
+                    <executions>
+                        <execution>
+                            <id>first</id>
+                            <goals>
+                                <goal>update-file-header</goal>
+                            </goals>
+                            <phase>process-sources</phase>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <verbose>false</verbose>
+                        <processStartTag>~~~~~~</processStartTag>
+                        <sectionDelimiter>------</sectionDelimiter>
+                        <processEndTag>======</processEndTag>
+                        <licenseName>apache_v2</licenseName>
+                        <organizationName>Mica Authors</organizationName>
+                        <projectName>Mica</projectName>
+                        <inceptionYear>2023</inceptionYear>
+                        <roots>
+                            <root>src/main/java</root>
+                            <root>src/test/java</root>
+                        </roots>
+                        <extraExtensions>
+                            <tsx>java</tsx>
+                        </extraExtensions>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
