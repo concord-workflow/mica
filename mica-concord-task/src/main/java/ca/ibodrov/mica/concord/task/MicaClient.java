@@ -65,6 +65,14 @@ public class MicaClient {
         return parseOptionalResponseAsJson(response, Entity.class);
     }
 
+    public void deleteEntityById(EntityId entityId) {
+        var uri = "/api/mica/v1/entity/" + entityId.toExternalForm();
+        var request = newRequest(uri)
+                .DELETE()
+                .build();
+        send(request, ofInputStream());
+    }
+
     public EntityList listEntities(ListEntitiesParameters params) throws ApiException {
         var request = newRequest("/api/mica/v1/entity?" + params.toQueryParameters())
                 .GET()

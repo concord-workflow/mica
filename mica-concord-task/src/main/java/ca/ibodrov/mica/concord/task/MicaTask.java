@@ -88,6 +88,7 @@ public class MicaTask implements Task {
             case "renderProperties" -> renderProperties(input);
             case "upload" -> upload(input);
             case "upsert" -> upsert(input);
+            case "delete" -> delete(input);
             default -> throw new RuntimeException("Unknown 'action': " + action);
         };
     }
@@ -229,6 +230,26 @@ public class MicaTask implements Task {
                 BodyPublishers.ofByteArray(requestBody));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(updatedVersion, Map.class));
+    }
+
+    private TaskResult delete(Variables input) throws ApiException {
+        var name = input.assertString("name");
+
+        var meta = findEntityByName(input, name);
+        if (meta.isEmpty()) {
+            return TaskResult.success();
+        }
+
+        if (isDryRun(input)) {
+            log.info("Dry-run mode enabled: Skipping delete action");
+
+            return TaskResult.success();
+        }
+
+        var client = createMicaClient(input);
+        client.deleteEntityById(meta.get().id());
+
+        return TaskResult.success();
     }
 
     private Optional<EntityMetadata> findEntityByName(Variables input, String name) throws ApiException {
