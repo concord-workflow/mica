@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>ca.ibodrov.mica</groupId>
     <artifactId>mica</artifactId>
-    <version>0.0.29</version>
+    <version>0.0.30-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Mica</name>
@@ -329,7 +329,7 @@
         <url>${project.url}</url>
         <connection>scm:git:${project.scm.url}</connection>
         <developerConnection>scm:git:${project.url}</developerConnection>
-        <tag>0.0.29</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
