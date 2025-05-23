@@ -70,7 +70,7 @@ public class InternalEntityFetcher implements EntityFetcher {
 
         var kind = request.kind().orElseThrow(() -> new StoreException("selector.entityKind is required"));
 
-        var step = dsl.select(MICA_ENTITIES.ID,
+        var query = dsl.select(MICA_ENTITIES.ID,
                 MICA_ENTITIES.NAME,
                 MICA_ENTITIES.KIND,
                 MICA_ENTITIES.CREATED_AT,
@@ -81,7 +81,7 @@ public class InternalEntityFetcher implements EntityFetcher {
                 .where(MICA_ENTITIES.DELETED_AT.isNull()
                         .and(MICA_ENTITIES.KIND.likeRegex(kind)));
 
-        return () -> step.fetch(this::toEntity).stream();
+        return () -> query.fetch(this::toEntity).stream();
     }
 
     private EntityLike toEntity(Record7<UUID, String, String, Instant, Instant, Instant, JSONB> record) {

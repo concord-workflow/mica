@@ -1,0 +1,10 @@
+# a view that returns the statistics about rendered views
+name: /examples/view-render-history/view
+kind: /mica/view/v1
+selector:
+  includes:
+    - mica://viewRenderHistory
+  entityKind: .*
+data:
+  jsonPath: $
+

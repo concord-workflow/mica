@@ -27,6 +27,8 @@ import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.data.jsonStore.JsonStoreEntityFetcher;
 import ca.ibodrov.mica.server.data.s3.S3ClientManager;
 import ca.ibodrov.mica.server.data.s3.S3EntityFetcher;
+import ca.ibodrov.mica.server.data.viewRenderHistory.ViewRenderHistoryCleaner;
+import ca.ibodrov.mica.server.data.viewRenderHistory.ViewRenderHistoryEntityFetcher;
 import ca.ibodrov.mica.server.exceptions.DataAccessExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.StoreExceptionExceptionMapper;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorExceptionMapper;
@@ -141,6 +143,7 @@ public class MicaPluginModule implements Module {
         newSetBinder(binder, EntityFetcher.class).addBinding().to(JsonStoreEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ReportEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(S3EntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(ViewRenderHistoryEntityFetcher.class);
         binder.bind(EntityFetchers.class).in(SINGLETON);
 
         // tasks

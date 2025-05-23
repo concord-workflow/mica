@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.data;
+package ca.ibodrov.mica.server.data.viewRenderHistory;
 
 /*-
  * ~~~~~~
@@ -31,7 +31,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-import static ca.ibodrov.mica.db.jooq.tables.MicaEntityHistory.MICA_ENTITY_HISTORY;
 import static ca.ibodrov.mica.db.jooq.tables.MicaViewRenderHistory.MICA_VIEW_RENDER_HISTORY;
 import static java.util.Objects.requireNonNull;
 

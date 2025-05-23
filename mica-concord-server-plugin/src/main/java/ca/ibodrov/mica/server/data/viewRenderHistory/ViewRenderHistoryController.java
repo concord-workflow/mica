@@ -1,4 +1,4 @@
-package ca.ibodrov.mica.server.data;
+package ca.ibodrov.mica.server.data.viewRenderHistory;
 
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.db.MicaDB;

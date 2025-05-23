@@ -26,6 +26,7 @@ import ca.ibodrov.mica.api.model.ApiError;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.RenderRequest;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
+import ca.ibodrov.mica.server.data.viewRenderHistory.ViewRenderHistoryController;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.reports.ValidateAllReport;
 import com.fasterxml.jackson.core.JsonProcessingException;
