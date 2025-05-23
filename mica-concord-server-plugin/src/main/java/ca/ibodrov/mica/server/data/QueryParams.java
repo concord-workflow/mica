@@ -26,12 +26,10 @@ import java.util.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.*;
 
-public class QueryParams {
-
-    private final Map<String, List<String>> params;
+public record QueryParams(Map<String, List<String>> params) {
 
     public QueryParams(String s) {
-        this.params = parse(s);
+        this(parse(s));
     }
 
     public Optional<String> getFirst(String key) {

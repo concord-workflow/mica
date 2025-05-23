@@ -23,6 +23,7 @@ package ca.ibodrov.mica.server.data.s3;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.data.EntityFetcher;
+import ca.ibodrov.mica.server.data.QueryParams;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -75,14 +76,14 @@ public class S3EntityFetcher implements EntityFetcher {
     @Override
     public Cursor fetch(FetchRequest request) {
         var uri = request.uri().orElseThrow(() -> new StoreException("s3:// URI is required"));
-        var params = parseQueryParams(uri);
+        var params = new QueryParams(uri.getQuery());
 
         var client = clientManager.getClient(params);
 
         var bucketName = uri.getHost();
         var objectName = normalizeObjectName(uri.getPath());
-        var kind = Optional.ofNullable(params.get("defaultKind")).orElse(DEFAULT_ENTITY_KIND);
-        var batchSize = Optional.ofNullable(params.get("batchSize")).map(Integer::parseInt).orElse(DEFAULT_BATCH_SIZE);
+        var kind = params.getFirst("defaultKind").orElse(DEFAULT_ENTITY_KIND);
+        var batchSize = params.getFirst("batchSize").map(Integer::parseInt).orElse(DEFAULT_BATCH_SIZE);
 
         if (objectName == null || objectName.isBlank()) {
             return () -> fetchAllEntities(client, bucketName, kind, batchSize);

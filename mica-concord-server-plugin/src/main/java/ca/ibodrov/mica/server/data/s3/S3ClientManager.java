@@ -20,6 +20,7 @@ package ca.ibodrov.mica.server.data.s3;
  * ======
  */
 
+import ca.ibodrov.mica.server.data.QueryParams;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -43,7 +44,6 @@ import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 
 import static com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope.apiRequest;
@@ -83,10 +83,10 @@ public class S3ClientManager {
                 });
     }
 
-    public S3Client getClient(Map<String, String> params) {
-        var key = new ClientKey(Optional.ofNullable(params.get("secretRef")),
-                Optional.ofNullable(params.get("region")),
-                Optional.ofNullable(params.get("endpoint")));
+    public S3Client getClient(QueryParams params) {
+        var key = new ClientKey(params.getFirst("secretRef"),
+                params.getFirst("region"),
+                params.getFirst("endpoint"));
         try {
             return cache.getUnchecked(key);
         } catch (UncheckedExecutionException e) {

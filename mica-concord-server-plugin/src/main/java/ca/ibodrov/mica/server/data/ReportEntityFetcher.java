@@ -24,7 +24,6 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import ca.ibodrov.mica.server.reports.ValidateAllReport;
 
 import javax.inject.Inject;
-import java.net.URI;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -38,10 +37,6 @@ public class ReportEntityFetcher implements EntityFetcher {
     @Inject
     public ReportEntityFetcher(ValidateAllReport validateAllReport) {
         this.validateAllReport = requireNonNull(validateAllReport);
-    }
-
-    public boolean isSupported(URI uri) {
-        return URI_SCHEME.equals(uri.getScheme());
     }
 
     @Override
