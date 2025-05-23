@@ -29,7 +29,7 @@
         "react-error-boundary": "^6.0.0",
         "react-router-dom": "^7.6.0",
         "swagger-ui-react": "^5.22.0",
-        "yaml": "^2.7.1"
+        "yaml": "^2.8.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.25.0",
