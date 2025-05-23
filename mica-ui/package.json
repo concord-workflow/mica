@@ -20,7 +20,7 @@
         "@mui/icons-material": "^7.1.0",
         "@mui/lab": "^7.0.0-beta.12",
         "@mui/material": "^7.1.0",
-        "@tanstack/react-query": "^5.75.5",
+        "@tanstack/react-query": "^5.76.2",
         "@uidotdev/usehooks": "^2.4.1",
         "monaco-marker-data-provider": "^1.2.4",
         "monaco-yaml": "^5.3.1",
