@@ -3,14 +3,16 @@ package ca.ibodrov.mica.server.data.viewRenderHistory;
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.data.EntityFetcher;
+import ca.ibodrov.mica.server.data.QueryParams;
+import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import org.jooq.DSLContext;
-import org.jooq.Record5;
 import org.jooq.Record6;
 
 import javax.inject.Inject;
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +46,11 @@ public class ViewRenderHistoryEntityFetcher implements EntityFetcher {
 
     @Override
     public Cursor fetch(FetchRequest request) {
+        var uri = request.uri().orElseThrow(() -> new StoreException("mica://viewRenderHistory URI is required"));
+        var params = new QueryParams(uri.getQuery());
+
+        var after = params.getFirst("after").map(Instant::parse).orElse(Instant.now().minus(Duration.ofDays(31)));
+
         var query = dsl.select(MICA_VIEW_RENDER_HISTORY.ENTITY_ID,
                 MICA_ENTITIES.NAME,
                 MICA_VIEW_RENDER_HISTORY.RENDERED_AT,
@@ -51,7 +58,9 @@ public class ViewRenderHistoryEntityFetcher implements EntityFetcher {
                 MICA_VIEW_RENDER_HISTORY.RENDER_TIME_MS,
                 MICA_VIEW_RENDER_HISTORY.FETCHED_ENTITIES)
                 .from(MICA_VIEW_RENDER_HISTORY)
-                .leftOuterJoin(MICA_ENTITIES).on(MICA_VIEW_RENDER_HISTORY.ENTITY_ID.eq(MICA_ENTITIES.ID));
+                .leftOuterJoin(MICA_ENTITIES).on(MICA_VIEW_RENDER_HISTORY.ENTITY_ID.eq(MICA_ENTITIES.ID))
+                .where(MICA_VIEW_RENDER_HISTORY.RENDERED_AT.greaterThan(after))
+                .orderBy(MICA_VIEW_RENDER_HISTORY.RENDERED_AT.desc());
 
         return () -> query.fetch(ViewRenderHistoryEntityFetcher::toEntity).stream();
     }
