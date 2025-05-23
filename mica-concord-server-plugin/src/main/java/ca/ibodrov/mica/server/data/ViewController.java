@@ -36,9 +36,12 @@ import org.jooq.DSLContext;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
@@ -57,6 +60,7 @@ public class ViewController {
     private final ViewInterpolator viewInterpolator;
     private final ViewRenderer viewRenderer;
     private final ViewCache viewCache;
+    private final ViewRenderHistoryController viewRenderHistoryController;
     private final Validator validator;
     private final ObjectMapper objectMapper;
     private final DSLContext dsl;
@@ -68,12 +72,14 @@ public class ViewController {
                           EntityFetchers entityFetchers,
                           JsonPathEvaluator jsonPathEvaluator,
                           ViewCache viewCache,
+                          ViewRenderHistoryController viewRenderHistoryController,
                           ObjectMapper objectMapper) {
 
         this.entityStore = requireNonNull(entityStore);
         this.entityKindStore = requireNonNull(entityKindStore);
         this.entityFetchers = requireNonNull(entityFetchers);
         this.viewCache = requireNonNull(viewCache);
+        this.viewRenderHistoryController = requireNonNull(viewRenderHistoryController);
         this.objectMapper = requireNonNull(objectMapper);
         var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
         this.viewInterpolator = new ViewInterpolator(objectMapper, schemaFetcher);
@@ -84,11 +90,10 @@ public class ViewController {
 
     public RenderedView getCachedOrRender(RenderRequest request, RenderOverrides overrides) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
-        var view = interpolateView(assertViewEntity(request), parameters);
-        return viewCache.getOrRender(request, overrides, view, (_view, _overrides) -> {
-            var entities = select(view);
-            return viewRenderer.render(view, overrides, entities);
-        });
+        var viewEntity = assertViewEntity(request);
+        var view = interpolateView(viewEntity, parameters);
+        return viewCache.getOrRender(request, overrides, view,
+                (_view, _overrides) -> render(viewEntity.id(), view, overrides));
     }
 
     public PartialEntity getCachedOrRenderAsEntity(RenderRequest request) {
@@ -149,7 +154,7 @@ public class ViewController {
         });
     }
 
-    private EntityLike assertViewEntity(@Valid RenderRequest request) {
+    private Entity assertViewEntity(@Valid RenderRequest request) {
         if (request.viewId().isPresent()) {
             return entityStore.getById(request.viewId().get())
                     .orElseThrow(() -> ApiException.notFound("View not found: " + request.viewId().get()));
@@ -212,6 +217,37 @@ public class ViewController {
         }
 
         return result;
+    }
+
+    private RenderedView render(EntityId viewEntityId, ViewLike view, RenderOverrides overrides) {
+        var entities = withDuration(() -> select(view));
+        var renderedView = withDuration(() -> viewRenderer.render(view, overrides, entities.value));
+        viewRenderHistoryController.addEntry(viewEntityId, entities.duration, renderedView.duration,
+                renderedView.value.entityNames().size());
+        return renderedView.value;
+    }
+
+    private <T> WithDuration<T> withDuration(Callable<T> callable) {
+        var start = Instant.now();
+        try {
+            var value = callable.call();
+            var duration = Duration.between(start, Instant.now());
+            return new WithDuration<>(value, duration);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private class WithDuration<T> {
+        T value;
+        Duration duration;
+
+        private WithDuration(T value, Duration duration) {
+            this.value = value;
+            this.duration = duration;
+        }
     }
 
     private Optional<JsonNode> validateResult(RenderedView renderedView) {

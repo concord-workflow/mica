@@ -146,6 +146,7 @@ public class MicaPluginModule implements Module {
         // tasks
 
         newSetBinder(binder, ScheduledTask.class).addBinding().to(EntityHistoryCleaner.class);
+        newSetBinder(binder, ScheduledTask.class).addBinding().to(ViewRenderHistoryCleaner.class);
 
         // other beans
 

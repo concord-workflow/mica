@@ -62,12 +62,14 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 new ValidateAllReport(entityKindStore, internalEntityFetcher, objectMapper));
         var entityFetchers = new EntityFetchers(Set.of(internalEntityFetcher, reportEntityFetcher));
         var jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
+        var renderHistoryController = new ViewRenderHistoryController(dsl());
         viewController = new ViewController(dsl(),
                 entityStore,
                 entityKindStore,
                 entityFetchers,
                 jsonPathEvaluator,
                 ViewCache.noop(),
+                renderHistoryController,
                 objectMapper);
     }
 
