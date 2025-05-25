@@ -2,6 +2,20 @@
 
 A configuration management system.
 
+Features:
+- Multiple data source support:
+  - internal database;
+  - Git repositories;
+  - S3 buckets;
+  - Concord [Json Stores](https://concord.walmartlabs.com/docs/getting-started/json-store.html)
+- User-defined "views" to merge, filter and modify YAML and JSON documents pulled different data sources;
+- Simple "dashboards" to visualize data;
+- API access;
+- OIDC support.
+
+![Entity details](docs/screenshots/entity-details.png)
+![Preview](docs/screenshots/preview.png)
+
 ## Prerequisites
 
 - JDK 17
