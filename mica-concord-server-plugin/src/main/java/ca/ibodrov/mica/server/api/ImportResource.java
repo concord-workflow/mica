@@ -114,7 +114,8 @@ public class ImportResource implements Resource {
                 doImport(dataExport);
                 return new ImportResponse(true);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            log.error("importData -> error", e);
             throw ApiException.internalError("Failed to import a ZIP archive: " + e.getMessage());
         } finally {
             if (tmpDir != null) {
@@ -142,7 +143,12 @@ public class ImportResource implements Resource {
                     "Requires confirmation. Pass 'confirmation=it_might_destroy_existing_data' query parameter.");
         }
 
-        doImport(dataExport);
+        try {
+            doImport(dataExport);
+        } catch (Exception e) {
+            log.error("importData -> error", e);
+            throw ApiException.internalError("Failed to import JSON: " + e.getMessage());
+        }
 
         return new ImportResponse(true);
     }
