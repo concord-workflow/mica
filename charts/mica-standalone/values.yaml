@@ -134,6 +134,8 @@ tolerations: []
 
 affinity: {}
 
+topologySpreadConstraints: {}
+
 mica:
   baseUrl: "http://mica.example.org:8080"
   db:
