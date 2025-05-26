@@ -1,7 +1,9 @@
 import { useCurrentUser } from '../../UserContext.tsx';
 import { redirectToLogout } from '../../api/common.ts';
+import ApiKeyDialog from '../ApiKeyDialog.tsx';
 import ProfileDialog from './ProfileDialog.tsx';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import KeyIcon from '@mui/icons-material/Key';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
 
@@ -31,9 +33,20 @@ const ProfileToolbarButton = () => {
         setProfileOpen(false);
     };
 
+    const [apiKeysOpen, setApiKeysOpen] = React.useState<boolean>(false);
+
+    const openApiKeys = () => {
+        setApiKeysOpen(true);
+    };
+
+    const closeApiKeys = () => {
+        setApiKeysOpen(false);
+    };
+
     return (
         <>
             <ProfileDialog open={profileOpen} onClose={closeProfile} user={currentUser} />
+            <ApiKeyDialog open={apiKeysOpen} onClose={closeApiKeys} user={currentUser} />
             <Button
                 color="inherit"
                 startIcon={<AccountCircleIcon />}
@@ -48,6 +61,12 @@ const ProfileToolbarButton = () => {
                         <AccountCircleIcon />
                     </ListItemIcon>
                     <ListItemText>Profile</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={openApiKeys}>
+                    <ListItemIcon>
+                        <KeyIcon />
+                    </ListItemIcon>
+                    <ListItemText>API keys</ListItemText>
                 </MenuItem>
                 <MenuItem onClick={redirectToLogout}>
                     <ListItemIcon>
