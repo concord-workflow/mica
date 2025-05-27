@@ -22,20 +22,18 @@ package ca.ibodrov.mica.server.api;
 
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.api.model.PreviewRequest;
-import ca.ibodrov.mica.api.model.RenderRequest;
+import ca.ibodrov.mica.api.model.PreviewViewRequest;
+import ca.ibodrov.mica.api.model.RenderViewRequest;
 import ca.ibodrov.mica.server.data.ViewController;
 import com.walmartlabs.concord.server.sdk.metrics.WithTimer;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.sdk.validation.Validate;
-import com.walmartlabs.concord.server.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -60,7 +58,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Render a view", operationId = "render")
     @Validate
     @WithTimer
-    public PartialEntity render(@Valid RenderRequest request) {
+    public PartialEntity render(@Valid RenderViewRequest request) {
         return controller.getCachedOrRenderAsEntity(request);
     }
 
@@ -71,7 +69,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Render a view into a .properties file", operationId = "renderProperties")
     @Validate
     @WithTimer
-    public String renderProperties(@Valid RenderRequest request) {
+    public String renderProperties(@Valid RenderViewRequest request) {
         return controller.getCachedOrRenderAsProperties(request);
     }
 
@@ -81,7 +79,7 @@ public class ViewResource implements Resource {
     @Validate
     @WithTimer
     public PartialEntity renderSimple(@PathParam("viewId") EntityId viewId) {
-        var request = new RenderRequest(Optional.of(viewId), Optional.empty(), Optional.empty());
+        var request = new RenderViewRequest(Optional.of(viewId), Optional.empty(), Optional.empty());
         return controller.getCachedOrRenderAsEntity(request);
     }
 
@@ -91,7 +89,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Preview a view", operationId = "preview")
     @Validate
     @WithTimer
-    public PartialEntity preview(@Valid PreviewRequest request) {
+    public PartialEntity preview(@Valid PreviewViewRequest request) {
         return controller.preview(request);
     }
 
@@ -101,7 +99,7 @@ public class ViewResource implements Resource {
     @Operation(summary = "Materialize a view", description = "Render a view and save the result as entities", operationId = "materialize")
     @Validate
     @WithTimer
-    public PartialEntity materialize(@Valid RenderRequest request) {
+    public PartialEntity materialize(@Valid RenderViewRequest request) {
         return controller.materialize(request);
     }
 }

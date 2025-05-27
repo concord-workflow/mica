@@ -1,0 +1,12 @@
+name: /examples/view-render-history/dashboard
+kind: /mica/dashboard/v1
+title: View Render History
+view:
+  name: /examples/view-render-history/view
+layout: table
+table:
+  columns:
+    - title: View
+      jsonPath: $.viewEntityName
+    - title: Rendered At
+      jsonPath: $.renderedAt

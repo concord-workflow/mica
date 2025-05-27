@@ -5,12 +5,12 @@ import { JsonNode } from './schema.ts';
 
 import { UseMutationOptions, useMutation } from '@tanstack/react-query';
 
-export interface PreviewRequest {
+export interface PreviewViewRequest {
     view: PartialEntity;
     parameters?: Record<string, string>;
 }
 
-const preview = (request: PreviewRequest): Promise<PartialEntity> =>
+const preview = (request: PreviewViewRequest): Promise<PartialEntity> =>
     doFetch(`/api/mica/v1/view/preview`, {
         method: 'POST',
         headers: {
@@ -19,23 +19,24 @@ const preview = (request: PreviewRequest): Promise<PartialEntity> =>
         body: JSON.stringify(request),
     }).then(handleJsonResponse<PartialEntity>);
 
-export const usePreview = (options?: UseMutationOptions<PartialEntity, ApiError, PreviewRequest>) =>
-    useMutation<PartialEntity, ApiError, PreviewRequest>({ mutationFn: preview, ...options });
+export const usePreview = (
+    options?: UseMutationOptions<PartialEntity, ApiError, PreviewViewRequest>,
+) => useMutation<PartialEntity, ApiError, PreviewViewRequest>({ mutationFn: preview, ...options });
 
-export interface RenderRequest {
+export interface RenderViewRequest {
     viewId: string;
     parameters?: JsonNode;
 }
 
-export interface RenderResponse {
+export interface RenderViewResponse {
     data: JsonNode;
 }
 
-export const render = (request: RenderRequest): Promise<RenderResponse> =>
+export const render = (request: RenderViewRequest): Promise<RenderViewResponse> =>
     doFetch(`/api/mica/v1/view/render`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
-    }).then(handleJsonResponse<RenderResponse>);
+    }).then(handleJsonResponse<RenderViewResponse>);

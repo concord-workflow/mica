@@ -11,6 +11,7 @@ import PageTitle from '../components/PageTitle.tsx';
 import PathBreadcrumbs from '../components/PathBreadcrumbs.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
 import Spacer from '../components/Spacer.tsx';
+import PreviewDashboard from '../features/dashboard/PreviewDashboard.tsx';
 import ResetButton from '../features/editor/ResetButton.tsx';
 import YamlEditor from '../features/editor/YamlEditor.tsx';
 import PreviewView from '../features/views/PreviewView.tsx';
@@ -174,7 +175,7 @@ const EditEntityPage = () => {
         const newKind = getYamlField(editorValue, 'kind');
         setSelectedKind((prev) => (prev === newKind ? prev : newKind));
 
-        if (showPreview && newKind !== MICA_VIEW_KIND) {
+        if (showPreview && newKind !== MICA_VIEW_KIND && newKind !== MICA_DASHBOARD_KIND) {
             setShowPreview(false);
         }
     }, [editorValue, showPreview]);
@@ -305,19 +306,20 @@ const EditEntityPage = () => {
                             )}
                         </PageTitle>
                         <Spacer />
-                        {selectedKind === MICA_VIEW_KIND && (
-                            <FormControl>
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            checked={showPreview}
-                                            onChange={handlePreviewSwitch}
-                                        />
-                                    }
-                                    label="Preview"
-                                />
-                            </FormControl>
-                        )}
+                        {selectedKind === MICA_VIEW_KIND ||
+                            (selectedKind === MICA_DASHBOARD_KIND && (
+                                <FormControl>
+                                    <FormControlLabel
+                                        control={
+                                            <Switch
+                                                checked={showPreview}
+                                                onChange={handlePreviewSwitch}
+                                            />
+                                        }
+                                        label="Preview"
+                                    />
+                                </FormControl>
+                            ))}
                         {selectedId !== undefined &&
                             selectedId !== '_new' &&
                             selectedKind === MICA_DASHBOARD_KIND && (
@@ -373,7 +375,12 @@ const EditEntityPage = () => {
                     />
                     {showPreview && (
                         <PreviewDrawer anchor="bottom" variant="permanent">
-                            <PreviewView data={editorValue} onClose={handlePreviewClose} />
+                            {selectedKind === MICA_VIEW_KIND && (
+                                <PreviewView data={editorValue} onClose={handlePreviewClose} />
+                            )}
+                            {selectedKind === MICA_DASHBOARD_KIND && (
+                                <PreviewDashboard data={editorValue} onClose={handlePreviewClose} />
+                            )}
                         </PreviewDrawer>
                     )}
                 </Box>

@@ -64,4 +64,9 @@ public record Entity(@NotNull EntityId id,
     public EntityVersion version() {
         return new EntityVersion(id, updatedAt);
     }
+
+    public PartialEntity asPartialEntity() {
+        return new PartialEntity(Optional.of(id), name, kind, Optional.of(createdAt), Optional.of(updatedAt), deletedAt,
+                data);
+    }
 }

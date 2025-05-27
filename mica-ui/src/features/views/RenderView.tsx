@@ -1,5 +1,5 @@
 import { ApiError } from '../../api/error.ts';
-import { RenderRequest, RenderResponse, render } from '../../api/view.ts';
+import { RenderViewRequest, RenderViewResponse, render } from '../../api/view.ts';
 import ReadableApiError from '../../components/ReadableApiError.tsx';
 import DataView from './DataView.tsx';
 import { Alert, Box, CircularProgress } from '@mui/material';
@@ -7,11 +7,11 @@ import { Alert, Box, CircularProgress } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 
 interface Props {
-    request: RenderRequest;
+    request: RenderViewRequest;
 }
 
 const RenderView = ({ request }: Props) => {
-    const { data, isLoading, error } = useQuery<RenderResponse, ApiError>({
+    const { data, isLoading, error } = useQuery<RenderViewResponse, ApiError>({
         queryKey: ['render', request],
         queryFn: () => render(request),
 

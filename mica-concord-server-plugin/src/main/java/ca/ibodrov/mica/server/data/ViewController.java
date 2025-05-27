@@ -89,7 +89,7 @@ public class ViewController {
         this.dsl = requireNonNull(dsl);
     }
 
-    public RenderedView getCachedOrRender(RenderRequest request, RenderOverrides overrides) {
+    public RenderedView getCachedOrRender(RenderViewRequest request, RenderOverrides overrides) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var viewEntity = assertViewEntity(request);
         var view = interpolateView(viewEntity, parameters);
@@ -97,13 +97,13 @@ public class ViewController {
                 (_view, _overrides) -> render(viewEntity.id(), view, overrides));
     }
 
-    public PartialEntity getCachedOrRenderAsEntity(RenderRequest request) {
+    public PartialEntity getCachedOrRenderAsEntity(RenderViewRequest request) {
         var renderedView = getCachedOrRender(request, RenderOverrides.none());
         var validation = validateResult(renderedView);
         return buildEntity(renderedView, renderedView.data(), validation);
     }
 
-    public String getCachedOrRenderAsProperties(RenderRequest request) {
+    public String getCachedOrRenderAsProperties(RenderViewRequest request) {
         var renderedView = getCachedOrRender(request, RenderOverrides.merged());
         if (renderedView.data().size() != 1) {
             throw ApiException.badRequest("Expected a view flattened down to a single entity, got "
@@ -123,7 +123,7 @@ public class ViewController {
                 .orElse("# empty") + "\n";
     }
 
-    public PartialEntity preview(PreviewRequest request) {
+    public PartialEntity preview(PreviewViewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var viewEntity = validateView(request.view());
         var view = interpolateView(viewEntity, parameters);
@@ -134,7 +134,7 @@ public class ViewController {
         return buildEntity(renderedView, renderedView.data(), validation);
     }
 
-    public PartialEntity materialize(RenderRequest request) {
+    public PartialEntity materialize(RenderViewRequest request) {
         var parameters = request.parameters().orElseGet(NullNode::getInstance);
         var view = interpolateView(assertViewEntity(request), parameters);
         var entities = select(view);
@@ -155,7 +155,7 @@ public class ViewController {
         });
     }
 
-    private Entity assertViewEntity(@Valid RenderRequest request) {
+    private Entity assertViewEntity(@Valid RenderViewRequest request) {
         if (request.viewId().isPresent()) {
             return entityStore.getById(request.viewId().get())
                     .orElseThrow(() -> ApiException.notFound("View not found: " + request.viewId().get()));

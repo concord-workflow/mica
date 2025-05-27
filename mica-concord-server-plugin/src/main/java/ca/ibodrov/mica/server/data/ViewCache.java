@@ -20,7 +20,7 @@ package ca.ibodrov.mica.server.data;
  * ======
  */
 
-import ca.ibodrov.mica.api.model.RenderRequest;
+import ca.ibodrov.mica.api.model.RenderViewRequest;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.api.model.ViewLike.Caching;
 import ca.ibodrov.mica.server.data.ViewRenderer.RenderOverrides;
@@ -45,7 +45,7 @@ public interface ViewCache {
         return new NoopViewCache();
     }
 
-    RenderedView getOrRender(RenderRequest request,
+    RenderedView getOrRender(RenderViewRequest request,
                              RenderOverrides overrides,
                              ViewLike viewLike,
                              BiFunction<ViewLike, RenderOverrides, RenderedView> renderer);
@@ -60,7 +60,7 @@ public interface ViewCache {
                     .build();
         }
 
-        public RenderedView getOrRender(RenderRequest request,
+        public RenderedView getOrRender(RenderViewRequest request,
                                         RenderOverrides overrides,
                                         ViewLike viewLike,
                                         BiFunction<ViewLike, RenderOverrides, RenderedView> renderer) {
@@ -76,7 +76,7 @@ public interface ViewCache {
     class NoopViewCache implements ViewCache {
 
         @Override
-        public RenderedView getOrRender(RenderRequest request,
+        public RenderedView getOrRender(RenderViewRequest request,
                                         RenderOverrides overrides,
                                         ViewLike viewLike,
                                         BiFunction<ViewLike, RenderOverrides, RenderedView> renderer) {
@@ -111,7 +111,7 @@ public interface ViewCache {
         }
     }
 
-    record CacheKey(RenderRequest request, RenderOverrides overrides) {
+    record CacheKey(RenderViewRequest request, RenderOverrides overrides) {
     }
 
     private static boolean isCachingEnabled(ViewLike view) {

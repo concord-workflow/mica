@@ -149,10 +149,10 @@ public class MicaTask implements Task {
                 .value("data", objectMapper.convertValue(entityList.data(), List.class));
     }
 
-    private RenderRequest parseRenderRequest(Variables input) {
+    private RenderViewRequest parseRenderRequest(Variables input) {
         var viewName = input.assertString("name");
         var parameters = parseParameters(input);
-        return new RenderRequest(Optional.empty(), Optional.of(viewName),
+        return new RenderViewRequest(Optional.empty(), Optional.of(viewName),
                 Optional.of(objectMapper.convertValue(parameters, JsonNode.class)));
     }
 

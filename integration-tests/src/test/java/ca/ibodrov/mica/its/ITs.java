@@ -24,7 +24,7 @@ import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.EntityId;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.api.model.RenderRequest;
+import ca.ibodrov.mica.api.model.RenderViewRequest;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.api.ViewResource;
 import ca.ibodrov.mica.server.data.EntityStore;
@@ -583,7 +583,7 @@ public class ITs extends TestResources {
 
     @Test
     public void requestsMustBeValidated() {
-        assertThrows(ConstraintViolationException.class, () -> viewResource.render(RenderRequest.of("_invalid_")));
+        assertThrows(ConstraintViolationException.class, () -> viewResource.render(RenderViewRequest.of("_invalid_")));
     }
 
     @Test
@@ -723,7 +723,7 @@ public class ITs extends TestResources {
                 .toPartialEntity(objectMapper));
 
         var result = securityContext.runAs(adminId,
-                () -> viewResource.render(RenderRequest.of("/acme/views/json-store-demo")));
+                () -> viewResource.render(RenderViewRequest.of("/acme/views/json-store-demo")));
         var data = result.data().get("data");
         assertEquals(1, data.size());
         var item = data.get(0);
@@ -781,7 +781,7 @@ public class ITs extends TestResources {
                 .toPartialEntity(objectMapper));
 
         var result = securityContext.runAs(adminId,
-                () -> viewResource.render(RenderRequest.of("/acme/views/s3-single-demo")));
+                () -> viewResource.render(RenderViewRequest.of("/acme/views/s3-single-demo")));
         var data = result.data().get("data");
         assertEquals(1, data.size());
         var item = data.get(0);

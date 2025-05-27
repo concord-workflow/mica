@@ -404,14 +404,16 @@ const EntityDetailsPage = () => {
                     <Grid>
                         <FormControl>
                             <Tooltip title="Permanently delete this entity. This action cannot be undone.">
-                                <Button
-                                    startIcon={<DeleteIcon />}
-                                    variant="outlined"
-                                    color="error"
-                                    onClick={handleDelete}
-                                    disabled={isFetching}>
-                                    Delete
-                                </Button>
+                                <span>
+                                    <Button
+                                        startIcon={<DeleteIcon />}
+                                        variant="outlined"
+                                        color="error"
+                                        onClick={handleDelete}
+                                        disabled={isFetching}>
+                                        Delete
+                                    </Button>
+                                </span>
                             </Tooltip>
                         </FormControl>
                     </Grid>

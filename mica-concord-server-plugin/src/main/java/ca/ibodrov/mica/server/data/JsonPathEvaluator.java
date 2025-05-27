@@ -50,14 +50,13 @@ public class JsonPathEvaluator {
                 .build());
     }
 
-    public Optional<JsonNode> applyInApiCall(String entityName,
-                                             JsonNode data,
+    public Optional<JsonNode> applyInApiCall(JsonNode data,
                                              String jsonPath) {
         try {
             return apply(data, jsonPath);
         } catch (JsonPathException e) {
             throw ApiException
-                    .badRequest("Error while processing entity '%s'. %s".formatted(entityName, e.getMessage()));
+                    .badRequest("Error while processing JSON path: " + e.getMessage());
         }
     }
 

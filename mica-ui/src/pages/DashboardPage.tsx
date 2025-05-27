@@ -1,42 +1,24 @@
-import { DashboardRenderResponse, Layout, render } from '../api/dashboard.ts';
+import { DashboardRenderResponse, render } from '../api/dashboard.ts';
+import { ApiError } from '../api/error.ts';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import PageTitle from '../components/PageTitle.tsx';
+import ReadableApiError from '../components/ReadableApiError.tsx';
+import RenderDashboard from '../features/dashboard/RenderDashboard.tsx';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
 import {
-    Alert,
-    AlertTitle,
     Backdrop,
-    Box,
     Button,
     CircularProgress,
     Container,
     FormControl,
     Grid,
-    Paper,
     Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
 } from '@mui/material';
 
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-
-const Error = ({ message }: { message: string }) => {
-    return (
-        <Box m={2}>
-            <Alert color="error">
-                <AlertTitle>Dashboard Error</AlertTitle>
-                {message}
-            </Alert>
-        </Box>
-    );
-};
 
 const CopyPermalinkButton = ({ entityId }: { entityId: string | undefined }) => {
     if (!entityId) {
@@ -52,19 +34,13 @@ const CopyPermalinkButton = ({ entityId }: { entityId: string | undefined }) => 
         </Typography>
     );
 };
-const renderCell = (row: string | boolean | number | unknown) => {
-    if (typeof row === 'string' || typeof row === 'boolean' || typeof row === 'number') {
-        return row;
-    }
-    return JSON.stringify(row);
-};
 
 const DashboardPage = () => {
     const navigate = useNavigate();
 
     const { entityId } = useParams();
 
-    const { data, isLoading, error } = useQuery<DashboardRenderResponse, Error>({
+    const { data, isLoading, error, isError } = useQuery<DashboardRenderResponse, ApiError>({
         queryKey: ['dashboard', entityId],
         queryFn: () => render(entityId!),
         enabled: entityId !== undefined,
@@ -73,8 +49,8 @@ const DashboardPage = () => {
         refetchOnReconnect: false,
     });
 
-    if (error) {
-        return <Error message={error.message} />;
+    if (isError) {
+        return <ReadableApiError error={error} />;
     }
 
     if (isLoading || !data) {
@@ -85,22 +61,9 @@ const DashboardPage = () => {
         );
     }
 
-    if (data.dashboard.layout !== Layout.TABLE) {
-        return <Error message={`Unsupported layout: ${data.dashboard.layout}`} />;
-    }
-
-    const columns = data.dashboard.table?.columns;
-    if (!columns) {
-        return (
-            <Error message="Invalid dashboard definition: 'table.columns' parameter is required for 'layout: TABLE' mode" />
-        );
-    }
-
-    const rows = data.data;
-
     return (
         <Container sx={{ mt: 2 }} maxWidth="xl">
-            <Grid container>
+            <Grid container sx={{ mb: 1 }}>
                 <Grid size={10}>
                     <PageTitle>{data.dashboard.title}</PageTitle>
                 </Grid>
@@ -120,26 +83,7 @@ const DashboardPage = () => {
                     </Stack>
                 </Grid>
             </Grid>
-            <TableContainer sx={{ mt: 1 }} component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            {columns.map((col) => (
-                                <TableCell key={col.title}>{col.title}</TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rows.map((_, row) => (
-                            <TableRow key={row}>
-                                {columns.map((_, col) => (
-                                    <TableCell key={col}>{renderCell(rows[row][col])}</TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            <RenderDashboard dashboard={data.dashboard} data={data.data} />
         </Container>
     );
 };

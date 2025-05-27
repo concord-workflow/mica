@@ -79,7 +79,7 @@ public class ViewRenderer {
         var data = entities
                 // ...while we are at it, collect the entity names
                 .peek(entity -> entityNames.add(entity.name()))
-                .map(row -> applyAllJsonPaths(row.name(), objectMapper.convertValue(row, JsonNode.class), jsonPath))
+                .map(row -> applyAllJsonPaths(objectMapper.convertValue(row, JsonNode.class), jsonPath))
                 .flatMap(Optional::stream)
                 .toList();
 
@@ -104,7 +104,7 @@ public class ViewRenderer {
             data = data.stream()
                     .collect(groupingBy(
                             node -> jsonPathEvaluator
-                                    .applyInApiCall(entityNames.build().toString(), node, mergeBy.get())
+                                    .applyInApiCall(node, mergeBy.get())
                                     .orElse(NullNode.getInstance())))
                     .entrySet().stream()
                     .flatMap(entry -> {
@@ -166,7 +166,7 @@ public class ViewRenderer {
                         }
                         var result = objectMapper.createObjectNode();
                         map.get().forEach((key, value) -> {
-                            var output = applyAllJsonPaths(entityNames.build().toString(), node, value);
+                            var output = applyAllJsonPaths(node, value);
                             output.ifPresent(jsonNode -> result.set(key, jsonNode));
                         });
                         return (JsonNode) result;
@@ -177,15 +177,15 @@ public class ViewRenderer {
         return new RenderedView(view, data, entityNames.build());
     }
 
-    private Optional<JsonNode> applyAllJsonPaths(String entityName, JsonNode data, JsonNode jsonPath) {
+    private Optional<JsonNode> applyAllJsonPaths(JsonNode data, JsonNode jsonPath) {
         if (jsonPath.isTextual()) {
-            return jsonPathEvaluator.applyInApiCall(entityName, data, jsonPath.asText());
+            return jsonPathEvaluator.applyInApiCall(data, jsonPath.asText());
         } else if (jsonPath.isArray()) {
             var result = data;
             for (int i = 0; i < jsonPath.size(); i++) {
                 var node = jsonPath.get(i);
                 String jsonPath1 = node.asText();
-                var output = jsonPathEvaluator.applyInApiCall(entityName, result, jsonPath1);
+                var output = jsonPathEvaluator.applyInApiCall(result, jsonPath1);
                 if (output.isEmpty()) {
                     return Optional.empty();
                 }

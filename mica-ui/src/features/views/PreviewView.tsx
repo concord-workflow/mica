@@ -1,6 +1,6 @@
 import { PartialEntity } from '../../api/entity.ts';
 import { ObjectSchemaNode } from '../../api/schema.ts';
-import { PreviewRequest, usePreview } from '../../api/view.ts';
+import { PreviewViewRequest, usePreview } from '../../api/view.ts';
 import ReadableApiError from '../../components/ReadableApiError.tsx';
 import DataView from './DataView.tsx';
 import ShowRenderedViewDetailsToggle from './ShowRenderedViewDetailsToggle.tsx';
@@ -13,7 +13,7 @@ import { parse as parseYaml } from 'yaml';
 import React, { PropsWithChildren } from 'react';
 
 interface PreviewRequestOrError {
-    request?: PreviewRequest;
+    request?: PreviewViewRequest;
     parameters?: ObjectSchemaNode;
     error?: Error;
 }

@@ -8,7 +8,7 @@ view:
 layout: table
 table:
   columns:
-    - title: Version
+    - title: Versionz
       jsonPath: $.version
     - title: Date
       jsonPath: $.date

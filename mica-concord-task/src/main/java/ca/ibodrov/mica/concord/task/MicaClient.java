@@ -101,7 +101,7 @@ public class MicaClient {
         return parseResponseAsJson(response, EntityList.class);
     }
 
-    public PartialEntity renderView(RenderRequest body) throws ApiException {
+    public PartialEntity renderView(RenderViewRequest body) throws ApiException {
         var request = newRequest("/api/mica/v1/view/render")
                 .header("Content-Type", "application/json")
                 .POST(BodyPublishers.ofByteArray(serialize(body)))
@@ -110,7 +110,7 @@ public class MicaClient {
         return parseResponseAsJson(response, PartialEntity.class);
     }
 
-    public String renderProperties(RenderRequest body) throws ApiException {
+    public String renderProperties(RenderViewRequest body) throws ApiException {
         var request = newRequest("/api/mica/v1/view/renderProperties")
                 .header("Content-Type", "application/json")
                 .POST(BodyPublishers.ofByteArray(serialize(body)))

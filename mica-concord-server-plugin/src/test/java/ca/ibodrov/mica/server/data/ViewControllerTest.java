@@ -24,7 +24,7 @@ import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.kinds.MicaViewV1;
 import ca.ibodrov.mica.api.model.ApiError;
 import ca.ibodrov.mica.api.model.PartialEntity;
-import ca.ibodrov.mica.api.model.RenderRequest;
+import ca.ibodrov.mica.api.model.RenderViewRequest;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.data.viewRenderHistory.ViewRenderHistoryController;
 import ca.ibodrov.mica.server.exceptions.ApiException;
@@ -107,7 +107,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .build()
                 .toPartialEntity(objectMapper));
 
-        var result = viewController.getCachedOrRenderAsEntity(RenderRequest.of("/test-name-patterns"));
+        var result = viewController.getCachedOrRenderAsEntity(RenderViewRequest.of("/test-name-patterns"));
         assertEquals(6, result.data().get("data").size());
 
         // validate record order
@@ -153,7 +153,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         var result = viewController
-                .getCachedOrRenderAsEntity(RenderRequest.parameterized("/test-name-pattern-substitution",
+                .getCachedOrRenderAsEntity(RenderViewRequest.parameterized("/test-name-pattern-substitution",
                         parameters("x", TextNode.valueOf("first"), "y", TextNode.valueOf("second"))));
         assertEquals(1, result.data().get("data").size());
         assertEquals("/second/record", result.data().get("data").get(0).get("name").asText());
@@ -211,7 +211,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
         // we expect the view to return the original data plus the validation errors
         var result = viewController
                 .getCachedOrRenderAsEntity(
-                        RenderRequest.parameterized("/test-view-validation", NullNode.getInstance()));
+                        RenderViewRequest.parameterized("/test-view-validation", NullNode.getInstance()));
         assertEquals(2, result.data().get("data").size());
         assertEquals(2, result.data().get("validation").size());
         assertEquals("required", result.data().get("validation").get(0).get("messages").get(0).get("type").asText());
@@ -255,7 +255,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         // we expect entities to be flattened into a .properties format
-        var result = viewController.getCachedOrRenderAsProperties(RenderRequest.of("/test-properties"));
+        var result = viewController.getCachedOrRenderAsProperties(RenderViewRequest.of("/test-properties"));
         assertEquals("x.y=true\n", result);
     }
 
@@ -270,7 +270,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .toPartialEntity(objectMapper));
 
         var error = assertThrows(ApiException.class,
-                () -> viewController.getCachedOrRenderAsEntity(RenderRequest.of("/unknown-include")));
+                () -> viewController.getCachedOrRenderAsEntity(RenderViewRequest.of("/unknown-include")));
         assertEquals(CLIENT_ERROR, error.getStatus().getFamily());
         var entity = assertInstanceOf(ApiError.class, error.getResponse().getEntity());
         assertTrue(entity.message().contains("Unsupported URI"));
@@ -324,7 +324,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
 
         // we should end up with values 2 and 1
 
-        var result = viewController.getCachedOrRenderAsEntity(RenderRequest.of(viewName));
+        var result = viewController.getCachedOrRenderAsEntity(RenderViewRequest.of(viewName));
         assertEquals(2, result.data().get("data").size());
 
         // validate record order
@@ -375,7 +375,7 @@ public class ViewControllerTest extends AbstractDatabaseTest {
                 .build()
                 .toPartialEntity(objectMapper));
 
-        var result = viewController.getCachedOrRenderAsEntity(RenderRequest.of(pathPrefix + "/view"));
+        var result = viewController.getCachedOrRenderAsEntity(RenderViewRequest.of(pathPrefix + "/view"));
         assertEquals(1, result.data().get("data").size());
     }
 

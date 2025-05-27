@@ -29,11 +29,11 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
-public record RenderRequest(Optional<EntityId> viewId,
+public record RenderViewRequest(Optional<EntityId> viewId,
         Optional<String> viewName,
         Optional<JsonNode> parameters) {
 
-    public RenderRequest {
+    public RenderViewRequest {
         requireNonNull(viewId);
         requireNonNull(viewName);
 
@@ -49,11 +49,11 @@ public record RenderRequest(Optional<EntityId> viewId,
         });
     }
 
-    public static RenderRequest of(String viewName) {
-        return new RenderRequest(Optional.empty(), Optional.of(viewName), Optional.empty());
+    public static RenderViewRequest of(String viewName) {
+        return new RenderViewRequest(Optional.empty(), Optional.of(viewName), Optional.empty());
     }
 
-    public static RenderRequest parameterized(String viewName, JsonNode parameters) {
-        return new RenderRequest(Optional.empty(), Optional.of(viewName), Optional.ofNullable(parameters));
+    public static RenderViewRequest parameterized(String viewName, JsonNode parameters) {
+        return new RenderViewRequest(Optional.empty(), Optional.of(viewName), Optional.ofNullable(parameters));
     }
 }
