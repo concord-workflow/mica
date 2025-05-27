@@ -103,6 +103,7 @@ public class ViewInterpolator {
         var entityKind = interpolate(selector.entityKind(), input);
         var namePatterns = selector.namePatterns().map(values -> interpolate(values, input));
         return new ViewLike.Selector() {
+
             @Override
             public Optional<List<String>> includes() {
                 return includes;
@@ -185,8 +186,8 @@ public class ViewInterpolator {
         };
     }
 
-    private static List<String> interpolate(List<String> uris, JsonNode input) {
-        return uris.stream()
+    private static List<String> interpolate(List<String> strings, JsonNode input) {
+        return strings.stream()
                 .map(u -> interpolate(u, input))
                 .toList();
     }
