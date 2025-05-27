@@ -1,9 +1,11 @@
 import { CurrentUser } from '../../UserContext.tsx';
 import CopyToClipboardButton from '../../components/CopyToClipboardButton.tsx';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import GroupIcon from '@mui/icons-material/Group';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import SecurityIcon from '@mui/icons-material/Security';
 import {
+    Box,
     Button,
     Dialog,
     DialogActions,
@@ -43,7 +45,11 @@ const ProfileDialog = ({ open, onClose, user }: Props) => {
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth={true}>
-            <DialogTitle>{user.username}</DialogTitle>
+            <DialogTitle>
+                <Box display="flex" alignItems="center">
+                    <AccountCircleIcon sx={{ mr: 2 }} /> {user.username}
+                </Box>
+            </DialogTitle>
             <DialogContent>
                 <FormControl>
                     <FormLabel>Theme</FormLabel>
