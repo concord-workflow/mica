@@ -38,3 +38,14 @@ export const useCreateApiKey = (
         mutationFn: (request) => createApiKey(request),
         ...options,
     });
+
+const deleteApiKey = (id: string) =>
+    doFetch(`/api/v1/apikey/${id}`, {
+        method: 'DELETE',
+    }).then(handleJsonResponse<object>);
+
+export const useDeleteApiKey = (options?: UseMutationOptions<object, ApiError, { id: string }>) =>
+    useMutation<object, ApiError, { id: string }>({
+        mutationFn: ({ id }) => deleteApiKey(id),
+        ...options,
+    });

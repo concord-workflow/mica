@@ -1,8 +1,10 @@
 import { CurrentUser } from '../UserContext.tsx';
-import { ApiKeyEntry, listApiKeys, useCreateApiKey } from '../api/apiKey.ts';
+import { ApiKeyEntry, listApiKeys, useCreateApiKey, useDeleteApiKey } from '../api/apiKey.ts';
 import { ApiError } from '../api/error.ts';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
 import ReadableApiError from '../components/ReadableApiError.tsx';
+import KeyIcon from '@mui/icons-material/Key';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import {
     Alert,
     Box,
@@ -13,6 +15,7 @@ import {
     DialogContent,
     DialogTitle,
     Divider,
+    IconButton,
     List,
     ListItem,
     ListSubheader,
@@ -24,6 +27,44 @@ import ListItemText from '@mui/material/ListItemText';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
+
+const DeleteApiKeyButton = ({
+    apiKeyId,
+    onSuccess,
+}: {
+    apiKeyId: string;
+    onSuccess: () => void;
+}) => {
+    const queryClient = useQueryClient();
+
+    const { mutateAsync, isPending } = useDeleteApiKey({
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['apikey'] }).then(onSuccess),
+    });
+
+    const [showConfirmation, setShowConfirmation] = React.useState<boolean>(false);
+
+    const handleClick = React.useCallback(() => {
+        setShowConfirmation(true);
+    }, []);
+
+    const handleConfirm = React.useCallback(() => {
+        mutateAsync({ id: apiKeyId });
+    }, [apiKeyId, mutateAsync]);
+
+    if (showConfirmation) {
+        return (
+            <Button onClick={handleConfirm} loading={isPending} color="error" variant="outlined">
+                Remove permanently
+            </Button>
+        );
+    }
+
+    return (
+        <IconButton onClick={handleClick}>
+            <RemoveCircleOutlineIcon />
+        </IconButton>
+    );
+};
 
 interface Props {
     open: boolean;
@@ -49,6 +90,7 @@ const ApiKeyDialog = ({ open, onClose }: Props) => {
         error: createError,
         isPending: isCreating,
         isError: isCreateError,
+        reset,
     } = useCreateApiKey({
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['apikey'] }),
     });
@@ -63,8 +105,12 @@ const ApiKeyDialog = ({ open, onClose }: Props) => {
     const isError = isCreateError || isListError;
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth={true}>
-            <DialogTitle>API Keys</DialogTitle>
+        <Dialog open={open} onClose={onClose} fullWidth={true} maxWidth="md">
+            <DialogTitle>
+                <Box display="flex" alignItems="center">
+                    <KeyIcon sx={{ mr: 2 }} /> API Keys
+                </Box>
+            </DialogTitle>
             <DialogContent>
                 {createdKey && (
                     <Alert color="success">
@@ -79,15 +125,23 @@ const ApiKeyDialog = ({ open, onClose }: Props) => {
                     </Box>
                 )}
                 <List>
-                    <ListSubheader>Existing API keys</ListSubheader>
-                    {!isFetching &&
-                        existingKeys?.map((entry) => (
-                            <ListItem key={entry.id}>
-                                <ListItemText>
-                                    <strong>{entry.name}</strong> (ID: {entry.id})
-                                </ListItemText>
-                            </ListItem>
-                        ))}
+                    {!isFetching && existingKeys && existingKeys.length > 0 && (
+                        <>
+                            <ListSubheader>Existing API keys</ListSubheader>
+                            {existingKeys?.map((entry) => (
+                                <ListItem
+                                    key={entry.id}
+                                    secondaryAction={
+                                        <DeleteApiKeyButton apiKeyId={entry.id} onSuccess={reset} />
+                                    }>
+                                    <ListItemText>
+                                        <strong>{entry.name}</strong> (ID: {entry.id})
+                                    </ListItemText>
+                                </ListItem>
+                            ))}
+                        </>
+                    )}
+
                     {!isFetching && existingKeys && existingKeys.length === 0 && (
                         <ListItem>Current user has no API keys registered.</ListItem>
                     )}
