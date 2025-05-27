@@ -114,7 +114,8 @@ const ApiKeyDialog = ({ open, onClose }: Props) => {
             <DialogContent>
                 {createdKey && (
                     <Alert color="success">
-                        New API key created: {createdKey.key}{' '}
+                        New API key created. Save the key, it will be shown only once:{' '}
+                        <strong>{createdKey.key}</strong>{' '}
                         <CopyToClipboardButton text={createdKey.key} />
                     </Alert>
                 )}
@@ -135,7 +136,10 @@ const ApiKeyDialog = ({ open, onClose }: Props) => {
                                         <DeleteApiKeyButton apiKeyId={entry.id} onSuccess={reset} />
                                     }>
                                     <ListItemText>
-                                        <strong>{entry.name}</strong> (ID: {entry.id})
+                                        <strong>{entry.name}</strong>{' '}
+                                        <Typography color="textDisabled">
+                                            (ID: {entry.id})
+                                        </Typography>
                                     </ListItemText>
                                 </ListItem>
                             ))}
