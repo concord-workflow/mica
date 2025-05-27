@@ -81,10 +81,10 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
         // check the results
         var deletedEntities = result.deletedEntities().orElseThrow();
         assertEquals(2, deletedEntities.size());
-        assertEquals("/foo", deletedEntities.get(0).name());
-        assertEquals(fooVersion1.id(), deletedEntities.get(0).id());
-        assertEquals("/bar", deletedEntities.get(1).name());
-        assertEquals(barVersion1.id(), deletedEntities.get(1).id());
+        assertEquals("/bar", deletedEntities.get(0).name());
+        assertEquals(barVersion1.id(), deletedEntities.get(0).id());
+        assertEquals("/foo", deletedEntities.get(1).name());
+        assertEquals(fooVersion1.id(), deletedEntities.get(1).id());
 
         // "/foo" and "/bar" should be marked as deleted, but "/baz" should still be as
         // is was
@@ -102,10 +102,10 @@ public class BatchOperationResourceTest extends AbstractDatabaseTest {
         // check the results
         deletedEntities = result.deletedEntities().orElseThrow();
         assertEquals(2, deletedEntities.size());
-        assertEquals("/baz", deletedEntities.get(0).name());
-        assertEquals(bazVersion1.id(), deletedEntities.get(0).id());
-        assertEquals("/bar", deletedEntities.get(1).name());
-        assertEquals(barVersion2.id(), deletedEntities.get(1).id());
+        assertEquals("/bar", deletedEntities.get(0).name());
+        assertEquals(barVersion2.id(), deletedEntities.get(0).id());
+        assertEquals("/baz", deletedEntities.get(1).name());
+        assertEquals(bazVersion1.id(), deletedEntities.get(1).id());
 
         // check that /foo is still there
         assertTrue(entityStore.getById(fooVersion2.id()).isPresent());

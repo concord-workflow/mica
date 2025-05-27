@@ -36,10 +36,12 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+import java.util.Comparator;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
+import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 import static org.jooq.JSONB.jsonb;
 import static org.jooq.impl.DSL.currentInstant;
@@ -267,6 +269,7 @@ public class EntityStore {
                         }
                         return Stream.of(new DeletedEntityVersionAndName(new EntityId(id), updatedAt, deletedAt, name));
                     })
+                    .sorted(comparing(DeletedEntityVersionAndName::name))
                     .toList();
         });
     }

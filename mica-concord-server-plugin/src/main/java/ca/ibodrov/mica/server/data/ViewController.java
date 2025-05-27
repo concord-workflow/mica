@@ -39,6 +39,7 @@ import javax.validation.Valid;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,6 +50,7 @@ import java.util.stream.Stream;
 
 import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_URI;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 
 public class ViewController {
@@ -213,7 +215,8 @@ public class ViewController {
 
                 result = Stream.concat(result, entities.stream()
                         .filter(e -> e.name() != null)
-                        .filter(e -> pattern.matcher(e.name()).matches()));
+                        .filter(e -> pattern.matcher(e.name()).matches())
+                        .sorted(comparing(EntityLike::name)));
             }
         }
 
