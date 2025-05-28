@@ -68,6 +68,7 @@ public class MicaTask implements Task {
 
     private final Map<String, Object> defaultVariables;
     private final boolean dryRun;
+    private final Path workDir;
 
     @Inject
     public MicaTask(ObjectMapper objectMapper, Context ctx) {
@@ -96,6 +97,7 @@ public class MicaTask implements Task {
         }
 
         this.dryRun = ctx.processConfiguration().dryRun();
+        this.workDir = ctx.workingDirectory();
     }
 
     @Override
@@ -172,14 +174,18 @@ public class MicaTask implements Task {
     }
 
     private TaskResult upload(Variables input) throws IOException, ApiException {
-        var src = input.assertString("src");
+        var src = Path.of(input.assertString("src")).toAbsolutePath().normalize();
+        if (!src.startsWith(workDir)) {
+            throw new IllegalArgumentException("The 'src' path must be within ${workDir}");
+        }
 
         var kind = input.getString("kind");
         var name = input.getString("name");
+        var replace = input.getBoolean("replace", true);
+        var overwrite = input.getBoolean("overwrite", true);
+        var updateIf = input.getString("updateIf");
 
-        var str = Files.readString(Path.of(src));
-        str = hideSensitiveData(input, str);
-        var body = str;
+        var body = hideSensitiveData(input, Files.readString(src));
 
         if (isDryRun(input)) {
             log.info("Dry-run mode enabled: Skipping upload and returning a random 'version' value");
@@ -190,7 +196,8 @@ public class MicaTask implements Task {
         }
 
         var client = createMicaClient(input);
-        var response = withRetry(log, () -> client.uploadPartialYaml(kind, name, true, true, ofString(body)));
+        var response = withRetry(log,
+                () -> client.uploadPartialYaml(kind, name, replace, overwrite, updateIf, ofString(body)));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(response, Map.class));
     }
@@ -202,6 +209,7 @@ public class MicaTask implements Task {
         var name = input.assertString("name");
         var body = input.assertVariable("entity", Object.class);
         var merge = input.getBoolean("merge", false);
+        var updateIf = input.getString("updateIf");
 
         if (merge) {
             var meta = findEntityByName(input, name);
@@ -246,7 +254,7 @@ public class MicaTask implements Task {
             throw new RuntimeException("Error serializing entity: " + name, e);
         }
 
-        var updatedVersion = client.uploadPartialYaml(kind, name, false, false,
+        var updatedVersion = client.uploadPartialYaml(kind, name, false, false, updateIf,
                 BodyPublishers.ofByteArray(requestBody));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(updatedVersion, Map.class));

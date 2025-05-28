@@ -123,13 +123,16 @@ public class MicaClient {
                                            String name,
                                            boolean replace,
                                            boolean overwrite,
+                                           String updateIf,
                                            BodyPublisher bodyPublisher)
             throws ApiException {
+
         var qp = queryParameters(
                 "entityKind", kind,
                 "entityName", name,
                 "replace", replace,
-                "overwrite", overwrite);
+                "overwrite", overwrite,
+                "updateIf", updateIf);
 
         var uri = "/api/mica/v1/upload/partialYaml?" + qp;
         var request = newRequest(uri)

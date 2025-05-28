@@ -19,6 +19,8 @@
     - [Field Mapping](#field-mapping)
     - [Caching](#caching)
 - [Dashboards](#dashboards)
+- [Mica Task For Concord](#mica-task-for-concord)
+    - [Upload Action](#upload-action)
 - [Supported JSON Schema Features](#supported-json-schema-features)
 - [Database Design](#database-design)
 
@@ -1112,6 +1114,96 @@ table:
       jsonPath: $.version
     - title: Release Date
       jsonPath: $.releaseDate
+```
+
+## Mica Task For Concord
+
+The `mica` task supports the following actions:
+- `upsert` - creates or updates an entity from an object;
+- `upload` - creates or updates an entity from a local file;
+- `delete` - removes an existing entity by name;
+- `listEntities` - lists existing entities based on some criteria;
+- `renderView` - renders a Mica [view](#views);
+- `renderProperties` - renders a Mica [view](#views) in Java ".properties" format;
+- `batch` -- applies a batch operation.
+
+### Upload Action
+
+The `upload` action accepts the following parameters:
+- `src` -- required, path to a local YAML file;
+- `kind` -- optional. Overrides entity kind in the file;
+- `name` -- optional. Overrides entity name in the file;
+- `replace` -- optional, boolean. If `true` an existing entity with the same
+  name will be replaced with the new entity. Default is `true`;
+- `overwrite` -- optional, boolean. If `true` an existing entity with the same 
+  name but different ID will be replaced with the new entity. Default is `true`;
+- `updateIf` -- optional. If specified as `structuralDiff` then the existing
+  entity will be replaced with the new entity only if there are "structural"
+  differences, i.e. differences in `kind` or entity data ignoring "system"
+  fields like `id` and `updatedAt`.
+
+#### Examples
+
+Simple `upload`:
+
+```yaml
+# entity.yml
+name: /foo
+kind: /mica/record/v1
+data: |
+  Hello, world!
+```
+
+```yaml
+# concord.yml
+flows:
+  default:
+    - task: mica
+      in:
+        action: upload
+        src: ${workDir}/entity.yml
+      out: result # returns the entity ID and updatedAt value
+    - log: "${result}"
+```
+
+Update only if there are structural differences between the existing entity
+and the new one:
+
+```yaml
+# v1.yml
+name: /foo
+kind: /mica/record/v1
+data: |
+  Hello, world!
+```
+
+```yaml
+# v2.yml
+name: /foo
+kind: /mica/record/v1
+data: |
+  Hello, world!
+```
+
+```yaml
+# concord.yml
+flows:
+  default:
+    - task: mica
+      in:
+        action: upload
+        src: ${workDir}/v1.yml
+      out: result # returns the new entity's ID and the initial updatedAt value
+    - log: "${result}"
+
+    - task: mica
+      in:
+        action: upload
+        replace: false
+        updateIf: structuralDiff
+        src: ${workDir}/v2.yml
+      out: result # returns the same entity ID and updatedAt value
+    - log: "${result}" 
 ```
 
 ## Supported JSON Schema Features

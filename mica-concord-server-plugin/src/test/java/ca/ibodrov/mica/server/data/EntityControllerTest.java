@@ -20,12 +20,17 @@ package ca.ibodrov.mica.server.data;
  * ======
  */
 
+import ca.ibodrov.mica.api.kinds.MicaKindV1;
 import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.YamlMapper;
+import ca.ibodrov.mica.server.data.EntityController.UpdateIf;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import ca.ibodrov.mica.server.exceptions.StoreException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.walmartlabs.concord.server.sdk.validation.ValidationErrorsException;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import org.intellij.lang.annotations.Language;
@@ -33,6 +38,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 import static ca.ibodrov.mica.db.jooq.tables.MicaEntities.MICA_ENTITIES;
@@ -179,7 +185,6 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     @Test
     public void usersCanOverwriteConflicts() {
         // create the initial version
-
         var doc = """
                 kind: /mica/record/v1
                 name: %s
@@ -305,7 +310,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     @Test
     public void multipleEntitiesWithTheSameNameCanBeMarkedAsDeleted() {
         // create the initial "foo"
-        String entityName = "/test_delete_" + UUID.randomUUID() + "/foo";
+        var entityName = "/test_delete_" + UUID.randomUUID() + "/foo";
         var initialDoc = """
                 kind: /mica/record/v1
                 name: %s
@@ -359,7 +364,7 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     @Test
     public void putWithReplaceDoesNotDeleteEntities() {
         // create the initial "foo"
-        String entityName = "/test_put_%s/foo".formatted(UUID.randomUUID());
+        var entityName = "/test_put_%s/foo".formatted(UUID.randomUUID());
         var initialDoc = """
                 kind: /mica/record/v1
                 name: %s
@@ -371,11 +376,83 @@ public class EntityControllerTest extends AbstractDatabaseTest {
         var updatedDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
 
         updatedDoc = updatedDoc.replace("initial", "updated");
-        var replacedVersion = controller.put(session, parseYaml(updatedDoc), updatedDoc, false, true);
+        var replacedVersion = controller.put(session, parseYaml(updatedDoc), updatedDoc, false, true, Optional.empty());
         assertEquals(initialVersion.id(), replacedVersion.id());
 
         var replacedEntity = entityStore.getById(replacedVersion.id()).orElseThrow();
         assertTrue(replacedEntity.deletedAt().isEmpty());
+    }
+
+    @Test
+    public void putWithStructuralDiffWorksAsIntended() {
+        // create the initial "foo"
+        var entityName = "/test_struct_diff/" + randomEntityName();
+        var initialDoc = """
+                kind: /mica/record/v1
+                name: %s
+                data: |
+                  initial version
+                """.formatted(entityName);
+        var initialVersion = createOrUpdate(parseYaml(initialDoc), initialDoc, false);
+
+        // updateIf=structuralDiff
+        var updatedDoc = """
+                kind: /mica/record/v1
+                name: %s
+                data: |
+                  second version
+                """.formatted(entityName);
+        var secondVersion = controller.put(session, parseYaml(updatedDoc), updatedDoc, false, false,
+                Optional.of(UpdateIf.STRUCTURAL_DIFF));
+        assertEquals(initialVersion.id(), secondVersion.id());
+        assertNotEquals(initialVersion.updatedAt(), secondVersion.updatedAt());
+        updatedDoc = entityStore.getEntityDoc(secondVersion).orElseThrow();
+        assertTrue(updatedDoc.contains("second version"));
+
+        // updateIf=structuralDiff with the same doc
+        var stillSecondVersion = controller.put(session, parseYaml(updatedDoc), updatedDoc, false, false,
+                Optional.of(UpdateIf.STRUCTURAL_DIFF));
+        assertEquals(initialVersion.id(), stillSecondVersion.id());
+        assertEquals(secondVersion.updatedAt(), stillSecondVersion.updatedAt());
+
+        // updateIf=structuralDiff with the same doc but different kind
+        upsert(new MicaKindV1.Builder()
+                .name("/test_struct_diff/kind")
+                .schema(parseObject("""
+                        properties:
+                          data:
+                            type: string
+                        """))
+                .build()
+                .toPartialEntity(objectMapper));
+        updatedDoc = """
+                kind: /test_struct_diff/kind
+                name: %s
+                data: |
+                  second version
+                """.formatted(entityName);
+        var thirdVersion = controller.put(session, parseYaml(updatedDoc), updatedDoc, false, false,
+                Optional.of(UpdateIf.STRUCTURAL_DIFF));
+        assertEquals(secondVersion.id(), thirdVersion.id());
+        assertNotEquals(secondVersion.updatedAt(), thirdVersion.updatedAt());
+
+        // regular update
+        updatedDoc = """
+                kind: /mica/record/v1
+                name: %s
+                data: |
+                  fourth version
+                """.formatted(entityName);
+        try {
+            controller.put(session, parseYaml(updatedDoc), updatedDoc, false, false, Optional.empty());
+            fail("should fail");
+        } catch (StoreException e) {
+            assertTrue(e.getMessage().contains("already exists"));
+        }
+
+        // regular replace
+        var fourthVersion = controller.put(session, parseYaml(updatedDoc), updatedDoc, false, true, Optional.empty());
+        assertNotEquals(secondVersion.id(), fourthVersion.id());
     }
 
     private static PartialEntity parseYaml(@Language("yaml") String yaml) {
@@ -388,5 +465,13 @@ public class EntityControllerTest extends AbstractDatabaseTest {
 
     private static String randomEntityName() {
         return "test_" + UUID.randomUUID();
+    }
+
+    private static ObjectNode parseObject(@Language("yaml") String s) {
+        try {
+            return objectMapper.copyWith(new YAMLFactory()).readValue(s, ObjectNode.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -20,7 +20,6 @@ package ca.ibodrov.mica.server;
  * ======
  */
 
-import ca.ibodrov.mica.server.data.EntityHistoryController;
 import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.data.InitialDataLoader;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,9 +45,9 @@ public class AbstractDatabaseTest {
         uuidGenerator = new UuidGenerator();
 
         var dsl = testDatabase.getJooqConfiguration().dsl();
-        var entityHistoryController = new EntityHistoryController(dsl);
 
         entityStore = new EntityStore(dsl, objectMapper, uuidGenerator);
+
         new InitialDataLoader(dsl, entityStore, objectMapper).load();
     }
 

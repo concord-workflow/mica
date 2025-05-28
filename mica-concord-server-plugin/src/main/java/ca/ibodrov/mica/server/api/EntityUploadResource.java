@@ -24,6 +24,7 @@ import ca.ibodrov.mica.api.model.EntityVersion;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.data.EntityController;
+import ca.ibodrov.mica.server.data.EntityController.UpdateIf;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -75,7 +76,7 @@ public class EntityUploadResource implements Resource {
                                  String doc) {
 
         // assume the name is present in the document
-        return putPartialYaml(session, null, null, false, overwrite, doc);
+        return putPartialYaml(session, null, null, false, overwrite, null, doc);
     }
 
     @PUT
@@ -88,7 +89,10 @@ public class EntityUploadResource implements Resource {
                                         @Nullable @QueryParam("entityKind") String entityKind,
                                         @Parameter(description = "Replace any entity with the same name") @QueryParam("replace") @DefaultValue("false") boolean replace,
                                         @Parameter(description = "Overwrite any other changes to the entity") @QueryParam("overwrite") @DefaultValue("false") boolean overwrite,
+                                        @Parameter(description = "Conditional update ('structuralDiff' -- update only if there are structural differences, i.e. ignore comments, formatting or updatedAt field)") @QueryParam("updateIf") String updateIfMode,
                                         String doc) {
+
+        var updateIf = UpdateIf.parse(updateIfMode);
 
         // TODO validate entityName
         PartialEntity entity;
@@ -113,6 +117,6 @@ public class EntityUploadResource implements Resource {
             throw new ConstraintViolationException("Invalid entity", violations);
         }
 
-        return controller.put(session, entity, doc, overwrite, replace);
+        return controller.put(session, entity, doc, overwrite, replace, updateIf);
     }
 }

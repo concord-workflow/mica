@@ -1055,6 +1055,117 @@ public class ITs extends TestResources {
         assertTrue(log.matches("(?s).*Result:.*updatedAt=" + currentYear + "-.*"));
     }
 
+    @Test
+    public void uploadWithStructuralDiff() throws Exception {
+        // upload the initial version
+
+        @Language("yaml")
+        var initialDoc = """
+                name: /uploadWithStructuralDiff/foo
+                kind: /mica/record/v1
+                data: |
+                  initial version
+                """;
+
+        var proc = startConcordProcess(Map.of(
+                "entity.yml", initialDoc.strip().getBytes(),
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upload
+                                src: entity.yml
+                              out: result
+                            - log: "Result: ${result}"
+                        """.strip().getBytes()));
+        assertFinished(proc);
+
+        var initialVersion = entityStore.getVersion("/uploadWithStructuralDiff/foo").orElseThrow();
+        initialDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
+        assertTrue(initialDoc.contains("initial version"));
+
+        var log = getProcessLog(proc.getInstanceId());
+        assertTrue(log.contains(initialVersion.id().toExternalForm()));
+
+        // upload the second version
+
+        @Language("yaml")
+        var secondDoc = """
+                name: /uploadWithStructuralDiff/foo
+                kind: /mica/record/v1
+                data: |
+                  second version
+                """;
+
+        proc = startConcordProcess(Map.of(
+                "entity.yml", secondDoc.strip().getBytes(),
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upload
+                                src: entity.yml
+                                replace: false
+                                updateIf: structuralDiff
+                              out: result
+                            - log: "Result: ${result}"
+                        """.strip().getBytes()));
+        assertFinished(proc);
+
+        var secondVersion = entityStore.getVersion("/uploadWithStructuralDiff/foo").orElseThrow();
+        assertEquals(initialVersion.id(), secondVersion.id());
+        assertNotEquals(initialVersion.updatedAt(), secondVersion.updatedAt());
+        secondDoc = entityStore.getEntityDoc(secondVersion).orElseThrow();
+        assertTrue(secondDoc.contains("second version"));
+
+        log = getProcessLog(proc.getInstanceId());
+        assertTrue(log.contains(secondVersion.id().toExternalForm()));
+
+        // upload the same doc plus some comments
+
+        @Language("yaml")
+        var thirdDoc = """
+                name: /uploadWithStructuralDiff/foo
+                kind: /mica/record/v1
+                # no structural changes
+                data: |
+                  second version
+                """;
+
+        proc = startConcordProcess(Map.of(
+                "entity.yml", thirdDoc.strip().getBytes(),
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upload
+                                src: entity.yml
+                                replace: false
+                                updateIf: structuralDiff
+                              out: result
+                            - log: "Result: ${result}"
+                        """.strip().getBytes()));
+        assertFinished(proc);
+
+        var secondVersionAgain = entityStore.getVersion("/uploadWithStructuralDiff/foo").orElseThrow();
+        assertEquals(secondVersion.id(), secondVersionAgain.id());
+        assertEquals(secondVersion.updatedAt(), secondVersionAgain.updatedAt());
+        secondDoc = entityStore.getEntityDoc(secondVersion).orElseThrow();
+        assertFalse(secondDoc.contains("no structural changes"));
+
+        log = getProcessLog(proc.getInstanceId());
+        assertTrue(log.contains(secondVersionAgain.id().toExternalForm()));
+    }
+
     private static void createBinarySecret(String orgName, String secretName, byte[] secret) throws Exception {
         securityContext.runAs(adminId, () -> {
             var orgId = orgManager.createOrGet(orgName).orgId();

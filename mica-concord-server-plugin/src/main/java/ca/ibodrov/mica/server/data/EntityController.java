@@ -72,14 +72,45 @@ public class EntityController {
                              PartialEntity entity,
                              String doc,
                              boolean overwrite,
-                             boolean replace) {
+                             boolean replace,
+                             Optional<UpdateIf> updateIf) {
+
+        var kind = validateKind(entity.kind());
+
+        var schema = entityKindStore.getSchemaForKind(kind)
+                .orElseThrow(() -> ApiException.badRequest("Can't find schema for " + kind));
+
+        var entityAsJsonObject = objectMapper.convertValue(entity, JsonNode.class);
+        var validatedInput = validator.validateObject(schema, entityAsJsonObject);
+        if (!validatedInput.isValid()) {
+            throw validatedInput.toException();
+        }
+
         return dsl.transactionResult(cfg -> {
             var tx = cfg.dsl();
+
+            var newEntity = entity;
+
             if (replace) {
-                entityStore.getVersion(tx, entity.name())
+                entityStore.getVersion(tx, newEntity.name())
                         .ifPresent(version -> entityStore.killById(tx, version.id()));
+            } else if (updateIf.isPresent() && updateIf.get() == UpdateIf.STRUCTURAL_DIFF) {
+                var maybeExistingEntity = entityStore.getByName(tx, newEntity.name());
+                if (maybeExistingEntity.isPresent()) {
+                    var existingEntity = maybeExistingEntity.get();
+
+                    if (Objects.equals(existingEntity.kind(), newEntity.kind())
+                            && Objects.equals(existingEntity.data(), newEntity.data())) {
+                        // no structural changes, return existing version
+                        return existingEntity.version();
+                    }
+
+                    // structural changes, update the existing entity
+                    newEntity = newEntity.withVersion(existingEntity.version());
+                }
             }
-            return createOrUpdate(tx, session, entity, doc, overwrite);
+
+            return createOrUpdate(tx, session, newEntity, doc, overwrite);
         });
     }
 
@@ -113,22 +144,9 @@ public class EntityController {
                                  @Nullable String doc,
                                  boolean overwrite) {
 
-        var kind = validateKind(tx, entity.kind());
-
-        var schema = entityKindStore.getSchemaForKind(kind)
-                .orElseThrow(() -> ApiException.badRequest("Can't find schema for " + kind));
-
-        var input = objectMapper.convertValue(entity, JsonNode.class);
-
-        // validate the input
-        var validatedInput = validator.validateObject(schema, input);
-        if (!validatedInput.isValid()) {
-            throw validatedInput.toException();
-        }
-
         if (!overwrite) {
             // check if another entity already exists with the same name
-            entityStore.getVersion(entity.name()).ifPresent(version -> {
+            entityStore.getVersion(tx, entity.name()).ifPresent(version -> {
                 if (entity.id().isEmpty() || !entity.id().get().equals(version.id())) {
                     throw new StoreException("Entity '%s' already exists (with ID=%s)"
                             .formatted(entity.name(), version.id().toExternalForm()));
@@ -158,15 +176,34 @@ public class EntityController {
         return version;
     }
 
-    private String validateKind(DSLContext tx, String kind) {
+    private String validateKind(String kind) {
         if (kind == null || kind.isBlank()) {
             throw ApiException.badRequest("Missing 'kind'");
         }
 
-        if (!entityKindStore.isKindExists(tx, kind)) {
+        if (!entityKindStore.isKindExists(dsl, kind)) {
             throw ApiException.badRequest("Unknown kind: " + kind);
         }
 
         return kind;
+    }
+
+    public enum UpdateIf {
+
+        /**
+         * Perform a structural comparison of the existing entity and the new one.
+         * Ignores comments, formatting and updatedAt.
+         */
+        STRUCTURAL_DIFF;
+
+        public static Optional<UpdateIf> parse(String s) {
+            if (s == null || s.isBlank()) {
+                return Optional.empty();
+            }
+            if (s.equals("structuralDiff")) {
+                return Optional.of(STRUCTURAL_DIFF);
+            }
+            throw new IllegalArgumentException("Unknown updateIf condition");
+        }
     }
 }
