@@ -83,8 +83,8 @@ public class DryRunTest {
     }
 
     @Test
-    public void batchDeleteShouldBeSkipped() throws Exception {
-        var ctx = new MockContext(baseUrl);
+    public void batchDeleteShouldBeSkipped(@TempDir Path workDir) throws Exception {
+        var ctx = new MockContext(baseUrl, workDir);
         var task = new MicaTask(new ObjectMapper(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "batch",
@@ -100,8 +100,8 @@ public class DryRunTest {
     }
 
     @Test
-    public void listEntitiesShouldReturnActualData() throws Exception {
-        var ctx = new MockContext(baseUrl);
+    public void listEntitiesShouldReturnActualData(@TempDir Path workDir) throws Exception {
+        var ctx = new MockContext(baseUrl, workDir);
         var task = new MicaTask(new ObjectMapper(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "listEntities",
@@ -115,11 +115,11 @@ public class DryRunTest {
     }
 
     @Test
-    public void uploadShouldBeSkipped(@TempDir Path tmpDir) throws Exception {
-        var src = tmpDir.resolve("test.txt");
+    public void uploadShouldBeSkipped(@TempDir Path workDir) throws Exception {
+        var src = workDir.resolve("test.txt");
         Files.writeString(src, "hello: 'world'");
 
-        var ctx = new MockContext(baseUrl);
+        var ctx = new MockContext(baseUrl, workDir);
         var task = new MicaTask(new ObjectMapper(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "upload",
@@ -136,8 +136,8 @@ public class DryRunTest {
     }
 
     @Test
-    public void upsertShouldBeSkipped() throws Exception {
-        var ctx = new MockContext(baseUrl);
+    public void upsertShouldBeSkipped(@TempDir Path workDir) throws Exception {
+        var ctx = new MockContext(baseUrl, workDir);
         var task = new MicaTask(new ObjectMapper(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "upsert",

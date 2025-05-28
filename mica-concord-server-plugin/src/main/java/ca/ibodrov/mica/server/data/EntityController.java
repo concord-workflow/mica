@@ -137,12 +137,11 @@ public class EntityController {
         });
     }
 
-    @VisibleForTesting
-    EntityVersion createOrUpdate(DSLContext tx,
-                                 UserPrincipal session,
-                                 PartialEntity entity,
-                                 @Nullable String doc,
-                                 boolean overwrite) {
+    private EntityVersion createOrUpdate(DSLContext tx,
+                                         UserPrincipal session,
+                                         PartialEntity entity,
+                                         @Nullable String doc,
+                                         boolean overwrite) {
 
         if (!overwrite) {
             // check if another entity already exists with the same name

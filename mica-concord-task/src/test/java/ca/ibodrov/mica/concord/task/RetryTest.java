@@ -26,9 +26,11 @@ import com.walmartlabs.concord.runtime.v2.sdk.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -81,10 +83,10 @@ public class RetryTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void test(@TempDir Path workDir) throws Exception {
         var baseUrl = "http://localhost:" + port;
 
-        var ctx = new MockContext(baseUrl);
+        var ctx = new MockContext(baseUrl, workDir);
         var task = new MicaTask(new ObjectMapper(), ctx);
         var input = new MapBackedVariables(Map.of("action", "listEntities"));
 

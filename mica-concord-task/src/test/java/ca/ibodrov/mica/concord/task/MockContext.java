@@ -32,14 +32,16 @@ import java.util.UUID;
 final class MockContext implements Context {
 
     private final String baseUrl;
+    private final Path workingDirectory;
 
-    MockContext(String baseUrl) {
+    MockContext(String baseUrl, Path workingDirectory) {
         this.baseUrl = baseUrl;
+        this.workingDirectory = workingDirectory;
     }
 
     @Override
     public Path workingDirectory() {
-        return null;
+        return workingDirectory;
     }
 
     @Override
