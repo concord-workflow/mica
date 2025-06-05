@@ -38,13 +38,13 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URLDecoder;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class S3EntityFetcher implements EntityFetcher {
@@ -101,7 +101,7 @@ public class S3EntityFetcher implements EntityFetcher {
         return objects.map(object -> fetchEntity(client, bucketName, object.key(), kind));
     }
 
-    private EntityLike fetchEntity(S3Client client, String bucketName, String objectName, String kind) {
+    private EntityLike fetchEntity(S3Client client, String bucketName, String objectName, String defaultKind) {
         var getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(objectName)
@@ -112,7 +112,7 @@ public class S3EntityFetcher implements EntityFetcher {
             var response = client.getObject(getObjectRequest, ResponseTransformer.toInputStream());
             try {
                 var data = objectMapper.readValue(response, MAP_OF_JSON_NODES);
-                return PartialEntity.create(bucketName + "/" + objectName, kind, data);
+                return PartialEntity.create(bucketName + "/" + objectName, defaultKind, data);
             } catch (IOException e) {
                 throw new StoreException("Can't parse S3 object %s/%s as JSON: %s".formatted(bucketName,
                         objectName, e.getMessage()));
@@ -122,23 +122,6 @@ public class S3EntityFetcher implements EntityFetcher {
         } catch (Exception e) {
             throw new StoreException(e.getMessage());
         }
-    }
-
-    private static Map<String, String> parseQueryParams(URI uri) {
-        var query = uri.getQuery();
-        if (query == null || query.isBlank()) {
-            return Map.of();
-        }
-
-        var result = new HashMap<String, String>();
-        var pairs = query.split("&");
-        for (var pair : pairs) {
-            var idx = pair.indexOf("=");
-            var key = URLDecoder.decode(pair.substring(0, idx), UTF_8);
-            var value = idx + 1 < pair.length() ? URLDecoder.decode(pair.substring(idx + 1), UTF_8) : "";
-            result.put(key, value);
-        }
-        return result;
     }
 
     private static String normalizeObjectName(String s) {

@@ -27,26 +27,17 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.walmartlabs.concord.common.secret.UsernamePassword;
-import com.walmartlabs.concord.common.validation.ConcordKey;
-import com.walmartlabs.concord.server.org.OrganizationManager;
-import com.walmartlabs.concord.server.org.secret.SecretManager;
-import com.walmartlabs.concord.server.org.secret.SecretType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import javax.inject.Inject;
-import javax.ws.rs.WebApplicationException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
-import static com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope.apiRequest;
 import static java.util.Objects.requireNonNull;
 
 public class S3ClientManager {
@@ -55,14 +46,12 @@ public class S3ClientManager {
     private static final Duration INACTIVITY_PERIOD = Duration.ofMinutes(30);
     private static final int MAX_CLIENTS = 10;
 
-    private final OrganizationManager orgManager;
-    private final SecretManager secretManager;
+    private final S3CredentialsProvider s3CredentialsProvider;
     private final LoadingCache<ClientKey, S3Client> cache;
 
     @Inject
-    public S3ClientManager(OrganizationManager orgManager, SecretManager secretManager) {
-        this.orgManager = requireNonNull(orgManager);
-        this.secretManager = requireNonNull(secretManager);
+    public S3ClientManager(S3CredentialsProvider s3CredentialsProvider) {
+        this.s3CredentialsProvider = requireNonNull(s3CredentialsProvider);
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(INACTIVITY_PERIOD)
                 .maximumSize(MAX_CLIENTS)
@@ -101,7 +90,7 @@ public class S3ClientManager {
         var builder = S3Client.builder();
 
         key.secretRef()
-                .map(this::fetchCredentials)
+                .map(s3CredentialsProvider::get)
                 .ifPresentOrElse(
                         builder::credentialsProvider,
                         () -> builder.credentialsProvider(DefaultCredentialsProvider.create()));
@@ -118,45 +107,6 @@ public class S3ClientManager {
         log.info("createClient -> key={}", key);
 
         return client;
-    }
-
-    private StaticCredentialsProvider fetchCredentials(String secretRef) {
-        secretRef = secretRef.trim();
-
-        if (secretRef.isBlank()) {
-            throw new StoreException("Invalid secretRef. Expected orgName/secretName format, got a blank value");
-        }
-
-        var idx = secretRef.indexOf("/");
-        if (idx <= 0 || idx + 1 >= secretRef.length()) {
-            throw new StoreException("Invalid secretRef. Expected orgName/secretName format, got: " + secretRef);
-        }
-
-        var orgName = secretRef.substring(0, idx);
-        if (!orgName.matches(ConcordKey.PATTERN)) {
-            throw new StoreException("Invalid secretRef. Expected an organization name, got: " + orgName);
-        }
-
-        var secretName = secretRef.substring(idx + 1);
-        if (!secretName.matches(ConcordKey.PATTERN)) {
-            throw new StoreException("Invalid secretRef. Expected a secret name, got: " + orgName);
-        }
-
-        try {
-            var org = requireNonNull(orgManager).assertAccess(orgName, false);
-            var secretContainer = requireNonNull(secretManager).getSecret(apiRequest(), org.getId(), secretName, null,
-                    SecretType.USERNAME_PASSWORD);
-            var secret = secretContainer.getSecret();
-            if (secret instanceof UsernamePassword credentials) {
-                return StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(credentials.getUsername(), new String(credentials.getPassword())));
-            } else {
-                throw new StoreException(
-                        "Invalid secretRef. Expected a username/password secret, got: " + secret.getClass());
-            }
-        } catch (WebApplicationException e) {
-            throw new StoreException("Can't fetch the secretRef " + secretRef + ". " + e.getMessage());
-        }
     }
 
     private static URI parseEndpoint(String s) {
