@@ -647,8 +647,47 @@ selector:
     - s3://my-bucket
 ```
 
-Mica will fetch all objects in the bucket and try to parse them as JSON. Object
+Mica will fetch all objects in the bucket and try to parse them as JSON or YAML,
+depending on the extension. If the object contains fields `name`, `kind`, `createdAt`
+or `updatedAt` those values will be used as the entity fields. Otherwise, object
 names will be used as entity names.
+
+For example, object `bar` in bucket `foo` with the content like so:
+
+```json
+{
+  "foo": "bar"
+}
+```
+
+will become an entity like
+
+```yaml
+name: /foo/bar
+kind: /s3/object/v1
+foo: "bar"
+```
+
+But an object like
+
+```json
+{
+  "name": "/bar/baz",
+  "kind": "/mica/record/v1",
+  "data": {
+    "hello": "world"
+  }
+}
+```
+
+will become an entity like
+
+```yaml
+name: /bar/baz
+kind: /mica/record/v1
+data:
+  hello: "world"
+```
 
 To fetch a specific objects add the object key:
 
