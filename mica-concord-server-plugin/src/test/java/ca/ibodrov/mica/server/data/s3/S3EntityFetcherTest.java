@@ -52,8 +52,8 @@ public class S3EntityFetcherTest {
             DockerImageName.parse("localstack/localstack:s3-latest"))
             .withServices(S3);
 
-    private static S3CredentialsProvider credentialsProvider;
     private static S3Client s3Client;
+    private static S3EntityFetcher fetcher;
     private String bucketName;
 
     @BeforeAll
@@ -63,14 +63,17 @@ public class S3EntityFetcherTest {
         var localStackCredentials = StaticCredentialsProvider
                 .create(AwsBasicCredentials.create(localStack.getAccessKey(), localStack.getSecretKey()));
 
-        credentialsProvider = mock(S3CredentialsProvider.class);
-        when(credentialsProvider.get(anyString())).thenReturn(localStackCredentials);
-
         s3Client = S3Client.builder()
                 .endpointOverride(localStack.getEndpointOverride(S3))
                 .credentialsProvider(localStackCredentials)
                 .region(Region.of(localStack.getRegion()))
                 .build();
+
+        var credentialsProvider = mock(S3CredentialsProvider.class);
+        when(credentialsProvider.get(anyString())).thenReturn(localStackCredentials);
+
+        var clientManager = new S3ClientManager(credentialsProvider);
+        fetcher = new S3EntityFetcher(clientManager, objectMapper);
     }
 
     @AfterAll
@@ -87,7 +90,7 @@ public class S3EntityFetcherTest {
     }
 
     @Test
-    public void fetchSingleEntity() {
+    public void fetchPlainJson() {
         s3Client.putObject(PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key("test.json")
@@ -97,12 +100,10 @@ public class S3EntityFetcherTest {
                         }
                         """));
 
-        var clientManager = new S3ClientManager(credentialsProvider);
-        var fetcher = new S3EntityFetcher(clientManager, objectMapper);
-
         var fetchRequest = FetchRequest
                 .ofUri(URI.create("s3://%s/test.json?endpoint=%s&region=%s&secretRef=test/test"
                         .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+
         var result = fetcher.fetch(fetchRequest).stream().toList();
         assertEquals(1, result.size());
         assertEquals("bar", result.get(0).data().get("foo").asText());
@@ -123,13 +124,36 @@ public class S3EntityFetcherTest {
                             """.formatted(i)));
         }
 
-        var clientManager = new S3ClientManager(credentialsProvider);
-        var fetcher = new S3EntityFetcher(clientManager, objectMapper);
-
         var fetchRequest = FetchRequest
                 .ofUri(URI.create("s3://%s?endpoint=%s&region=%s&secretRef=test/test"
                         .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+
         var result = fetcher.fetch(fetchRequest).stream().toList();
         assertEquals(entityCount, result.size());
+    }
+
+    @Test
+    public void fetchYaml() {
+        s3Client.putObject(PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key("test.yaml")
+                .build(), RequestBody.fromString("""
+                        name: /test
+                        kind: /mica/record/v1
+                        createdAt: "2025-06-06T00:00:02.510095Z"
+                        data:
+                          foo: "bar"
+                        """));
+
+        var fetchRequest = FetchRequest
+                .ofUri(URI.create("s3://%s/test.yaml?endpoint=%s&region=%s&secretRef=test/test"
+                        .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+
+        var result = fetcher.fetch(fetchRequest).stream().toList();
+        assertEquals(1, result.size());
+        var entity = result.get(0);
+        assertEquals("/test", entity.name());
+        assertEquals("/mica/record/v1", entity.kind());
+        assertEquals("bar", entity.data().get("data").get("foo").asText());
     }
 }

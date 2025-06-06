@@ -28,20 +28,17 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.google.common.annotations.VisibleForTesting;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.*;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -58,12 +55,14 @@ public class S3EntityFetcher implements EntityFetcher {
     };
 
     private final S3ClientManager clientManager;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper jsonMapper;
+    private final YAMLMapper yamlMapper;
 
     @Inject
     public S3EntityFetcher(S3ClientManager clientManager, ObjectMapper objectMapper) {
         this.clientManager = requireNonNull(clientManager);
-        this.objectMapper = requireNonNull(objectMapper);
+        this.jsonMapper = requireNonNull(objectMapper);
+        this.yamlMapper = YAMLMapper.builder().build();
     }
 
     @Override
@@ -111,8 +110,7 @@ public class S3EntityFetcher implements EntityFetcher {
         try {
             var response = client.getObject(getObjectRequest, ResponseTransformer.toInputStream());
             try {
-                var data = objectMapper.readValue(response, MAP_OF_JSON_NODES);
-                return PartialEntity.create(bucketName + "/" + objectName, defaultKind, data);
+                return parse(bucketName, objectName, defaultKind, response);
             } catch (IOException e) {
                 throw new StoreException("Can't parse S3 object %s/%s as JSON: %s".formatted(bucketName,
                         objectName, e.getMessage()));
@@ -122,6 +120,33 @@ public class S3EntityFetcher implements EntityFetcher {
         } catch (Exception e) {
             throw new StoreException(e.getMessage());
         }
+    }
+
+    private EntityLike parse(String bucketName,
+                             String objectName,
+                             String defaultKind,
+                             ResponseInputStream<GetObjectResponse> response)
+            throws IOException {
+
+        Map<String, JsonNode> data;
+        if (objectName.endsWith(".json")) {
+            data = jsonMapper.readValue(response, MAP_OF_JSON_NODES);
+        } else if (objectName.endsWith(".yml") || objectName.endsWith(".yaml")) {
+            data = yamlMapper.readValue(response, MAP_OF_JSON_NODES);
+        } else {
+            throw new StoreException("Can't parse %s/%s - only .json, .yaml or .yml files are supported."
+                    .formatted(bucketName, objectName));
+        }
+
+        data = new HashMap<>(data);
+
+        var name = Optional.ofNullable(data.remove("name")).map(JsonNode::asText)
+                .orElseGet(() -> bucketName + "/" + objectName);
+        var kind = Optional.ofNullable(data.remove("kind")).map(JsonNode::asText).orElse(defaultKind);
+        var createdAt = Optional.ofNullable(data.remove("createdAt")).map(JsonNode::asText).map(Instant::parse);
+        var updatedAt = Optional.ofNullable(data.remove("updatedAt")).map(JsonNode::asText).map(Instant::parse);
+
+        return new PartialEntity(Optional.empty(), name, kind, createdAt, updatedAt, Optional.empty(), data);
     }
 
     private static String normalizeObjectName(String s) {
