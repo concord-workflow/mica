@@ -1,6 +1,7 @@
 import Version from '../features/Version.tsx';
 import ProfileToolbarButton from '../features/profile/ProfileToolbarButton.tsx';
 import ApiIcon from '@mui/icons-material/Api';
+import HelpIcon from '@mui/icons-material/Help';
 import { AppBar, Box, Button, Toolbar, Typography } from '@mui/material';
 
 import { PropsWithChildren } from 'react';
@@ -28,6 +29,15 @@ const MainLayout = ({ children }: PropsWithChildren) => {
                         color="inherit"
                         startIcon={<ApiIcon />}>
                         API
+                    </Button>
+                    <Button
+                        component={Link}
+                        to="/documentation"
+                        variant="outlined"
+                        color="inherit"
+                        startIcon={<HelpIcon />}
+                        sx={{ ml: 2 }}>
+                        Documentation
                     </Button>
                     <Typography variant="caption" sx={{ ml: 2, mr: 2 }}>
                         <Version />

@@ -2,6 +2,7 @@ import App from './App.tsx';
 import ApiPage from './pages/ApiPage.tsx';
 import DashboardPage from './pages/DashboardPage.tsx';
 import DeletedEntityListPage from './pages/DeletedEntityListPage.tsx';
+import DocumentationPage from './pages/DocumentationPage.tsx';
 import EditEntityPage from './pages/EditEntityPage.tsx';
 import EntityDetailsPage from './pages/EntityDetailsPage.tsx';
 import EntityListPage from './pages/EntityListPage.tsx';
@@ -47,6 +48,10 @@ export const createRouter = () =>
                     {
                         path: 'dashboard/:entityId',
                         element: <DashboardPage />,
+                    },
+                    {
+                        path: 'documentation',
+                        element: <DocumentationPage />,
                     },
                 ],
             },
