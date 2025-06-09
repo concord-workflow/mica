@@ -37,6 +37,7 @@ import com.walmartlabs.concord.server.sdk.metrics.WithTimer;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.sdk.validation.Validate;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -48,6 +49,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "Dashboard")
 @Path("/api/mica/v1/dashboard")
 @Produces(APPLICATION_JSON)
 public class DashboardResource implements Resource {
