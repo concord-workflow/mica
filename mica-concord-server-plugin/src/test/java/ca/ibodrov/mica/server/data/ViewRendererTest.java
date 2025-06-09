@@ -454,12 +454,18 @@ public class ViewRendererTest {
                       value:
                         id: 4
                         name: Blamf
+                    - op: copy
+                      from: ""
+                      path: /stuff
+                    - op: remove
+                      path: /widgets
                 """);
 
         var result = renderer.render(view, Stream.of(entity));
         assertNotNull(result);
         assertEquals(1, result.data().size());
-        assertEquals("Blamf", result.data().get(0).get("widgets").get(3).get("name").asText());
+        var stuff = result.data().get(0).get("stuff");
+        assertEquals("Blamf", stuff.get("widgets").get(3).get("name").asText());
     }
 
     @Test
