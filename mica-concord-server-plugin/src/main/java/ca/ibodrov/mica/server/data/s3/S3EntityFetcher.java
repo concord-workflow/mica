@@ -141,7 +141,7 @@ public class S3EntityFetcher implements EntityFetcher {
         data = new HashMap<>(data);
 
         var name = Optional.ofNullable(data.remove("name")).map(JsonNode::asText)
-                .orElseGet(() -> bucketName + "/" + objectName);
+                .orElseGet(() -> "/" + bucketName + "/" + objectName);
         var kind = Optional.ofNullable(data.remove("kind")).map(JsonNode::asText).orElse(defaultKind);
         var createdAt = Optional.ofNullable(data.remove("createdAt")).map(JsonNode::asText).map(Instant::parse);
         var updatedAt = Optional.ofNullable(data.remove("updatedAt")).map(JsonNode::asText).map(Instant::parse);
