@@ -306,20 +306,20 @@ const EditEntityPage = () => {
                             )}
                         </PageTitle>
                         <Spacer />
-                        {selectedKind === MICA_VIEW_KIND ||
-                            (selectedKind === MICA_DASHBOARD_KIND && (
-                                <FormControl>
-                                    <FormControlLabel
-                                        control={
-                                            <Switch
-                                                checked={showPreview}
-                                                onChange={handlePreviewSwitch}
-                                            />
-                                        }
-                                        label="Preview"
-                                    />
-                                </FormControl>
-                            ))}
+                        {(selectedKind === MICA_VIEW_KIND ||
+                            selectedKind === MICA_DASHBOARD_KIND) && (
+                            <FormControl>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={showPreview}
+                                            onChange={handlePreviewSwitch}
+                                        />
+                                    }
+                                    label="Preview"
+                                />
+                            </FormControl>
+                        )}
                         {selectedId !== undefined &&
                             selectedId !== '_new' &&
                             selectedKind === MICA_DASHBOARD_KIND && (
