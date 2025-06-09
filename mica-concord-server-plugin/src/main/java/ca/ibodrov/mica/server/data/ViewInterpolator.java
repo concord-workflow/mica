@@ -127,6 +127,7 @@ public class ViewInterpolator {
         var dropProperties = data.dropProperties()
                 .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
         var map = data.map().map(v -> interpolate(objectMapper, v, input));
+        var template = data.template().map(v -> interpolate(objectMapper, v, input));
         return new ViewLike.Data() {
             @Override
             public JsonNode jsonPath() {
@@ -161,6 +162,11 @@ public class ViewInterpolator {
             @Override
             public Optional<Map<String, JsonNode>> map() {
                 return map;
+            }
+
+            @Override
+            public Optional<JsonNode> template() {
+                return template;
             }
         };
     }

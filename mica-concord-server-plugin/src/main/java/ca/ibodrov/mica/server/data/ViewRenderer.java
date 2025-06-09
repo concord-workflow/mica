@@ -174,6 +174,14 @@ public class ViewRenderer {
                     .toList();
         }
 
+        // apply "template"
+        var template = view.data().template().filter(t -> !t.isNull());
+        if (template.isPresent()) {
+            data = data.stream()
+                    .map(node -> applyTemplate(node, template.get()))
+                    .toList();
+        }
+
         return new RenderedView(view, data, entityNames.build());
     }
 
@@ -248,6 +256,41 @@ public class ViewRenderer {
             throw new ViewProcessorException(
                     "Error while applying data.jsonPatch: " + e.getMessage());
         }
+    }
+
+    private JsonNode applyTemplate(JsonNode node, JsonNode template) {
+        if (template.isNull()) {
+            return template;
+        } else if (template.isTextual()) {
+            var text = template.asText();
+            if (text.startsWith("$")) {
+                return applyAllJsonPaths(node, template).orElse(NullNode.getInstance());
+            }
+        } else if (template.isArray()) {
+            if (template.isEmpty()) {
+                return template;
+            }
+
+            for (var i = 0; i < template.size(); i++) {
+                var in = template.get(i);
+                var out = applyTemplate(node, in);
+                ((ArrayNode) template).set(i, out);
+            }
+        } else if (template.isObject()) {
+            if (template.isEmpty()) {
+                return template;
+            }
+
+            var result = objectMapper.createObjectNode();
+            template.fieldNames().forEachRemaining(key -> {
+                var in = template.get(key);
+                var out = applyTemplate(node, in);
+                result.set(key, out);
+            });
+            return result;
+        }
+
+        return template;
     }
 
     private ObjectNode deepMerge(ObjectNode left, ObjectNode right) {

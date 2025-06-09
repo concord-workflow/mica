@@ -64,6 +64,8 @@ public interface ViewLike {
         Optional<List<String>> dropProperties();
 
         Optional<Map<String, JsonNode>> map();
+
+        Optional<JsonNode> template();
     }
 
     interface Validation {

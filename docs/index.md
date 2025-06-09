@@ -17,6 +17,7 @@
     - [Materialize View Data As Entities](#materialize-view-data-as-entities)
     - [Validate View Entities](#validate-view-entities)
     - [Field Mapping](#field-mapping)
+    - [Templating](#templating)
     - [Caching](#caching)
 - [Dashboards](#dashboards)
 - [Mica Task For Concord](#mica-task-for-concord)
@@ -1047,8 +1048,8 @@ selector:
 data:
   jsonPath: $
   map:
-    foo: $.foo.value
-    bar: $.foo.nested.bar
+    foo: $.data.foo.value
+    bar: $.data.foo.nested.bar
 ```
 
 Now, given the following entity:
@@ -1075,6 +1076,57 @@ The rendered view will contain:
     ]
 }
 ```
+
+To produce nested data structures, the `template` [operation](#templating) can be used.
+
+### Templating
+
+As an alternative to `map`, the `template` operation can be used to produce
+complex data structures using  values pulled from entities as well as constants:
+
+```yaml
+name: /examples/field-mapping
+kind: /mica/view/v1
+selector:
+  entityKind: /mica/record/v1
+data:
+  jsonPath: $
+  template:
+    foo: $.foo.value
+    nested:
+      foo: $.foo.value
+    someConstant: "hello!"
+```
+
+Given the following entity:
+
+```yaml
+name: /examples/data
+kind: /mica/record/v1
+data:
+  foo:
+    value: 123
+```
+
+Will be rendered as:
+
+```json
+{
+    "data": [
+      {
+        "foo": 123,
+        "nested": {
+          "foo": 123
+        },
+        "someConstant": "hello!"
+      }
+    ]
+}
+```
+
+In `template`, string values that look like JSON paths (which start with `$`)
+will be evaluated against each entity. All other values will be rendered as-is.
+Nested objects and arrays will preserve their structure.
 
 ### Caching
 

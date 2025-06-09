@@ -780,6 +780,101 @@ public class ViewRendererTest {
         assertEquals(678, result.data().get(1).get("x").asInt());
     }
 
+    @Test
+    public void templateWorksAsIntended() {
+        var entityA = parseYaml("""
+                kind: /test
+                name: /entityA
+                data:
+                  nested1:
+                    moreNested1: "value1"
+                  nested2:
+                    moreNested2: "value2"
+                """);
+
+        var entityB = parseYaml("""
+                kind: /test
+                name: /entityB
+                data:
+                  nested1:
+                    moreNested1: "value3"
+                  nested2:
+                    moreNested2: "value4"
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: /test
+                selector:
+                  entityKind: /test
+                data:
+                  jsonPath: $
+                  template:
+                    stuff:
+                      foo: $.data.nested1.moreNested1
+                      bar: "const1"
+                    moreStuff:
+                      baz: $.data.nested2.moreNested2
+                      qux: "const2"
+                """);
+
+        var result = renderer.render(view, Stream.of(entityA, entityB));
+        assertEquals(2, result.data().size());
+
+        var stuff1 = result.data().get(0).get("stuff");
+        assertEquals("value1", stuff1.get("foo").asText());
+        assertEquals("const1", stuff1.get("bar").asText());
+        var moreStuff1 = result.data().get(0).get("moreStuff");
+        assertEquals("value2", moreStuff1.get("baz").asText());
+        assertEquals("const2", moreStuff1.get("qux").asText());
+
+        var stuff2 = result.data().get(1).get("stuff");
+        assertEquals("value3", stuff2.get("foo").asText());
+        assertEquals("const1", stuff2.get("bar").asText());
+        var moreStuff2 = result.data().get(1).get("moreStuff");
+        assertEquals("value4", moreStuff2.get("baz").asText());
+        assertEquals("const2", moreStuff2.get("qux").asText());
+    }
+
+    @Test
+    public void templateCanProduceArrays() {
+        var entity = parseYaml("""
+                kind: /test
+                name: /entity
+                data:
+                  nested1:
+                    moreNested1: "value1"
+                  nested2:
+                    moreNested2: "value2"
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: /test
+                selector:
+                  entityKind: /test
+                data:
+                  jsonPath: $
+                  template:
+                    - stuff:
+                        foo: $.data.nested1.moreNested1
+                        bar: "const1"
+                    - moreStuff:
+                        baz: $.data.nested2.moreNested2
+                        qux: "const2"
+                """);
+
+        var result = renderer.render(view, Stream.of(entity));
+        assertEquals(1, result.data().size());
+
+        var stuff = result.data().get(0).get(0).get("stuff");
+        assertEquals("value1", stuff.get("foo").asText());
+        assertEquals("const1", stuff.get("bar").asText());
+        var moreStuff = result.data().get(0).get(1).get("moreStuff");
+        assertEquals("value2", moreStuff.get("baz").asText());
+        assertEquals("const2", moreStuff.get("qux").asText());
+    }
+
     private static ViewLike parseView(@Language("yaml") String yaml) {
         return asViewLike(objectMapper, parseYaml(yaml));
     }

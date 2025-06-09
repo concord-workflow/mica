@@ -180,6 +180,8 @@ public final class BuiltinSchemas {
         var map = select(entity, "data", "map",
                 n -> objectMapper.convertValue(n, MAP_OF_JSON_NODES));
 
+        var template = select(entity, "data", "template", identity());
+
         return new ViewLike.Data() {
             @Override
             public JsonNode jsonPath() {
@@ -214,6 +216,11 @@ public final class BuiltinSchemas {
             @Override
             public Optional<Map<String, JsonNode>> map() {
                 return map;
+            }
+
+            @Override
+            public Optional<JsonNode> template() {
+                return template;
             }
         };
     }

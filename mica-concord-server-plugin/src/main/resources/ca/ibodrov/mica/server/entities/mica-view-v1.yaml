@@ -39,6 +39,7 @@ schema:
           type: object
           additionalProperties:
             type: string
+        template: {}
       required: [ "jsonPath" ]
     validation:
       properties:
