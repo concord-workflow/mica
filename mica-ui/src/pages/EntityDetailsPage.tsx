@@ -22,6 +22,7 @@ import EntityChangesTable from '../features/history/EntityChangesTable.tsx';
 import RenderView from '../features/views/RenderView.tsx';
 import ViewParameters from '../features/views/ViewParameters.tsx';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
 import PreviewIcon from '@mui/icons-material/Preview';
 import ShareIcon from '@mui/icons-material/Share';
@@ -373,6 +374,17 @@ const EntityDetailsPage = () => {
                             entityName={data?.name}
                             entityKind={data?.kind}
                         />
+                    </FormControl>
+                </Grid>
+                <Grid>
+                    <FormControl>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DownloadIcon />}
+                            target="_blank"
+                            href={`/api/mica/v1/entity/${entityId}/download`}>
+                            Download
+                        </Button>
                     </FormControl>
                 </Grid>
                 {data.kind === MICA_DASHBOARD_KIND && (

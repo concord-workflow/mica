@@ -46,6 +46,7 @@ import java.util.UUID;
 import static ca.ibodrov.mica.server.api.ApiUtils.nonBlank;
 import static ca.ibodrov.mica.server.api.ApiUtils.parseIsoAsInstant;
 import static java.util.Objects.requireNonNull;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Entity")
@@ -143,6 +144,17 @@ public class EntityResource implements Resource {
             log.warn("YAML serialization error: {}", e.getMessage(), e);
             throw ApiException.internalError(e.getMessage());
         }
+    }
+
+    @GET
+    @Path("{id}/download")
+    @Operation(summary = "Downloads the original unparsed YAML (or JSON) document for the entity", operationId = "downloadEntityDoc")
+    @Produces("text/yaml")
+    public Response downloadEntityDoc(@PathParam("id") EntityId entityId,
+                                      @Nullable @QueryParam("updatedAt") String updatedAtString) {
+        return Response.fromResponse(getEntityDoc(entityId, updatedAtString))
+                .header(CONTENT_DISPOSITION, "attachment; filename=\"%s.yaml\"".formatted(entityId.toExternalForm()))
+                .build();
     }
 
     @DELETE
