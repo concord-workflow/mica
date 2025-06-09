@@ -259,7 +259,8 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
             Map<FileFormat, FileFormatOptions> formatOptions) {
 
         static Query parse(FetchRequest request) {
-            var uri = request.uri().orElseThrow(() -> new StoreException("Missing URI"));
+            var uri = request.uri().orElseThrow(() -> new StoreException(URI_SCHEME + ":// URI is required"));
+            ;
 
             if (!URI_SCHEME.equals(uri.getScheme())) {
                 throw new StoreException("Unsupported URI scheme: " + uri.getScheme());

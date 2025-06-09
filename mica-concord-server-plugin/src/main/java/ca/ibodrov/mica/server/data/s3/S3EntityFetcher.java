@@ -74,7 +74,7 @@ public class S3EntityFetcher implements EntityFetcher {
 
     @Override
     public Cursor fetch(FetchRequest request) {
-        var uri = request.uri().orElseThrow(() -> new StoreException("s3:// URI is required"));
+        var uri = request.uri().orElseThrow(() -> new StoreException(URI_SCHEME + ":// URI is required"));
         var params = new QueryParams(uri.getQuery());
 
         var client = clientManager.getClient(params);

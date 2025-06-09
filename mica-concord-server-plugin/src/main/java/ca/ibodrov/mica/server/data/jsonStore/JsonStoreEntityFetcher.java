@@ -65,7 +65,7 @@ public class JsonStoreEntityFetcher implements EntityFetcher {
 
     @Override
     public Cursor fetch(FetchRequest request) {
-        var uri = request.uri().orElseThrow(() -> new StoreException("URI is required"));
+        var uri = request.uri().orElseThrow(() -> new StoreException(URI_SCHEME + ":// URI is required"));
         var query = Query.parse(uri);
         // TODO support for running a query (by name or by specifying the sql)
         // TODO pagination? streaming?
