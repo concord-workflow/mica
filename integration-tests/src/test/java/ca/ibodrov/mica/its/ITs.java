@@ -91,6 +91,7 @@ import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -1177,7 +1178,7 @@ public class ITs extends TestResources {
     public void remoteViewsAsEntities() {
         var secretResolver = mock(ConcordSecretResolver.class);
         var apiKey = micaServer.getAdminApiKey();
-        when(secretResolver.get(anyString())).thenReturn(new BinaryDataSecret(apiKey.getBytes(UTF_8)));
+        when(secretResolver.get(anyString(), any())).thenReturn(new BinaryDataSecret(apiKey.getBytes(UTF_8)));
 
         var fetcher = new RemoteMicaEntityFetcher(secretResolver, objectMapper);
         var uri = URI.create(

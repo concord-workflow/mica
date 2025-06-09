@@ -183,7 +183,8 @@ public class RemoteMicaEntityFetcher implements EntityFetcher {
                     data = Map.of("data", item);
                 }
 
-                var entity = new PartialEntity(Optional.empty(), viewName, DEFAULT_ENTITY_KIND, Optional.empty(),
+                var name = viewName + "/" + i;
+                var entity = new PartialEntity(Optional.empty(), name, DEFAULT_ENTITY_KIND, Optional.empty(),
                         Optional.empty(), Optional.empty(), data);
                 result.add(entity);
             }
