@@ -27,7 +27,10 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.RenderViewRequest;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.api.ViewResource;
+import ca.ibodrov.mica.server.data.ConcordSecretResolver;
+import ca.ibodrov.mica.server.data.EntityFetcher;
 import ca.ibodrov.mica.server.data.EntityStore;
+import ca.ibodrov.mica.server.data.remote.RemoteMicaEntityFetcher;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +43,7 @@ import com.walmartlabs.concord.client2.ApiException;
 import com.walmartlabs.concord.client2.ProcessApi;
 import com.walmartlabs.concord.client2.ProcessEntry;
 import com.walmartlabs.concord.client2.StartProcessResponse;
+import com.walmartlabs.concord.common.secret.BinaryDataSecret;
 import com.walmartlabs.concord.server.org.OrganizationEntry;
 import com.walmartlabs.concord.server.org.OrganizationManager;
 import com.walmartlabs.concord.server.org.jsonstore.JsonStoreDataManager;
@@ -87,6 +91,9 @@ import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
 /**
@@ -1164,6 +1171,22 @@ public class ITs extends TestResources {
 
         log = getProcessLog(proc.getInstanceId());
         assertTrue(log.contains(secondVersionAgain.id().toExternalForm()));
+    }
+
+    @Test
+    public void remoteViewsAsEntities() {
+        var secretResolver = mock(ConcordSecretResolver.class);
+        var apiKey = micaServer.getAdminApiKey();
+        when(secretResolver.get(anyString())).thenReturn(new BinaryDataSecret(apiKey.getBytes(UTF_8)));
+
+        var fetcher = new RemoteMicaEntityFetcher(secretResolver, objectMapper);
+        var uri = URI.create(
+                "mica+remote://localhost:" + micaServer.getApiPort()
+                        + "/view/examples/parametrized/example-view?parameters.recordName=.*&parameters.recordKey=x&secretRef=test/test&insecure=true");
+
+        var result = fetcher.fetch(EntityFetcher.FetchRequest.ofUri(uri)).stream().toList();
+        assertEquals(1, result.size());
+        assertEquals("hello!", result.get(0).data().get("data").asText());
     }
 
     private static void createBinarySecret(String orgName, String secretName, byte[] secret) throws Exception {

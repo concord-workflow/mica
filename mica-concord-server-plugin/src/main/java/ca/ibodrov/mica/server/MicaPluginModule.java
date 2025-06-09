@@ -25,6 +25,7 @@ import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
 import ca.ibodrov.mica.server.data.jsonStore.JsonStoreEntityFetcher;
+import ca.ibodrov.mica.server.data.remote.RemoteMicaEntityFetcher;
 import ca.ibodrov.mica.server.data.s3.ConcordSecretS3CredentialsProvider;
 import ca.ibodrov.mica.server.data.s3.S3CredentialsProvider;
 import ca.ibodrov.mica.server.data.s3.S3ClientManager;
@@ -143,6 +144,7 @@ public class MicaPluginModule implements Module {
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ConcordGitEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(InternalEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(JsonStoreEntityFetcher.class);
+        newSetBinder(binder, EntityFetcher.class).addBinding().to(RemoteMicaEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ReportEntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(S3EntityFetcher.class);
         newSetBinder(binder, EntityFetcher.class).addBinding().to(ViewRenderHistoryEntityFetcher.class);
