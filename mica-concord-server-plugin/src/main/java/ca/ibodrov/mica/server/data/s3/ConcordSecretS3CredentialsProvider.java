@@ -23,6 +23,7 @@ package ca.ibodrov.mica.server.data.s3;
 import ca.ibodrov.mica.server.data.ConcordSecretResolver;
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.walmartlabs.concord.common.secret.UsernamePassword;
+import com.walmartlabs.concord.server.org.secret.SecretType;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
@@ -41,7 +42,7 @@ public class ConcordSecretS3CredentialsProvider implements S3CredentialsProvider
 
     @Override
     public StaticCredentialsProvider get(String secretRef) {
-        var secret = usernamePasswordProvider.get(secretRef);
+        var secret = usernamePasswordProvider.get(secretRef, SecretType.USERNAME_PASSWORD);
         if (secret instanceof UsernamePassword credentials) {
             return StaticCredentialsProvider.create(
                     AwsBasicCredentials.create(credentials.getUsername(), new String(credentials.getPassword())));

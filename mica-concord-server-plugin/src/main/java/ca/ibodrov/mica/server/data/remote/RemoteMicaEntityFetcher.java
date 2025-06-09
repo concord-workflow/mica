@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.walmartlabs.concord.common.secret.BinaryDataSecret;
+import com.walmartlabs.concord.server.org.secret.SecretType;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response.Status;
@@ -143,7 +144,7 @@ public class RemoteMicaEntityFetcher implements EntityFetcher {
     }
 
     private BinaryDataSecret getSecret(String secretRef) {
-        var secret = secretResolver.get(secretRef);
+        var secret = secretResolver.get(secretRef, SecretType.DATA);
         if (secret instanceof BinaryDataSecret apiKey) {
             return apiKey;
         } else {

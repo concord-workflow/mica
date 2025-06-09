@@ -44,7 +44,7 @@ public class ConcordSecretResolver {
         this.secretManager = requireNonNull(secretManager);
     }
 
-    public Secret get(String secretRef) {
+    public Secret get(String secretRef, SecretType secretType) {
         secretRef = secretRef.trim();
 
         if (secretRef.isBlank()) {
@@ -69,7 +69,7 @@ public class ConcordSecretResolver {
         try {
             var org = requireNonNull(orgManager).assertAccess(orgName, false);
             var secretContainer = requireNonNull(secretManager).getSecret(apiRequest(), org.getId(), secretName, null,
-                    SecretType.USERNAME_PASSWORD);
+                    secretType);
             return secretContainer.getSecret();
         } catch (WebApplicationException e) {
             throw new StoreException("Can't fetch the secretRef " + secretRef + ". " + e.getMessage());
