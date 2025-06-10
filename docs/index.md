@@ -707,6 +707,7 @@ Supported parameters:
   the `DefaultCredentialsProvider` will be used. See below for an example;
 - `endpoint` -- optional, overrides the S3 endpoint URI. The only allowed values are `localhost`
   or `127.0.0.1`. Useful only for local testing;
+- `namePattern` -- optional, regex. If specified only the objects with matching names will be fetched;
 - `batchSize` -- optional, number of objects fetched from the bucket at a time. Not applicable
   when only one specific object is fetched. Default value is 10.
 

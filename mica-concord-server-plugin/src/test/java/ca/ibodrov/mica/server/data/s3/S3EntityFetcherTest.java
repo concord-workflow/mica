@@ -20,6 +20,7 @@ package ca.ibodrov.mica.server.data.s3;
  * ======
  */
 
+import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.server.data.EntityFetcher.FetchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
@@ -38,7 +39,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.net.URI;
 
+import static java.util.Comparator.comparing;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -130,6 +133,32 @@ public class S3EntityFetcherTest {
 
         var result = fetcher.fetch(fetchRequest).stream().toList();
         assertEquals(entityCount, result.size());
+    }
+
+    @Test
+    public void fetchSubset() {
+        var entityCount = 10;
+
+        for (var i = 0; i < entityCount; i++) {
+            s3Client.putObject(PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key("test%s.json".formatted(i))
+                    .build(), RequestBody.fromString("""
+                            {
+                                "num": %s
+                            }
+                            """.formatted(i)));
+        }
+
+        var fetchRequest = FetchRequest
+                .ofUri(URI.create("s3://%s?endpoint=%s&region=%s&secretRef=test/test&namePattern=test[1-3].json"
+                        .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+
+        var result = fetcher.fetch(fetchRequest).stream().sorted(comparing(EntityLike::name)).toList();
+        assertEquals(3, result.size());
+        assertTrue(result.get(0).name().contains("test1.json"));
+        assertTrue(result.get(1).name().contains("test2.json"));
+        assertTrue(result.get(2).name().contains("test3.json"));
     }
 
     @Test

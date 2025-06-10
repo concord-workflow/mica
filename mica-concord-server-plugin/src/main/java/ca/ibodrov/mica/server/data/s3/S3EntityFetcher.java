@@ -39,6 +39,8 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -48,6 +50,7 @@ public class S3EntityFetcher implements EntityFetcher {
 
     private static final String URI_SCHEME = "s3";
     private static final String DEFAULT_ENTITY_KIND = "/s3/object/v1";
+    private static final String DEFAULT_NAME_PATTERN = ".*";
     private static final long DEFAULT_MAX_BYTES = 5 * 1024 * 1024;
     private static final int DEFAULT_BATCH_SIZE = 10; // TODO make configurable
 
@@ -81,11 +84,16 @@ public class S3EntityFetcher implements EntityFetcher {
 
         var bucketName = uri.getHost();
         var objectName = normalizeObjectName(uri.getPath());
+        var namePattern = params.getFirst("namePattern").map(S3EntityFetcher::compileNamePattern).orElse(null);
+        if (objectName != null && namePattern != null) {
+            throw new StoreException("The 'namePattern' parameter cannot be used when fetching a specific object.");
+        }
+
         var kind = params.getFirst("defaultKind").orElse(DEFAULT_ENTITY_KIND);
         var batchSize = params.getFirst("batchSize").map(Integer::parseInt).orElse(DEFAULT_BATCH_SIZE);
 
         if (objectName == null || objectName.isBlank()) {
-            return () -> fetchAllEntities(client, bucketName, kind, batchSize);
+            return () -> fetchAllEntities(client, bucketName, kind, namePattern, batchSize);
         } else {
             return () -> {
                 var entity = fetchEntity(client, bucketName, objectName, kind);
@@ -94,9 +102,14 @@ public class S3EntityFetcher implements EntityFetcher {
         }
     }
 
-    private Stream<EntityLike> fetchAllEntities(S3Client client, String bucketName, String kind, int batchSize) {
+    private Stream<EntityLike> fetchAllEntities(S3Client client,
+                                                String bucketName,
+                                                String kind,
+                                                Pattern namePattern,
+                                                int batchSize) {
         var iterator = new S3ObjectIterator(client, bucketName, batchSize);
-        var objects = StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+        var objects = StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false)
+                .filter(o -> namePattern == null || namePattern.matcher(o.key()).matches());
         return objects.map(object -> fetchEntity(client, bucketName, object.key(), kind));
     }
 
@@ -159,6 +172,14 @@ public class S3EntityFetcher implements EntityFetcher {
         }
 
         return s;
+    }
+
+    private static Pattern compileNamePattern(String s) {
+        try {
+            return Pattern.compile(s);
+        } catch (PatternSyntaxException e) {
+            throw new StoreException("Invalid 'namePattern' parameter: " + e.getMessage());
+        }
     }
 
     @VisibleForTesting
