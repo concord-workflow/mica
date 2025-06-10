@@ -123,11 +123,18 @@ public class ViewInterpolator {
 
     private ViewLike.Data interpolate(ViewLike.Data data, JsonNode input) {
         var jsonPath = interpolate(objectMapper, data.jsonPath(), input);
+
         var mergeBy = data.mergeBy().map(v -> interpolate(objectMapper, v, input));
+
         var dropProperties = data.dropProperties()
                 .map(properties -> properties.stream().map(v -> interpolate(v, input)).toList());
+
         var map = data.map().map(v -> interpolate(objectMapper, v, input));
+
         var template = data.template().map(v -> interpolate(objectMapper, v, input));
+
+        var js = data.js();
+
         return new ViewLike.Data() {
             @Override
             public JsonNode jsonPath() {
@@ -167,6 +174,11 @@ public class ViewInterpolator {
             @Override
             public Optional<JsonNode> template() {
                 return template;
+            }
+
+            @Override
+            public Optional<String> js() {
+                return js;
             }
         };
     }

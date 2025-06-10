@@ -24,11 +24,13 @@ import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.api.*;
 import ca.ibodrov.mica.server.data.*;
 import ca.ibodrov.mica.server.data.git.ConcordGitEntityFetcher;
+import ca.ibodrov.mica.server.data.js.GraalJsEvaluator;
+import ca.ibodrov.mica.server.data.js.JsEvaluator;
 import ca.ibodrov.mica.server.data.jsonStore.JsonStoreEntityFetcher;
 import ca.ibodrov.mica.server.data.remote.RemoteMicaEntityFetcher;
 import ca.ibodrov.mica.server.data.s3.ConcordSecretS3CredentialsProvider;
-import ca.ibodrov.mica.server.data.s3.S3CredentialsProvider;
 import ca.ibodrov.mica.server.data.s3.S3ClientManager;
+import ca.ibodrov.mica.server.data.s3.S3CredentialsProvider;
 import ca.ibodrov.mica.server.data.s3.S3EntityFetcher;
 import ca.ibodrov.mica.server.data.viewRenderHistory.ViewRenderHistoryCleaner;
 import ca.ibodrov.mica.server.data.viewRenderHistory.ViewRenderHistoryEntityFetcher;
@@ -158,11 +160,12 @@ public class MicaPluginModule implements Module {
         // other beans
 
         binder.bind(BuiltinSchemas.class).in(SINGLETON);
-        binder.bind(S3CredentialsProvider.class).to(ConcordSecretS3CredentialsProvider.class);
         binder.bind(EntityKindStore.class).in(SINGLETON);
         binder.bind(EntityStore.class).in(SINGLETON);
+        binder.bind(JsEvaluator.class).to(GraalJsEvaluator.class);
         binder.bind(JsonPathEvaluator.class).in(SINGLETON);
         binder.bind(S3ClientManager.class).in(SINGLETON);
+        binder.bind(S3CredentialsProvider.class).to(ConcordSecretS3CredentialsProvider.class);
         binder.bind(UuidGenerator.class).in(SINGLETON);
         binder.bind(ViewCache.class).toInstance(ViewCache.inMemory());
 

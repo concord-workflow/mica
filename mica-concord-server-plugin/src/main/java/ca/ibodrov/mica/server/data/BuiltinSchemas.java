@@ -182,6 +182,8 @@ public final class BuiltinSchemas {
 
         var template = select(entity, "data", "template", identity());
 
+        var js = select(entity, "data", "js", JsonNode::asText);
+
         return new ViewLike.Data() {
             @Override
             public JsonNode jsonPath() {
@@ -221,6 +223,11 @@ public final class BuiltinSchemas {
             @Override
             public Optional<JsonNode> template() {
                 return template;
+            }
+
+            @Override
+            public Optional<String> js() {
+                return js;
             }
         };
     }

@@ -22,6 +22,7 @@ package ca.ibodrov.mica.server.data;
 
 import ca.ibodrov.mica.api.model.EntityLike;
 import ca.ibodrov.mica.api.model.ViewLike;
+import ca.ibodrov.mica.server.data.js.JsEvaluator;
 import ca.ibodrov.mica.server.exceptions.ViewProcessorException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,12 +51,14 @@ import static java.util.stream.StreamSupport.stream;
 public class ViewRenderer {
 
     private final JsonPathEvaluator jsonPathEvaluator;
+    private final JsEvaluator jsEvaluator;
     private final ObjectMapper objectMapper;
     private final JsonMapper mergeMapper;
 
-    public ViewRenderer(JsonPathEvaluator jsonPathEvaluator, ObjectMapper objectMapper) {
+    public ViewRenderer(JsonPathEvaluator jsonPathEvaluator, JsEvaluator jsEvaluator, ObjectMapper objectMapper) {
         this.jsonPathEvaluator = requireNonNull(jsonPathEvaluator);
         this.objectMapper = requireNonNull(objectMapper);
+        this.jsEvaluator = requireNonNull(jsEvaluator);
         this.mergeMapper = JsonMapper.builder()
                 .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
                 .withConfigOverride(ArrayNode.class, cfg -> cfg.setMergeable(false))
@@ -180,6 +183,12 @@ public class ViewRenderer {
             data = data.stream()
                     .map(node -> applyTemplate(node, template.get()))
                     .toList();
+        }
+
+        // apply "js"
+        var js = view.data().js().filter(v -> !v.isBlank());
+        if (js.isPresent()) {
+            data = jsEvaluator.eval(js.get(), data);
         }
 
         return new RenderedView(view, data, entityNames.build());

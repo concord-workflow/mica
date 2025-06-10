@@ -24,6 +24,7 @@ import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.server.YamlMapper;
 import ca.ibodrov.mica.server.data.Validator.NoopSchemaFetcher;
+import ca.ibodrov.mica.server.data.js.GraalJsEvaluator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -44,7 +45,8 @@ public class ViewRendererTest {
     private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
     private static final YamlMapper yamlMapper = new YamlMapper(objectMapper);
     private static final JsonPathEvaluator jsonPathEvaluator = new JsonPathEvaluator(objectMapper);
-    private static final ViewRenderer renderer = new ViewRenderer(jsonPathEvaluator, objectMapper);
+    private static final ViewRenderer renderer = new ViewRenderer(jsonPathEvaluator, new GraalJsEvaluator(objectMapper),
+            objectMapper);
     private static final ViewInterpolator interpolator = new ViewInterpolator(objectMapper, new NoopSchemaFetcher());
 
     @Test
@@ -879,6 +881,33 @@ public class ViewRendererTest {
         var moreStuff = result.data().get(0).get(1).get("moreStuff");
         assertEquals("value2", moreStuff.get("baz").asText());
         assertEquals("const2", moreStuff.get("qux").asText());
+    }
+
+    @Test
+    public void jsWorksAsIntended() {
+        var entity = parseYaml("""
+                kind: /test
+                name: /entity
+                data:
+                  foo:
+                    bar: "hi!"
+                """);
+
+        var view = parseView("""
+                kind: /mica/view/v1
+                name: /test
+                selector:
+                  entityKind: /test
+                data:
+                  jsonPath: $
+                  js: |
+                    _input.forEach(n => n.data.foo.bar = "bye!");
+                    _input
+                """);
+
+        var result = renderer.render(view, Stream.of(entity));
+        assertEquals(1, result.data().size());
+        assertEquals("bye!", result.data().get(0).get("data").get("foo").get("bar").asText());
     }
 
     private static ViewLike parseView(@Language("yaml") String yaml) {

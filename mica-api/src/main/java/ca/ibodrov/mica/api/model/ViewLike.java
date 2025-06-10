@@ -66,6 +66,8 @@ public interface ViewLike {
         Optional<Map<String, JsonNode>> map();
 
         Optional<JsonNode> template();
+
+        Optional<String> js();
     }
 
     interface Validation {

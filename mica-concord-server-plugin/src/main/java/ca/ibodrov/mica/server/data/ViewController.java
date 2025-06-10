@@ -23,6 +23,7 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.api.model.*;
 import ca.ibodrov.mica.db.MicaDB;
 import ca.ibodrov.mica.server.data.ViewRenderer.RenderOverrides;
+import ca.ibodrov.mica.server.data.js.JsEvaluator;
 import ca.ibodrov.mica.server.data.viewRenderHistory.ViewRenderHistoryController;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -74,6 +75,7 @@ public class ViewController {
                           EntityKindStore entityKindStore,
                           EntityFetchers entityFetchers,
                           JsonPathEvaluator jsonPathEvaluator,
+                          JsEvaluator jsEvaluator,
                           ViewCache viewCache,
                           ViewRenderHistoryController viewRenderHistoryController,
                           ObjectMapper objectMapper) {
@@ -86,7 +88,7 @@ public class ViewController {
         this.objectMapper = requireNonNull(objectMapper);
         var schemaFetcher = new EntityKindStoreSchemaFetcher(entityKindStore, objectMapper);
         this.viewInterpolator = new ViewInterpolator(objectMapper, schemaFetcher);
-        this.viewRenderer = new ViewRenderer(requireNonNull(jsonPathEvaluator), objectMapper);
+        this.viewRenderer = new ViewRenderer(requireNonNull(jsonPathEvaluator), jsEvaluator, objectMapper);
         this.validator = Validator.getDefault(objectMapper, schemaFetcher);
         this.dsl = requireNonNull(dsl);
     }
