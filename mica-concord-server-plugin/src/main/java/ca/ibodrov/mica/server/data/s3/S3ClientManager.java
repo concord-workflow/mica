@@ -30,6 +30,8 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -47,11 +49,13 @@ public class S3ClientManager {
     private static final int MAX_CLIENTS = 10;
 
     private final S3CredentialsProvider s3CredentialsProvider;
+    private final SdkHttpClient sdkHttpClient;
     private final LoadingCache<ClientKey, S3Client> cache;
 
     @Inject
     public S3ClientManager(S3CredentialsProvider s3CredentialsProvider) {
         this.s3CredentialsProvider = requireNonNull(s3CredentialsProvider);
+        this.sdkHttpClient = ApacheHttpClient.builder().build();
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(INACTIVITY_PERIOD)
                 .maximumSize(MAX_CLIENTS)
@@ -103,7 +107,9 @@ public class S3ClientManager {
                 .map(S3ClientManager::parseEndpoint)
                 .ifPresent(builder::endpointOverride);
 
-        var client = builder.build();
+        var client = builder
+                .httpClient(sdkHttpClient)
+                .build();
         log.info("createClient -> key={}", key);
 
         return client;
