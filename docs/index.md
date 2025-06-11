@@ -18,6 +18,7 @@
     - [Validate View Entities](#validate-view-entities)
     - [Field Mapping](#field-mapping)
     - [Templating](#templating)
+    - [JavaScript Support](#javascript-support)
     - [Caching](#caching)
 - [Dashboards](#dashboards)
 - [Mica Task For Concord](#mica-task-for-concord)
@@ -1128,6 +1129,25 @@ Will be rendered as:
 In `template`, string values that look like JSON paths (which start with `$`)
 will be evaluated against each entity. All other values will be rendered as-is.
 Nested objects and arrays will preserve their structure.
+
+### JavaScript Support
+
+The `js` operation can be used to process view data using JavaScript:
+
+```yaml
+name: /examples/field-mapping
+kind: /mica/view/v1
+selector:
+  entityKind: /mica/record/v1
+data:
+  jsonPath: $
+  js:
+    _input.filter(entity => entity.foo == "bar")
+```
+
+The `_input` variable contains the view data after applying all other operations.
+The data is a JavaScript array. The `js` operation must return an array of items
+as well.
 
 ### Caching
 
