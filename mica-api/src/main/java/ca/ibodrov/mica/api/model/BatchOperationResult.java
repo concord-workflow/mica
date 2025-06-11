@@ -20,8 +20,13 @@ package ca.ibodrov.mica.api.model;
  * ======
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+
+@JsonInclude(NON_ABSENT)
 public record BatchOperationResult(Optional<List<DeletedEntityVersionAndName>> deletedEntities) {
 }

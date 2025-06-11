@@ -22,14 +22,17 @@ package ca.ibodrov.mica.api.kinds;
 
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.validation.ValidName;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.util.Objects.requireNonNull;
 
+@JsonInclude(NON_ABSENT)
 public record MicaKindV1(@ValidName String name,
         @NotNull JsonNode schema) {
 

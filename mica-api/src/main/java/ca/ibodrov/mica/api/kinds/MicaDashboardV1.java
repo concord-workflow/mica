@@ -21,13 +21,16 @@ package ca.ibodrov.mica.api.kinds;
  */
 
 import ca.ibodrov.mica.api.validation.ValidName;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.util.Objects.requireNonNull;
 
+@JsonInclude(NON_ABSENT)
 public record MicaDashboardV1(String title,
         ViewRef view,
         Layout layout,
@@ -46,6 +49,7 @@ public record MicaDashboardV1(String title,
         TABLE
     }
 
+    @JsonInclude(NON_ABSENT)
     public record ViewRef(@ValidName String name, Optional<JsonNode> parameters) {
     }
 

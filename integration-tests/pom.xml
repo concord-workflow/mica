@@ -29,12 +29,31 @@
             <artifactId>webapp-plugin</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.js</groupId>
+            <artifactId>js-scriptengine</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- we need concord-server/dist for the default config -->
         <dependency>
             <groupId>com.walmartlabs.concord.it</groupId>
             <artifactId>testing-concord-server</artifactId>
             <version>${concord.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.graalvm.js</groupId>
+                    <artifactId>js</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.graalvm.js</groupId>
+                    <artifactId>js-scriptengine</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.graalvm.truffle</groupId>
+                    <artifactId>truffle-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.walmartlabs.concord</groupId>

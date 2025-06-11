@@ -95,6 +95,10 @@
                     <groupId>org.graalvm.js</groupId>
                     <artifactId>js-scriptengine</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.graalvm.truffle</groupId>
+                    <artifactId>truffle-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

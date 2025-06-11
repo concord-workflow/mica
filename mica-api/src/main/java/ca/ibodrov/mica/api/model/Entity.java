@@ -33,11 +33,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+
 /**
  * @implNote the changes in fields and annotations here must be synchronized
  *           with {@link PartialEntity}
  */
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
+@JsonInclude(NON_ABSENT)
 public record Entity(@NotNull EntityId id,
         @ValidName String name,
         @ValidName String kind,

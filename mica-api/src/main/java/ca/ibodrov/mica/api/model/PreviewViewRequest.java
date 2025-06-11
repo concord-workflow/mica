@@ -20,10 +20,14 @@ package ca.ibodrov.mica.api.model;
  * ======
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.validation.constraints.NotNull;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+
+@JsonInclude(NON_ABSENT)
 public record PreviewViewRequest(@NotNull PartialEntity view, Optional<JsonNode> parameters) {
 }

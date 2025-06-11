@@ -26,10 +26,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import javax.validation.constraints.NotEmpty;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+
 /**
  * All exceptions thrown by the API should be mapped to this class.
  */
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
+@JsonInclude(NON_ABSENT)
 public record ApiError(@NotEmpty String type, @NotEmpty String message, Optional<JsonNode> payload) {
 
     public static ApiError notFound(String message) {

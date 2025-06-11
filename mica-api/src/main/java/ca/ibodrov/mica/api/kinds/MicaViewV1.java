@@ -23,6 +23,7 @@ package ca.ibodrov.mica.api.kinds;
 import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.api.model.ViewLike;
 import ca.ibodrov.mica.api.validation.ValidName;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -34,12 +35,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.util.Objects.requireNonNull;
 
 /**
  * @implNote when adding or removing fields here, make sure to update
  *           {@link #toPartialEntity(ObjectMapper)}
  */
+@JsonInclude(NON_ABSENT)
 public record MicaViewV1(@ValidName String name,
         @NotNull Selector selector,
         @NotNull Data data,
@@ -74,6 +77,7 @@ public record MicaViewV1(@ValidName String name,
         }
     }
 
+    @JsonInclude(NON_ABSENT)
     public record Data(JsonNode jsonPath,
             Optional<JsonNode> jsonPatch,
             Optional<Boolean> flatten,

@@ -20,10 +20,15 @@ package ca.ibodrov.mica.api.model;
  * ======
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+
+@JsonInclude(NON_ABSENT)
 public record BatchOperationRequest(@NotNull BatchOperation operation, Optional<List<String>> namePatterns) {
 
     public static BatchOperationRequest deleteByNamePatterns(List<String> namePatterns) {
