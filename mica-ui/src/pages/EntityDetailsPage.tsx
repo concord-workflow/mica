@@ -5,7 +5,6 @@ import {
     STANDARD_ENTITY_PROPERTIES,
     getEntity,
 } from '../api/entity.ts';
-import { EntryType } from '../api/entityList.ts';
 import { ApiError } from '../api/error.ts';
 import { ObjectSchemaNode } from '../api/schema.ts';
 import ActionBar from '../components/ActionBar.tsx';
@@ -17,11 +16,10 @@ import SearchField from '../components/SearchField.tsx';
 import SectionTitle from '../components/SectionTitle.tsx';
 import Spacer from '../components/Spacer.tsx';
 import highlightSubstring from '../components/highlight.tsx';
-import DeleteEntityConfirmation from '../features/DeleteEntityConfirmation.tsx';
+import DeleteEntityButton from '../features/DeleteEntityButton.tsx';
 import EntityChangesTable from '../features/history/EntityChangesTable.tsx';
 import RenderView from '../features/views/RenderView.tsx';
 import ViewParameters from '../features/views/ViewParameters.tsx';
-import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
 import PreviewIcon from '@mui/icons-material/Preview';
@@ -50,7 +48,6 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Tooltip,
     Typography,
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
@@ -294,7 +291,7 @@ const EntityDetailsPage = () => {
     const [searchParams] = useSearchParams();
     const { entityId } = useParams<RouteParams>();
 
-    const { data, isFetching, error } = useQuery<Entity, ApiError>({
+    const { data, isFetching, error, refetch } = useQuery<Entity, ApiError>({
         queryKey: ['entity', entityId],
         queryFn: () => getEntity(entityId!),
         enabled: entityId !== undefined,
@@ -304,14 +301,6 @@ const EntityDetailsPage = () => {
     const [search, setSearch] = React.useState<string>('');
 
     const navigate = useNavigate();
-
-    const [openDeleteConfirmation, setOpenDeleteConfirmation] = React.useState(false);
-    const handleDelete = React.useCallback(() => {
-        if (!data) {
-            return;
-        }
-        setOpenDeleteConfirmation(true);
-    }, [data]);
 
     const visibleProperties = React.useMemo(
         () => (data ? searchProperties(data, search).sort() : []),
@@ -352,16 +341,6 @@ const EntityDetailsPage = () => {
 
     return (
         <PageContainer>
-            {!deleted && (
-                <DeleteEntityConfirmation
-                    type={EntryType.FILE}
-                    entityId={data.id}
-                    entityName={data.name}
-                    open={openDeleteConfirmation}
-                    onSuccess={() => navigate('/entity')}
-                    onClose={() => setOpenDeleteConfirmation(false)}
-                />
-            )}
             <Grid container spacing={1}>
                 <Grid flex={1}>
                     <PageTitle help={HELP}>
@@ -425,20 +404,12 @@ const EntityDetailsPage = () => {
                 {showRender && <RenderDialog data={data} onClose={() => handleHideRender()} />}
                 {!deleted && (
                     <Grid>
-                        <FormControl>
-                            <Tooltip title="Permanently delete this entity. This action cannot be undone.">
-                                <span>
-                                    <Button
-                                        startIcon={<DeleteIcon />}
-                                        variant="outlined"
-                                        color="error"
-                                        onClick={handleDelete}
-                                        disabled={isFetching}>
-                                        Delete
-                                    </Button>
-                                </span>
-                            </Tooltip>
-                        </FormControl>
+                        <DeleteEntityButton
+                            entityId={data.id}
+                            entityName={data.name}
+                            disabled={isFetching}
+                            onSuccess={() => refetch()}
+                        />
                     </Grid>
                 )}
                 <Grid>
