@@ -58,7 +58,7 @@ import { SxProps } from '@mui/system';
 
 import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 const HELP: React.ReactNode = (
     <>
@@ -71,7 +71,7 @@ const HELP: React.ReactNode = (
         </p>
         <p>
             Depending on the entity's <b>kind</b>, additional actions are available. For example,
-            views (<i>/mica/view/v1</i> entities) can be previewed by clicking on the <b>Preview</b>{' '}
+            views (<i>/mica/view/v1</i> entities) can be rendered by clicking on the <b>Render</b>{' '}
             button. The view parameters can be set in the dialog.
         </p>
     </>
@@ -241,7 +241,7 @@ const PropertiesFound = ({ count }: { count: number }) => {
     );
 };
 
-const PreviewDialog = ({ data, onClose }: { data: Entity; onClose: () => void }) => {
+const RenderDialog = ({ data, onClose }: { data: Entity; onClose: () => void }) => {
     const [requestParameters, setRequestParameters] = React.useState<Record<string, string | null>>(
         {},
     );
@@ -255,7 +255,7 @@ const PreviewDialog = ({ data, onClose }: { data: Entity; onClose: () => void })
             <DialogTitle>
                 <Grid container spacing={2}>
                     <Grid flex={1}>
-                        Preview of <code>{data.name}</code>
+                        Rendered <code>{data.name}</code>
                     </Grid>
                     <Grid>
                         <Button variant="contained" onClick={onClose}>
@@ -291,6 +291,7 @@ const PageContainer = ({ children }: { children: React.ReactNode }) => {
 };
 
 const EntityDetailsPage = () => {
+    const [searchParams] = useSearchParams();
     const { entityId } = useParams<RouteParams>();
 
     const { data, isFetching, error } = useQuery<Entity, ApiError>({
@@ -317,7 +318,17 @@ const EntityDetailsPage = () => {
         [data, search],
     );
 
-    const [showPreview, setShowPreview] = React.useState(false);
+    const [showRender, setShowRender] = React.useState(searchParams.get('render') !== null);
+
+    const handleShowRender = React.useCallback(() => {
+        setShowRender(true);
+        navigate(`/entity/${entityId}/details?render`);
+    }, [entityId, navigate]);
+
+    const handleHideRender = React.useCallback(() => {
+        setShowRender(false);
+        navigate(`/entity/${entityId}/details`);
+    }, [entityId, navigate]);
 
     if (error) {
         return (
@@ -394,7 +405,7 @@ const EntityDetailsPage = () => {
                                 startIcon={<PreviewIcon />}
                                 variant="outlined"
                                 onClick={() => navigate(`/dashboard/${entityId}`)}>
-                                View
+                                Render
                             </Button>
                         </FormControl>
                     </Grid>
@@ -405,13 +416,13 @@ const EntityDetailsPage = () => {
                             <Button
                                 startIcon={<PreviewIcon />}
                                 variant="outlined"
-                                onClick={() => setShowPreview(true)}>
-                                Preview
+                                onClick={() => handleShowRender()}>
+                                Render
                             </Button>
                         </FormControl>
                     </Grid>
                 )}
-                {showPreview && <PreviewDialog data={data} onClose={() => setShowPreview(false)} />}
+                {showRender && <RenderDialog data={data} onClose={() => handleHideRender()} />}
                 {!deleted && (
                     <Grid>
                         <FormControl>
