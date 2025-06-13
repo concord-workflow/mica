@@ -25,9 +25,9 @@ import com.walmartlabs.concord.imports.Imports;
 import com.walmartlabs.concord.imports.ImportsListener;
 import com.walmartlabs.concord.process.loader.ImportsNormalizer;
 import com.walmartlabs.concord.process.loader.ProjectLoader;
-import com.walmartlabs.concord.process.loader.model.*;
-import com.walmartlabs.concord.process.loader.model.Configuration;
 import com.walmartlabs.concord.repository.Snapshot;
+import com.walmartlabs.concord.runtime.model.*;
+import com.walmartlabs.concord.runtime.model.Configuration;
 
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.walmartlabs.concord.process.loader.ConcordProjectLoader.CONCORD_V2_RUNTIME_TYPE;
+import static com.walmartlabs.concord.process.loader.StandardRuntimeTypes.CONCORD_V2_RUNTIME_TYPE;
 
 /**
  * Just a stub for the ProjectLoader. We don't need to parse repository data in
@@ -44,8 +44,8 @@ import static com.walmartlabs.concord.process.loader.ConcordProjectLoader.CONCOR
 public class DummyProjectLoader implements ProjectLoader {
 
     @Override
-    public Result loadProject(Path path, ImportsNormalizer importsNormalizer, ImportsListener importsListener) {
-        return new DummyResult();
+    public boolean supports(String runtime) {
+        return CONCORD_V2_RUNTIME_TYPE.equals(runtime);
     }
 
     @Override

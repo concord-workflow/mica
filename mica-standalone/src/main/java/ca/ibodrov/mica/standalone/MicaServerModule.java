@@ -95,10 +95,11 @@ public class MicaServerModule implements Module {
         binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
         binder.bind(OrganizationDao.class).in(SINGLETON);
         binder.bind(OrganizationManager.class).in(SINGLETON);
-        binder.bind(ProjectLoader.class).to(DummyProjectLoader.class);
         binder.bind(SecureRandom.class).toProvider(SecureRandomProvider.class);
         binder.bind(UserSecurityContext.class);
         binder.bind(UuidGenerator.class).in(SINGLETON);
+
+        newSetBinder(binder, ProjectLoader.class).addBinding().to(DummyProjectLoader.class);
 
         binder.install(new ConfigurationModule(config));
         binder.install(new DatabaseConfigurationModule());
