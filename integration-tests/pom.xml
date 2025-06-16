@@ -25,11 +25,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>ca.ibodrov.concord</groupId>
-            <artifactId>webapp-plugin</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.graalvm.js</groupId>
             <artifactId>js-scriptengine</artifactId>
             <scope>test</scope>

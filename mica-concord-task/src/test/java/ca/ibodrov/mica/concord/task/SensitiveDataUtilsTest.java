@@ -35,29 +35,29 @@ public class SensitiveDataUtilsTest {
 
     @Test
     public void validate() {
-        var holder = SensitiveDataHolder.getInstance();
+        var holder = new SensitiveDataHolder();
         holder.addAll(List.of("foo", "bar"));
 
         var aString = "Hello, foo!";
-        assertEquals("Hello, _*****!", hideSensitiveData(aString));
+        assertEquals("Hello, _*****!", hideSensitiveData(holder, aString));
 
         var aMap = Map.of("key", "Hello, foo!");
-        assertEquals("Hello, _*****!", hideSensitiveData(aMap).get("key"));
+        assertEquals("Hello, _*****!", hideSensitiveData(holder, aMap).get("key"));
 
         var aMap2 = Map.of("foo!", "!bar!");
-        var resultMap = hideSensitiveData(aMap2);
+        var resultMap = hideSensitiveData(holder, aMap2);
         assertEquals("!_*****!", resultMap.get("_*****!"));
         assertFalse(resultMap.containsKey("foo!"));
 
         var aList = List.of("Hello, foo!", "Bye, bar!");
-        var resultList = hideSensitiveData(aList);
+        var resultList = hideSensitiveData(holder, aList);
         assertEquals("Hello, _*****!", resultList.get(0));
         assertEquals("Bye, _*****!", resultList.get(1));
 
         var complex = List.of(
                 Map.of("foo", List.of("bar_1", "bar_2", "baz")),
                 Map.of("qux", List.of(1, 2, 3, "foo")));
-        var resultComplex = hideSensitiveData(complex);
+        var resultComplex = hideSensitiveData(holder, complex);
         assertEquals("_*****_1", resultComplex.get(0).get("_*****").get(0));
         assertEquals("_*****_2", resultComplex.get(0).get("_*****").get(1));
         assertEquals("baz", resultComplex.get(0).get("_*****").get(2));
@@ -67,7 +67,7 @@ public class SensitiveDataUtilsTest {
 
     @Test
     public void tooDeep() {
-        var holder = SensitiveDataHolder.getInstance();
+        var holder = new SensitiveDataHolder();
         holder.addAll(List.of("foo", "bar"));
 
         var depth = SensitiveDataUtils.MAX_DEPTH + 1;
@@ -80,7 +80,7 @@ public class SensitiveDataUtilsTest {
             pointer = next;
         }
 
-        var result = (List<Object>) hideSensitiveData(data);
+        var result = (List<Object>) hideSensitiveData(holder, data);
         for (int i = 0; i < SensitiveDataUtils.MAX_DEPTH; i++) {
             assertEquals("_*****_1", result.get(0));
             assertEquals("_*****_2", result.get(1));
@@ -93,21 +93,21 @@ public class SensitiveDataUtilsTest {
 
     @Test
     public void exclusionsMustBeRespected() {
-        var holder = SensitiveDataHolder.getInstance();
+        var holder = new SensitiveDataHolder();
         holder.addAll(List.of("foo", "bar"));
         var aMap = Map.of("foo", "Hello, bar!");
-        var result = hideSensitiveData(aMap, Set.of("foo"));
+        var result = hideSensitiveData(holder, aMap, Set.of("foo"));
         assertEquals("Hello, _*****!", result.get("foo"));
-        result = hideSensitiveData(aMap, Set.of("bar"));
+        result = hideSensitiveData(holder, aMap, Set.of("bar"));
         assertEquals("Hello, bar!", result.get("_*****"));
     }
 
     @Test
     public void maskingWorksWithStandardKeysAsExpected() {
-        var holder = SensitiveDataHolder.getInstance();
+        var holder = new SensitiveDataHolder();
         holder.addAll(List.of("foo", "bar"));
         var aMap = Map.of("name", "foo", "kind", "foo", "foo", "Hello, bar!");
-        var result = hideSensitiveData(aMap, Set.of("foo"));
+        var result = hideSensitiveData(holder, aMap, Set.of("foo"));
         assertEquals("foo", result.get("name"));
         assertEquals("foo", result.get("kind"));
         assertEquals("Hello, _*****!", result.get("foo"));

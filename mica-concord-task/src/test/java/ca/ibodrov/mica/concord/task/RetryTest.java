@@ -22,6 +22,7 @@ package ca.ibodrov.mica.concord.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
+import com.walmartlabs.concord.runtime.v2.runner.SensitiveDataHolder;
 import com.walmartlabs.concord.runtime.v2.sdk.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,7 +88,7 @@ public class RetryTest {
         var baseUrl = "http://localhost:" + port;
 
         var ctx = new MockContext(baseUrl, workDir);
-        var task = new MicaTask(new ObjectMapper(), ctx);
+        var task = new MicaTask(new ObjectMapper(), new SensitiveDataHolder(), ctx);
         var input = new MapBackedVariables(Map.of("action", "listEntities"));
 
         var output = (TaskResult.SimpleResult) task.execute(input);

@@ -23,10 +23,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>ca.ibodrov.concord</groupId>
-            <artifactId>webapp-plugin</artifactId>
-        </dependency>
-        <dependency>
             <groupId>ca.ibodrov.mica</groupId>
             <artifactId>mica-db</artifactId>
             <version>${project.version}</version>

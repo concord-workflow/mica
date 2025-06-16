@@ -43,8 +43,8 @@ public class MicaDataSourceProvider implements Provider<DataSource> {
 
     @Override
     public DataSource get() {
-        DataSource ds = DataSourceUtils.createDataSource(cfg, "mica", cfg.username(), cfg.password(), metricRegistry);
-        DataSourceUtils.migrateDb(ds, new MicaDBChangeLogProvider(), cfg.changeLogParameters());
-        return ds;
+        var changeLog = new MicaDBChangeLogProvider();
+        DataSourceUtils.migrateDb(cfg, changeLog);
+        return DataSourceUtils.createDataSource(cfg, "mica", cfg.username(), cfg.password(), metricRegistry);
     }
 }

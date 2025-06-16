@@ -55,10 +55,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>ca.ibodrov.concord</groupId>
-            <artifactId>webapp-plugin</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>

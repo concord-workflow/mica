@@ -61,6 +61,7 @@ public class MicaTask implements Task {
     private static final Logger log = LoggerFactory.getLogger(MicaTask.class);
 
     private final ObjectMapper objectMapper;
+    private final SensitiveDataHolder sensitiveDataHolder;
     private final HttpClient httpClient;
     private final URI defaultBaseUri;
     private final Optional<String> sessionToken;
@@ -71,11 +72,15 @@ public class MicaTask implements Task {
     private final Path workDir;
 
     @Inject
-    public MicaTask(ObjectMapper objectMapper, Context ctx) {
+    public MicaTask(ObjectMapper objectMapper,
+                    SensitiveDataHolder sensitiveDataHolder,
+                    Context ctx) {
+
         this.objectMapper = requireNonNull(objectMapper).copy()
                 .registerModule(new JavaTimeModule())
                 .registerModule(new Jdk8Module())
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        this.sensitiveDataHolder = requireNonNull(sensitiveDataHolder);
 
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
@@ -319,22 +324,22 @@ public class MicaTask implements Task {
         return input.getBoolean("dryRun", this.dryRun);
     }
 
-    private static Map<String, Object> parseParameters(Variables input) {
-        Map<String, Object> params = input.getMap("parameters", Map.of());
-        // remove all "null" values
-        params.values().removeIf(Objects::isNull);
-        return params;
-    }
-
-    private static <T> T hideSensitiveData(Variables input, T body) {
+    private <T> T hideSensitiveData(Variables input, T body) {
         var hideSensitiveData = input.getBoolean("hideSensitiveData", true);
         if (hideSensitiveData) {
             var sensitiveDataExclusions = input.getList("sensitiveDataExclusions", List.of())
                     .stream()
                     .map(Object::toString)
                     .collect(toSet());
-            return SensitiveDataUtils.hideSensitiveData(body, sensitiveDataExclusions);
+            return SensitiveDataUtils.hideSensitiveData(sensitiveDataHolder, body, sensitiveDataExclusions);
         }
         return body;
+    }
+
+    private static Map<String, Object> parseParameters(Variables input) {
+        Map<String, Object> params = input.getMap("parameters", Map.of());
+        // remove all "null" values
+        params.values().removeIf(Objects::isNull);
+        return params;
     }
 }

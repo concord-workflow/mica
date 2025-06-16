@@ -22,6 +22,7 @@ package ca.ibodrov.mica.concord.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
+import com.walmartlabs.concord.runtime.v2.runner.SensitiveDataHolder;
 import com.walmartlabs.concord.runtime.v2.sdk.MapBackedVariables;
 import com.walmartlabs.concord.runtime.v2.sdk.TaskResult;
 import org.junit.jupiter.api.AfterEach;
@@ -85,7 +86,7 @@ public class DryRunTest {
     @Test
     public void batchDeleteShouldBeSkipped(@TempDir Path workDir) throws Exception {
         var ctx = new MockContext(baseUrl, workDir);
-        var task = new MicaTask(new ObjectMapper(), ctx);
+        var task = new MicaTask(new ObjectMapper(), new SensitiveDataHolder(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "batch",
                 "operation", "delete",
@@ -102,7 +103,7 @@ public class DryRunTest {
     @Test
     public void listEntitiesShouldReturnActualData(@TempDir Path workDir) throws Exception {
         var ctx = new MockContext(baseUrl, workDir);
-        var task = new MicaTask(new ObjectMapper(), ctx);
+        var task = new MicaTask(new ObjectMapper(), new SensitiveDataHolder(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "listEntities",
                 "dryRun", true));
@@ -120,7 +121,7 @@ public class DryRunTest {
         Files.writeString(src, "hello: 'world'");
 
         var ctx = new MockContext(baseUrl, workDir);
-        var task = new MicaTask(new ObjectMapper(), ctx);
+        var task = new MicaTask(new ObjectMapper(), new SensitiveDataHolder(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "upload",
                 "kind", "/test/v1",
@@ -138,7 +139,7 @@ public class DryRunTest {
     @Test
     public void upsertShouldBeSkipped(@TempDir Path workDir) throws Exception {
         var ctx = new MockContext(baseUrl, workDir);
-        var task = new MicaTask(new ObjectMapper(), ctx);
+        var task = new MicaTask(new ObjectMapper(), new SensitiveDataHolder(), ctx);
         var input = new MapBackedVariables(Map.of(
                 "action", "upsert",
                 "kind", "/test/v1",

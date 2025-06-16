@@ -45,9 +45,8 @@ public class MicaStandaloneDatabaseModule implements Module {
     public DataSource mainDataSource(@MainDB DatabaseConfiguration cfg,
                                      MetricRegistry metricRegistry,
                                      MainDBChangeLogProvider mainDbChangeLog) {
-        DataSource ds = DataSourceUtils.createDataSource(cfg, "app", cfg.username(), cfg.password(), metricRegistry);
-        DataSourceUtils.migrateDb(ds, mainDbChangeLog, cfg.changeLogParameters());
-        return ds;
+        DataSourceUtils.migrateDb(cfg, mainDbChangeLog);
+        return DataSourceUtils.createDataSource(cfg, "app", cfg.username(), cfg.password(), metricRegistry);
     }
 
     @Provides
