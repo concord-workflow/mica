@@ -53,6 +53,10 @@ public final class Retry {
                     message = aex.getMessage();
                 }
 
+                if (status >= 400 && status < 500) {
+                    throw e;
+                }
+
                 if (message == null) {
                     message = e.getClass().toString();
                 }

@@ -178,7 +178,7 @@ public class MicaTask implements Task {
         return TaskResult.success().value("data", rendered);
     }
 
-    private TaskResult upload(Variables input) throws IOException, Exception {
+    private TaskResult upload(Variables input) throws Exception {
         var src = Path.of(input.assertString("src")).toAbsolutePath().normalize();
         if (!src.startsWith(workDir)) {
             throw new IllegalArgumentException("The 'src' path must be within ${workDir}");
@@ -199,6 +199,8 @@ public class MicaTask implements Task {
                             "id", UUID.randomUUID().toString(),
                             "updatedAt", "2023-01-01T00:00:00Z"));
         }
+
+        log.info("Uploading {} as {}", workDir.relativize(src), name);
 
         var client = createMicaClient(input);
         var response = withRetry(log,
