@@ -14,6 +14,8 @@
     <artifactId>mica-standalone</artifactId>
     <packaging>pom</packaging>
 
+    <name>${project.groupId}:${project.artifactId}</name>
+
     <properties>
         <docker.skip>true</docker.skip>
         <docker.image>concordworkflow/mica-standalone</docker.image>

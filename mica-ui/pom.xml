@@ -11,6 +11,8 @@
 
     <artifactId>mica-ui</artifactId>
 
+    <name>${project.groupId}:${project.artifactId}</name>
+
     <build>
         <plugins>
             <!-- this handles all NPM-related stuff -->

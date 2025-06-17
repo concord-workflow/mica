@@ -11,6 +11,8 @@
 
     <artifactId>mica-db</artifactId>
 
+    <name>${project.groupId}:${project.artifactId}</name>
+
     <properties>
         <db.image>library/postgres:15-alpine</db.image>
         <db.host>localhost</db.host>
