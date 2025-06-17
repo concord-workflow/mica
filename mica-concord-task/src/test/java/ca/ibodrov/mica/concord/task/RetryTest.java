@@ -23,7 +23,8 @@ package ca.ibodrov.mica.concord.task;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import com.walmartlabs.concord.runtime.v2.runner.SensitiveDataHolder;
-import com.walmartlabs.concord.runtime.v2.sdk.*;
+import com.walmartlabs.concord.runtime.v2.sdk.MapBackedVariables;
+import com.walmartlabs.concord.runtime.v2.sdk.TaskResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class RetryTest {
 
@@ -84,7 +86,7 @@ public class RetryTest {
     }
 
     @Test
-    public void test(@TempDir Path workDir) throws Exception {
+    public void retryOnBadStatus(@TempDir Path workDir) throws Exception {
         var baseUrl = "http://localhost:" + port;
 
         var ctx = new MockContext(baseUrl, workDir);
@@ -97,4 +99,12 @@ public class RetryTest {
         assertEquals(3, requestCount.get());
     }
 
+    @Test
+    public void doNotRetryOnInvalidHost(@TempDir Path workDir) {
+        var baseUrl = "http://test" + System.currentTimeMillis() + ".localdomain:12345";
+        var ctx = new MockContext(baseUrl, workDir);
+        var task = new MicaTask(new ObjectMapper(), new SensitiveDataHolder(), ctx);
+        var input = new MapBackedVariables(Map.of("action", "listEntities"));
+        assertThrows(ClientException.class, () -> task.execute(input));
+    }
 }

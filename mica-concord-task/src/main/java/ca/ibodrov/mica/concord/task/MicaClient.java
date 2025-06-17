@@ -156,7 +156,11 @@ public class MicaClient {
         try {
             return client.send(request, responseBodyHandler);
         } catch (IOException e) {
-            throw new ClientException("Error sending request: " + e.getMessage(), e);
+            var message = e.getMessage();
+            if (message == null) {
+                message = e.getClass().toString();
+            }
+            throw new ClientException("Error sending request: " + message, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ClientException("Request interrupted", e);

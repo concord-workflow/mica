@@ -120,7 +120,7 @@ public class MicaTask implements Task {
         };
     }
 
-    private TaskResult batchAction(Variables input) throws ApiException {
+    private TaskResult batchAction(Variables input) throws Exception {
         var operation = BatchOperation.valueOf(input.assertString("operation").toUpperCase());
         if (isDryRun(input)) {
             log.info("Dry-run mode enabled: Skipping batch '{}'", operation);
@@ -137,7 +137,7 @@ public class MicaTask implements Task {
                 .values(objectMapper.convertValue(response, Map.class));
     }
 
-    private TaskResult listEntities(Variables input) throws ApiException {
+    private TaskResult listEntities(Variables input) throws Exception {
         var params = new ListEntitiesParameters(
                 input.getString("search"),
                 input.getString("entityNameStartsWith"),
@@ -163,7 +163,7 @@ public class MicaTask implements Task {
                 Optional.of(objectMapper.convertValue(parameters, JsonNode.class)));
     }
 
-    private TaskResult renderView(Variables input) throws ApiException {
+    private TaskResult renderView(Variables input) throws Exception {
         var body = parseRenderRequest(input);
         var client = createMicaClient(input);
         var rendered = withRetry(log, () -> client.renderView(body));
@@ -171,14 +171,14 @@ public class MicaTask implements Task {
                 .value("data", objectMapper.convertValue(rendered.data().get("data"), List.class));
     }
 
-    private TaskResult renderProperties(Variables input) throws ApiException {
+    private TaskResult renderProperties(Variables input) throws Exception {
         var body = parseRenderRequest(input);
         var client = createMicaClient(input);
         var rendered = withRetry(log, () -> client.renderProperties(body));
         return TaskResult.success().value("data", rendered);
     }
 
-    private TaskResult upload(Variables input) throws IOException, ApiException {
+    private TaskResult upload(Variables input) throws IOException, Exception {
         var src = Path.of(input.assertString("src")).toAbsolutePath().normalize();
         if (!src.startsWith(workDir)) {
             throw new IllegalArgumentException("The 'src' path must be within ${workDir}");
@@ -207,7 +207,7 @@ public class MicaTask implements Task {
                 .value("version", objectMapper.convertValue(response, Map.class));
     }
 
-    private TaskResult upsert(Variables input) throws ApiException {
+    private TaskResult upsert(Variables input) throws Exception {
         var client = createMicaClient(input);
 
         var kind = input.getString("kind");

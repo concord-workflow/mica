@@ -35,24 +35,30 @@ public final class Retry {
         T call() throws ApiException;
     }
 
-    public static <T> T withRetry(Logger log, Retryable<T> call) throws ApiException {
+    public static <T> T withRetry(Logger log, Retryable<T> call) throws Exception {
         var retries = 0;
         var retryDelay = INITIAL_RETRY_DELAY;
 
         while (true) {
             try {
                 return call.call();
+            } catch (ClientException e) {
+                throw e;
             } catch (Exception e) {
-                if (retries >= MAX_RETRIES) {
-                    throw e;
+                var status = -1;
+                var message = e.getMessage();
+
+                if (e instanceof ApiException aex) {
+                    status = aex.getStatus();
+                    message = aex.getMessage();
                 }
 
-                var status = -1;
-                if (e instanceof ApiException) {
-                    status = ((ApiException) e).getStatus();
+                if (message == null) {
+                    message = e.getClass().toString();
                 }
+
                 log.info("Retrying after an API error (status={}, attempt={}, next in {}s): {}", status,
-                        retries + 1, retryDelay.toSeconds(), e.getMessage());
+                        retries + 1, retryDelay.toSeconds(), message);
 
                 try {
                     Thread.sleep(retryDelay.toMillis());
@@ -63,6 +69,10 @@ public final class Retry {
 
                 retries++;
                 retryDelay = Duration.ofMillis((long) (retryDelay.toMillis() * BACKOFF_MULTIPLIER));
+
+                if (retries >= MAX_RETRIES) {
+                    throw e;
+                }
             }
         }
     }
