@@ -50,9 +50,9 @@ public class S3EntityFetcher implements EntityFetcher {
 
     private static final String URI_SCHEME = "s3";
     private static final String DEFAULT_ENTITY_KIND = "/s3/object/v1";
-    private static final String DEFAULT_NAME_PATTERN = ".*";
     private static final long DEFAULT_MAX_BYTES = 5 * 1024 * 1024;
     private static final int DEFAULT_BATCH_SIZE = 10; // TODO make configurable
+    private static final int MAX_RESULTS = 50; // TODO make configurable
 
     private static final TypeReference<Map<String, JsonNode>> MAP_OF_JSON_NODES = new TypeReference<>() {
     };
@@ -76,28 +76,32 @@ public class S3EntityFetcher implements EntityFetcher {
     }
 
     @Override
+    @SuppressWarnings("resource")
     public Cursor fetch(FetchRequest request) {
         var uri = request.uri().orElseThrow(() -> new StoreException(URI_SCHEME + ":// URI is required"));
         var params = new QueryParams(uri.getQuery());
-
-        var client = clientManager.getClient(params);
-
         var bucketName = uri.getHost();
         var objectName = normalizeObjectName(uri.getPath());
         var namePattern = params.getFirst("namePattern").map(S3EntityFetcher::compileNamePattern).orElse(null);
+        var kind = params.getFirst("defaultKind").orElse(DEFAULT_ENTITY_KIND);
+        var batchSize = params.getFirst("batchSize").map(Integer::parseInt).orElse(DEFAULT_BATCH_SIZE);
+
         if (objectName != null && namePattern != null) {
             throw new StoreException("The 'namePattern' parameter cannot be used when fetching a specific object.");
         }
 
-        var kind = params.getFirst("defaultKind").orElse(DEFAULT_ENTITY_KIND);
-        var batchSize = params.getFirst("batchSize").map(Integer::parseInt).orElse(DEFAULT_BATCH_SIZE);
-
         if (objectName == null || objectName.isBlank()) {
-            return () -> fetchAllEntities(client, bucketName, kind, namePattern, batchSize);
+            return () -> {
+                var client = clientManager.createClient(params);
+                return fetchAllEntities(client, bucketName, kind, namePattern, batchSize)
+                        .limit(MAX_RESULTS)
+                        .onClose(client::close);
+            };
         } else {
             return () -> {
+                var client = clientManager.createClient(params);
                 var entity = fetchEntity(client, bucketName, objectName, kind);
-                return Stream.of(entity);
+                return Stream.of(entity).onClose(client::close);
             };
         }
     }

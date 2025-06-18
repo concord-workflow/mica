@@ -22,15 +22,7 @@ package ca.ibodrov.mica.server.data.s3;
 
 import ca.ibodrov.mica.server.data.QueryParams;
 import ca.ibodrov.mica.server.exceptions.StoreException;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.cache.RemovalListener;
-import com.google.common.util.concurrent.UncheckedExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -38,81 +30,43 @@ import software.amazon.awssdk.services.s3.S3Client;
 import javax.inject.Inject;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
 public class S3ClientManager {
 
-    private static final Logger log = LoggerFactory.getLogger(S3ClientManager.class);
-    private static final Duration INACTIVITY_PERIOD = Duration.ofMinutes(30);
-    private static final int MAX_CLIENTS = 10;
+    private static final Duration SO_TIMEOUT = Duration.ofSeconds(30);
+    private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
 
     private final S3CredentialsProvider s3CredentialsProvider;
-    private final SdkHttpClient sdkHttpClient;
-    private final LoadingCache<ClientKey, S3Client> cache;
 
     @Inject
     public S3ClientManager(S3CredentialsProvider s3CredentialsProvider) {
         this.s3CredentialsProvider = requireNonNull(s3CredentialsProvider);
-        this.sdkHttpClient = ApacheHttpClient.builder().build();
-        this.cache = CacheBuilder.newBuilder()
-                .expireAfterAccess(INACTIVITY_PERIOD)
-                .maximumSize(MAX_CLIENTS)
-                .softValues()
-                .removalListener((RemovalListener<ClientKey, S3Client>) notification -> {
-                    var client = notification.getValue();
-                    if (client != null) {
-                        client.close();
-                    }
-                    log.info("onRemoval -> key={}, cause={}, wasEvicted={}", notification.getKey(),
-                            notification.getCause(), notification.wasEvicted());
-                })
-                .build(new CacheLoader<>() {
-                    @Override
-                    public S3Client load(ClientKey key) {
-                        return createClient(key);
-                    }
-                });
     }
 
-    public S3Client getClient(QueryParams params) {
-        var key = new ClientKey(params.getFirst("secretRef"),
-                params.getFirst("region"),
-                params.getFirst("endpoint"));
-        try {
-            return cache.getUnchecked(key);
-        } catch (UncheckedExecutionException e) {
-            if (e.getCause() instanceof StoreException ex) {
-                throw ex;
-            }
-            throw new StoreException("Failed to get the S3 client: " + e.getMessage());
-        }
-    }
+    public S3Client createClient(QueryParams params) {
+        var builder = S3Client.builder()
+                .httpClientBuilder(ApacheHttpClient.builder()
+                        .socketTimeout(SO_TIMEOUT)
+                        .connectionTimeout(CONNECTION_TIMEOUT)
+                        .connectionAcquisitionTimeout(CONNECTION_TIMEOUT));
 
-    private S3Client createClient(ClientKey key) {
-        var builder = S3Client.builder();
-
-        key.secretRef()
+        params.getFirst("secretRef")
                 .map(s3CredentialsProvider::get)
                 .ifPresentOrElse(
                         builder::credentialsProvider,
-                        () -> builder.credentialsProvider(DefaultCredentialsProvider.create()));
+                        () -> builder.credentialsProvider(DefaultCredentialsProvider.builder().build()));
 
-        key.region()
+        params.getFirst("region")
                 .map(Region::of)
                 .ifPresent(builder::region);
 
-        key.endpoint()
+        params.getFirst("endpoint")
                 .map(S3ClientManager::parseEndpoint)
                 .ifPresent(builder::endpointOverride);
 
-        var client = builder
-                .httpClient(sdkHttpClient)
-                .build();
-        log.info("createClient -> key={}", key);
-
-        return client;
+        return builder.build();
     }
 
     private static URI parseEndpoint(String s) {
@@ -127,8 +81,5 @@ public class S3ClientManager {
         }
 
         throw new StoreException("Invalid endpoint. Only localhost or 127.0.0.1 are allowed as S3 endpoint overrides.");
-    }
-
-    private record ClientKey(Optional<String> secretRef, Optional<String> region, Optional<String> endpoint) {
     }
 }
