@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import { redirectToLogin } from './api/common.ts';
 
-import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import React, { PropsWithChildren, useContext } from 'react';
 
 export interface CurrentUser {
     userId?: string;
@@ -17,28 +18,24 @@ export interface CurrentUser {
 
 const UserContext = React.createContext<CurrentUser>({});
 
+async function whoami(): Promise<CurrentUser> {
+    const response = await fetch(`/api/mica/ui/whoami`);
+    if (response.status == 401) {
+        redirectToLogin();
+    }
+    return (await response.json()) as CurrentUser;
+}
+
 export const WithUserContext = ({ children }: PropsWithChildren) => {
-    const [currentUser, setCurrentUser] = useState<CurrentUser>({});
+    const { data } = useQuery({
+        queryKey: ['whoami'],
+        queryFn: whoami,
+        initialData: {},
+        refetchOnReconnect: true,
+        refetchOnWindowFocus: true,
+    });
 
-    useEffect(() => {
-        if (currentUser.username) {
-            return;
-        }
-
-        const doIt = async () => {
-            try {
-                const response = await fetch(`/api/mica/ui/whoami`);
-                const json = (await response.json()) as CurrentUser;
-                setCurrentUser(json);
-            } catch (_e) {
-                redirectToLogin();
-            }
-        };
-
-        doIt();
-    }, [currentUser.username]);
-
-    return <UserContext.Provider value={currentUser}>{children}</UserContext.Provider>;
+    return <UserContext.Provider value={data}>{children}</UserContext.Provider>;
 };
 
 export const useCurrentUser = () => {

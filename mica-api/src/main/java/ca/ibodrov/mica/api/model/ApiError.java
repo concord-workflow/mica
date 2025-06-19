@@ -49,4 +49,8 @@ public record ApiError(@NotEmpty String type, @NotEmpty String message, Optional
     public static ApiError internalError(String message) {
         return new ApiError("internal-error", message, Optional.empty());
     }
+
+    public static ApiError unauthorized(String message) {
+        return new ApiError("unauthorized", message, Optional.empty());
+    }
 }

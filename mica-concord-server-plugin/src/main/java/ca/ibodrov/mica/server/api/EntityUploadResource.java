@@ -31,12 +31,14 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.walmartlabs.concord.server.sdk.metrics.WithTimer;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
+import com.walmartlabs.concord.server.security.Roles;
 import com.walmartlabs.concord.server.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.annotation.Nullable;
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
@@ -70,6 +72,7 @@ public class EntityUploadResource implements Resource {
     @Path("yaml")
     @Consumes("*/yaml")
     @Operation(summary = "Upload an entity in YAML format", operationId = "putYaml")
+    @RolesAllowed({ Roles.ADMIN, Roles.SYSTEM_WRITER })
     @WithTimer
     public EntityVersion putYaml(@Context UserPrincipal session,
                                  @QueryParam("overwrite") @DefaultValue("false") boolean overwrite,
@@ -83,6 +86,7 @@ public class EntityUploadResource implements Resource {
     @Path("partialYaml")
     @Consumes("*/yaml")
     @Operation(summary = "Upload a partial entity in YAML format", description = "Upload a (possibly) partial entity in YAML format with 'name' or 'kind' overrides", operationId = "putPartialYaml")
+    @RolesAllowed({ Roles.ADMIN, Roles.SYSTEM_WRITER })
     @WithTimer
     public EntityVersion putPartialYaml(@Context UserPrincipal session,
                                         @Nullable @QueryParam("entityName") String entityName,

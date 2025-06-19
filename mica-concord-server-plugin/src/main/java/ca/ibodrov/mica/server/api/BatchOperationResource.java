@@ -27,8 +27,10 @@ import ca.ibodrov.mica.server.data.EntityStore;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.walmartlabs.concord.server.sdk.rest.Resource;
 import com.walmartlabs.concord.server.sdk.validation.Validate;
+import com.walmartlabs.concord.server.security.Roles;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -57,6 +59,7 @@ public class BatchOperationResource implements Resource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Validate
+    @RolesAllowed({ Roles.ADMIN, Roles.SYSTEM_WRITER })
     public BatchOperationResult apply(@Valid BatchOperationRequest request) {
         assert request.operation() != null;
         if (request.operation() != BatchOperation.DELETE) {

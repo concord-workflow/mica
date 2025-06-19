@@ -36,6 +36,7 @@ import org.jooq.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import java.io.IOException;
@@ -89,11 +90,8 @@ public class ImportResource implements Resource {
     @Operation(summary = "Import data as a ZIP archive", operationId = "importDataZip")
     @Consumes(APPLICATION_OCTET_STREAM)
     @Produces(APPLICATION_JSON)
+    @RolesAllowed(Roles.ADMIN)
     public ImportResponse importData(InputStream in, @QueryParam("confirmation") String confirmation) {
-        if (!Roles.isAdmin()) {
-            throw new UnauthorizedException("Only users with the admin role can import data.");
-        }
-
         if (!"it_might_destroy_existing_data".equals(confirmation)) {
             throw new IllegalArgumentException(
                     "Requires confirmation. Pass 'confirmation=it_might_destroy_existing_data' query parameter.");

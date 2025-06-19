@@ -31,6 +31,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jooq.*;
 
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -73,11 +74,8 @@ public class ExportResource implements Resource {
     @GET
     @WithTimer
     @Operation(summary = "Export data", operationId = "exportData")
+    @RolesAllowed(Roles.ADMIN)
     public DataExport exportData() {
-        if (!Roles.isAdmin()) {
-            throw new UnauthorizedException("Only users with the admin role can export data.");
-        }
-
         return new DataExport(
                 concordDsl.selectFrom(ORGANIZATIONS).fetch().map(ExportResource::toSerializableMap),
                 concordDsl.selectFrom(PROJECTS).fetch().map(ExportResource::toSerializableMap),

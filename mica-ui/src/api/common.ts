@@ -33,10 +33,6 @@ export const redirectToLogout = () => {
 
 export const handleErrors = async (resp: Response) => {
     if (!resp.ok) {
-        if (resp.status == 401) {
-            redirectToLogin();
-        }
-
         throw await parseError(resp);
     }
 };

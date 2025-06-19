@@ -103,6 +103,11 @@ public class MicaPluginModule implements Module {
 
         newSetBinder(binder, AuthenticationHandler.class).addBinding().to(MicaAuthenticationHandler.class);
 
+        // authorization
+
+        binder.bind(ApiSecurityFilter.class).in(SINGLETON);
+        newSetBinder(binder, Component.class).addBinding().to(ApiSecurityFilter.class);
+
         // servlets
 
         newSetBinder(binder, HttpServlet.class).addBinding().to(SwaggerServlet.class).in(SINGLETON);
