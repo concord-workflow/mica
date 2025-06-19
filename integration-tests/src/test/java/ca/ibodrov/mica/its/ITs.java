@@ -54,7 +54,10 @@ import com.walmartlabs.concord.server.org.project.ProjectManager;
 import com.walmartlabs.concord.server.org.project.RepositoryEntry;
 import com.walmartlabs.concord.server.org.secret.SecretManager;
 import com.walmartlabs.concord.server.org.secret.SecretVisibility;
+import com.walmartlabs.concord.server.security.Roles;
 import com.walmartlabs.concord.server.security.UserSecurityContext;
+import com.walmartlabs.concord.server.security.apikey.ApiKeyResource;
+import com.walmartlabs.concord.server.security.apikey.CreateApiKeyRequest;
 import com.walmartlabs.concord.server.user.UserManager;
 import com.walmartlabs.concord.server.user.UserType;
 import org.eclipse.jgit.api.Git;
@@ -76,6 +79,10 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import javax.validation.ConstraintViolationException;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Year;
@@ -90,6 +97,8 @@ import static ca.ibodrov.mica.server.data.BuiltinSchemas.INTERNAL_ENTITY_STORE_U
 import static com.walmartlabs.concord.client2.ProcessEntry.StatusEnum.FINISHED;
 import static java.net.URLEncoder.encode;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -107,9 +116,11 @@ public class ITs extends TestResources {
 
     static OrganizationManager orgManager;
     static ProjectManager projectManager;
+    static UserManager userManager;
     static UserSecurityContext securityContext;
     static EntityStore entityStore;
     static ViewResource viewResource;
+    static ApiKeyResource apiKeyResource;
     static ObjectMapper objectMapper;
     static DSLContext dsl;
     static UUID adminId;
@@ -125,14 +136,15 @@ public class ITs extends TestResources {
 
         orgManager = injector.getInstance(OrganizationManager.class);
         projectManager = injector.getInstance(ProjectManager.class);
+        userManager = injector.getInstance(UserManager.class);
         securityContext = injector.getInstance(UserSecurityContext.class);
         entityStore = injector.getInstance(EntityStore.class);
         viewResource = injector.getInstance(ViewResource.class);
+        apiKeyResource = injector.getInstance(ApiKeyResource.class);
         objectMapper = injector.getInstance(ObjectMapper.class);
         dsl = injector.getInstance(Key.get(DSLContext.class, MicaDB.class));
 
-        adminId = injector.getInstance(UserManager.class)
-                .getId("admin", null, UserType.LOCAL)
+        adminId = userManager.getId("admin", null, UserType.LOCAL)
                 .orElseThrow();
 
         localStack.start();
@@ -150,6 +162,50 @@ public class ITs extends TestResources {
     @AfterAll
     public static void tearDown() {
         localStack.stop();
+    }
+
+    @Test
+    public void roleBasedAuthorization() throws Exception {
+        var bobId = userManager
+                .create("bob", null, "Bob", "bob@localhost.local", UserType.LOCAL, Set.of(Roles.SYSTEM_READER))
+                .getId();
+
+        var bobKey = securityContext.runAs(adminId,
+                () -> apiKeyResource.create(new CreateApiKeyRequest(bobId, null, null, null, null))
+                        .getKey());
+
+        // POST a new entity, the request should fail with 401
+
+        var client = HttpClient.newHttpClient();
+
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(micaServer.getApiBaseUrl() + "/api/mica/v1/upload/partialYaml"))
+                .PUT(BodyPublishers.ofString("""
+                        name: /test/roleBasedAuthorization
+                        kind: /mica/record/v1
+                        data:
+                          foo: "bar"
+                        """))
+                .header(AUTHORIZATION, "Bearer " + bobKey)
+                .header(CONTENT_TYPE, "text/yaml")
+                .build();
+
+        var response = client.send(request, BodyHandlers.ofString());
+        assertEquals(401, response.statusCode());
+        assertTrue(response.body().contains("Requires one of the following user roles"));
+
+        // add the writer role to Bob
+
+        userManager.update(bobId, "Bob", "bob@localhost.local", UserType.LOCAL, false, Set.of(Roles.SYSTEM_WRITER));
+
+        // send POST again, this time is should succeed
+
+        response = client.send(request, BodyHandlers.ofString());
+        assertEquals(200, response.statusCode());
+
+        // check if the entity was actually uploaded
+
+        assertTrue(entityStore.getByName("/test/roleBasedAuthorization").isPresent());
     }
 
     /**
