@@ -76,28 +76,11 @@ import static com.walmartlabs.concord.server.Utils.bindServletFilter;
 @Named
 public class MicaPluginModule implements Module {
 
-    private final Config config;
-
-    public MicaPluginModule() {
-        this(loadDefaultConfig());
-    }
-
-    public MicaPluginModule(Config config) {
-        this.config = config;
-    }
-
     @Override
     public void configure(Binder binder) {
         // database
 
         binder.install(new MicaDatabaseModule());
-
-        // config
-
-        if (config == null) {
-            throw new RuntimeException("The config property must be injected before calling configure()");
-        }
-        binder.install(new ConfigModule("ca.ibodrov.mica.server", config));
 
         // authentication handlers
 

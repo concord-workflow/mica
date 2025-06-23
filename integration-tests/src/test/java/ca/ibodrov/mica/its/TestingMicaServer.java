@@ -44,9 +44,8 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 public class TestingMicaServer extends TestingConcordServer {
 
     public static TestingMicaServer withFakeOidc(PostgreSQLContainer<?> db, int port) {
-        var authServerUri = "http://localhost:12345/fake";
-        var config = Map.of("mica.oidc.logoutEndpoint", "%s/login/signout".formatted(authServerUri));
-        return new TestingMicaServer(db, port, config);
+        return new TestingMicaServer(db, port,
+                Map.of("oidc.discoveryUri", "http://localhost:12345/fake"));
     }
 
     public TestingMicaServer(PostgreSQLContainer<?> db, int port, Map<String, String> extraConfiguration) {
@@ -55,7 +54,7 @@ public class TestingMicaServer extends TestingConcordServer {
 
     private static List<Function<Config, Module>> extraModules() {
         return List.of(
-                MicaPluginModule::new,
+                _cfg -> new MicaPluginModule(),
                 _cfg -> new WebappPluginModule(),
                 _cfg -> new LocalServerModule(),
                 _cfg -> new OidcPluginModule());

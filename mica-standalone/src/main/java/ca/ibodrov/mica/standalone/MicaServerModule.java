@@ -20,7 +20,6 @@ package ca.ibodrov.mica.standalone;
  * ======
  */
 
-import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.MicaPluginModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
@@ -104,7 +103,7 @@ public class MicaServerModule implements Module {
         binder.install(new ConfigurationModule(config));
         binder.install(new DatabaseConfigurationModule());
         binder.install(new MicaStandaloneDatabaseModule());
-        binder.install(new MicaPluginModule(config));
+        binder.install(new MicaPluginModule());
 
         binder.install(new ApiKeyModule());
         binder.install(new ApiServerModule());
