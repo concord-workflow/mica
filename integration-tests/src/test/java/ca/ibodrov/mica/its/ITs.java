@@ -1246,6 +1246,78 @@ public class ITs extends TestResources {
         assertEquals("hello!", result.get(0).data().get("data").asText());
     }
 
+    @Test
+    public void upsertIgnoresDeletedEntities() throws Exception {
+        // upload the initial version
+
+        var proc = startConcordProcess(Map.of(
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: upsert
+                                name: /upsertIgnoresDeletedEntities/foo
+                                kind: /mica/record/v1
+                                entity:
+                                  data: |
+                                    initial version
+                              out: result
+                            - log: "Result: ${result}"
+                        """.strip().getBytes()));
+        assertFinished(proc);
+
+        var initialVersion = entityStore.getVersion("/upsertIgnoresDeletedEntities/foo").orElseThrow();
+        var initialDoc = entityStore.getEntityDoc(initialVersion).orElseThrow();
+        assertTrue(initialDoc.contains("initial version"));
+
+        var log = getProcessLog(proc.getInstanceId());
+        assertTrue(log.contains(initialVersion.id().toExternalForm()));
+
+        // delete the entity and upload the updated version
+
+        proc = startConcordProcess(Map.of(
+                "concord.yml", """
+                        configuration:
+                          runtime: "concord-v2"
+                        flows:
+                          default:
+                            - task: mica
+                              in:
+                                action: delete
+                                name: /upsertIgnoresDeletedEntities/foo
+                            - task: mica
+                              in:
+                                action: upsert
+                                name: /upsertIgnoresDeletedEntities/foo
+                                kind: /mica/record/v1
+                                entity:
+                                  data: |
+                                    updated version
+                              out: result
+                            - log: "Result: ${result}"
+                        """.strip().getBytes()));
+        assertFinished(proc);
+
+        var updatedVersion = entityStore.getVersion("/upsertIgnoresDeletedEntities/foo").orElseThrow();
+        assertNotEquals(initialVersion.id(), updatedVersion.id());
+        var updatedDoc = entityStore.getEntityDoc(updatedVersion).orElseThrow();
+        assertTrue(updatedDoc.contains("updated version"));
+
+        log = getProcessLog(proc.getInstanceId());
+        assertTrue(log.contains(updatedVersion.id().toExternalForm()));
+
+        // verify that the initial version was actually deleted
+        assertTrue(entityStore.getById(initialVersion.id()).orElseThrow().deletedAt().isPresent());
+
+        // check that both the deleted and the current (updated) versions have the same
+        // name
+        assertEquals(entityStore.getById(initialVersion.id()).orElseThrow().name(),
+                entityStore.getById(updatedVersion.id()).orElseThrow().name());
+    }
+
     private static void createBinarySecret(String orgName, String secretName, byte[] secret) throws Exception {
         securityContext.runAs(adminId, () -> {
             var orgId = orgManager.createOrGet(orgName).orgId();

@@ -385,6 +385,24 @@ public class EntityControllerTest extends AbstractDatabaseTest {
     }
 
     @Test
+    public void putIgnoresDeletedEntities() {
+        var entityName = "/test_put_%s/foo".formatted(UUID.randomUUID());
+        var doc = """
+                kind: /mica/record/v1
+                name: %s
+                data: |
+                  hi
+                """.formatted(entityName);
+
+        var initialVersion = put(parseYaml(doc), doc, false);
+        controller.deleteById(session, initialVersion.id());
+        assertTrue(entityStore.getById(initialVersion.id()).get().deletedAt().isPresent());
+
+        var newVersion = put(parseYaml(doc), doc, false);
+        assertTrue(entityStore.getById(newVersion.id()).get().deletedAt().isEmpty());
+    }
+
+    @Test
     public void putWithStructuralDiffWorksAsIntended() {
         // create the initial "foo"
         var entityName = "/test_struct_diff/" + randomEntityName();
