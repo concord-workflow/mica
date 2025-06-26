@@ -25,6 +25,8 @@ import java.net.http.HttpResponse;
 
 public class ApiException extends Exception {
 
+    private static final int MAX_MESSAGE_LENGTH = 512;
+
     public static ApiException from(HttpResponse<InputStream> response, String message) {
         try (var body = response.body()) {
             var bytes = body.readAllBytes();
@@ -48,7 +50,7 @@ public class ApiException extends Exception {
 
     private static String formatMessage(String message, int code, byte[] body) {
         var response = "[empty]";
-        var maxResponseLength = Math.min(128, body.length);
+        var maxResponseLength = Math.min(MAX_MESSAGE_LENGTH, body.length);
         if (maxResponseLength > 0) {
             response = new String(body, 0, maxResponseLength);
             if (body.length > maxResponseLength) {
