@@ -217,6 +217,8 @@ public class MicaTask implements Task {
         var body = input.assertVariable("entity", Object.class);
         var merge = input.getBoolean("merge", false);
         var updateIf = input.getString("updateIf");
+        var replace = input.getBoolean("replace", true);
+        var overwrite = input.getBoolean("overwrite", true);
 
         if (merge) {
             var meta = findEntityByName(input, name);
@@ -261,7 +263,7 @@ public class MicaTask implements Task {
             throw new RuntimeException("Error serializing entity: " + name, e);
         }
 
-        var updatedVersion = client.uploadPartialYaml(kind, name, false, false, updateIf,
+        var updatedVersion = client.uploadPartialYaml(kind, name, replace, overwrite, updateIf,
                 BodyPublishers.ofByteArray(requestBody));
         return TaskResult.success()
                 .value("version", objectMapper.convertValue(updatedVersion, Map.class));
