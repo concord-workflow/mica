@@ -6,7 +6,7 @@
     <parent>
         <groupId>ca.ibodrov.mica</groupId>
         <artifactId>mica</artifactId>
-        <version>0.0.33-SNAPSHOT</version>
+        <version>0.0.33</version>
     </parent>
 
     <artifactId>mica-api</artifactId>
