@@ -160,11 +160,6 @@ public class MicaPluginModule implements Module {
         binder.bind(InitialDataLoader.class).asEagerSingleton();
     }
 
-    private static Config loadDefaultConfig() {
-        // TODO avoid re-reading the config
-        return ConfigModule.load("concord-server");
-    }
-
     public static <K extends ExceptionMapper<?> & Component> void bindExceptionMapper(Binder binder, Class<K> klass) {
         binder.bind(klass).in(SINGLETON);
         newSetBinder(binder, Component.class).addBinding().to(klass);
