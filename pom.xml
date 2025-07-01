@@ -31,15 +31,16 @@
     </developers>
 
     <modules>
+        <module>docker/mica-sidecar</module>
+        <module>docker/mica-standalone</module>
         <module>integration-tests</module>
         <module>mica-api</module>
         <module>mica-concord-server-plugin</module>
         <module>mica-concord-task</module>
+        <module>mica-data</module>
         <module>mica-db</module>
-        <module>mica-ui</module>
         <module>mica-standalone</module>
-        <module>docker/mica-sidecar</module>
-        <module>docker/mica-standalone</module>
+        <module>mica-ui</module>
     </modules>
 
     <properties>
