@@ -4,10 +4,12 @@ import Spacer from '../../components/Spacer.tsx';
 import CreateEntityButton from '../CreateEntityButton.tsx';
 import EntityKindSelect from '../EntityKindSelect.tsx';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { Button, FormControl, InputLabel } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
+import { Button, FormControl, InputLabel, Tooltip } from '@mui/material';
 
 interface Props {
     canCreate: boolean;
+    canDownload: boolean;
     selectedPath: string;
     search: string;
     handleSearch: (value: string) => void;
@@ -18,6 +20,7 @@ interface Props {
 
 const EntityTableActionBar = ({
     canCreate,
+    canDownload,
     selectedPath,
     handleUpload,
     selectedKind,
@@ -41,6 +44,19 @@ const EntityTableActionBar = ({
                         Upload
                     </Button>
                 </FormControl>
+            )}
+            {canDownload && (
+                <Tooltip title="Download the current folder as a ZIP archive">
+                    <FormControl>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DownloadIcon />}
+                            target="_blank"
+                            href={`/api/mica/ui/downloadFolder?namePrefix=${selectedPath}`}>
+                            Download
+                        </Button>
+                    </FormControl>
+                </Tooltip>
             )}
             <Spacer />
             <FormControl size="small" sx={{ minWidth: 200 }}>

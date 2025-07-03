@@ -73,6 +73,10 @@ public class EntityStore {
             @Nullable String entityName,
             @Nullable String entityKind,
             @Nullable OrderBy orderBy) {
+
+        public static ListEntitiesRequest nameStartsWith(String entityNameStartsWith) {
+            return new ListEntitiesRequest(null, entityNameStartsWith, null, null, null);
+        }
     }
 
     public List<EntityMetadata> search(ListEntitiesRequest request) {

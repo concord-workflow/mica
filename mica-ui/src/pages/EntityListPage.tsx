@@ -106,6 +106,7 @@ const EntityListPage = () => {
             />
             <EntityTableActionBar
                 canCreate={true}
+                canDownload={true}
                 selectedPath={selectedPath}
                 selectedKind={selectedKind}
                 handleKindSelect={setSelectedKind}

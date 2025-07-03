@@ -41,6 +41,7 @@ const DeletedEntityListPage = () => {
             <PageTitle help={HELP}>Deleted Entities</PageTitle>
             <EntityTableActionBar
                 canCreate={false}
+                canDownload={false}
                 selectedPath={selectedPath}
                 selectedKind={selectedKind}
                 handleKindSelect={setSelectedKind}
