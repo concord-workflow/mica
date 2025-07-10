@@ -78,10 +78,7 @@ public class GraalJsEvaluator implements JsEvaluator {
                 .allowIO(IOAccess.NONE)
                 .allowCreateThread(false)
                 .allowNativeAccess(false)
-                .allowHostClassLookup(className -> {
-                    System.out.println("!" + className);
-                    return false;
-                })
+                .allowHostClassLookup(className -> false)
                 .build()) {
 
             var jsData = convertToJs(context, objectMapper, data);
