@@ -303,10 +303,12 @@ public class MicaTask implements Task {
     }
 
     private MicaClient createMicaClient(Variables input) {
-        return new MicaClient(httpClient, baseUri(input), auth(input), userAgent, objectMapper);
+        var baseUrl = baseUrl(input);
+        log.info("Connecting to {}", baseUrl);
+        return new MicaClient(httpClient, baseUrl, auth(input), userAgent, objectMapper);
     }
 
-    private URI baseUri(Variables input) {
+    private URI baseUrl(Variables input) {
         var baseUrl = input.getString("baseUrl", MapUtils.getString(defaultVariables, "baseUrl"));
         if (baseUrl != null) {
             return URI.create(baseUrl);
