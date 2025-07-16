@@ -20,12 +20,16 @@ package ca.ibodrov.mica.server.ui;
  * ======
  */
 
+import ca.ibodrov.mica.api.model.PartialEntity;
 import ca.ibodrov.mica.server.AbstractDatabaseTest;
 import ca.ibodrov.mica.server.ui.EntityListResource.ListResponse;
 import ca.ibodrov.mica.server.ui.EntityListResource.Type;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class EntityListResourceTest extends AbstractDatabaseTest {
 
@@ -53,6 +57,40 @@ public class EntityListResourceTest extends AbstractDatabaseTest {
         assertEntry(result, "/examples/parametrized/example-kind", Type.FILE);
         assertEntry(result, "/examples/parametrized/example-record", Type.FILE);
         assertEntry(result, "/examples/parametrized/example-view", Type.FILE);
+    }
+
+    @Test
+    public void canBeDeletedWorksAsIntended() {
+        var entityName = "/test-canBeDeletedWorksAsIntended";
+
+        var initialVersion = dsl()
+                .transactionResult(
+                        tx -> entityStore.upsert(tx.dsl(),
+                                PartialEntity.create(entityName, "/mica/record/v1",
+                                        Map.of("data", TextNode.valueOf("Hi!"))),
+                                null))
+                .orElseThrow();
+
+        var canBeDeleted = resource.canBeDeleted(initialVersion.id());
+        assertTrue(canBeDeleted.canBeDeleted());
+
+        var deletedVersion = dsl().transactionResult(tx -> entityStore.deleteById(tx.dsl(), initialVersion.id()))
+                .orElseThrow();
+        assertEquals(initialVersion.id(), deletedVersion.id());
+
+        canBeDeleted = resource.canBeDeleted(initialVersion.id());
+        assertFalse(canBeDeleted.canBeDeleted());
+
+        var newVersion = dsl()
+                .transactionResult(
+                        tx -> entityStore.upsert(tx.dsl(),
+                                PartialEntity.create(entityName, "/mica/record/v1",
+                                        Map.of("data", TextNode.valueOf("Hi!"))),
+                                null))
+                .orElseThrow();
+
+        canBeDeleted = resource.canBeDeleted(newVersion.id());
+        assertTrue(canBeDeleted.canBeDeleted());
     }
 
     private static void assertEntry(ListResponse response, String name, Type type) {

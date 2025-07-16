@@ -73,7 +73,7 @@ public class EntityListResource implements Resource {
         }
 
         // check if already "deleted"
-        if (record.component2() == null) {
+        if (record.component2() != null) {
             return new CanBeDeletedResponse(false, Optional.of("Already deleted"));
         }
 
