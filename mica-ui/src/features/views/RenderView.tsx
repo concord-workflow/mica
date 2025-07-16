@@ -2,7 +2,7 @@ import { ApiError } from '../../api/error.ts';
 import { RenderViewRequest, RenderViewResponse, render } from '../../api/view.ts';
 import ReadableApiError from '../../components/ReadableApiError.tsx';
 import DataView from './DataView.tsx';
-import { Alert, Box, CircularProgress } from '@mui/material';
+import { Alert, CircularProgress } from '@mui/material';
 
 import { useQuery } from '@tanstack/react-query';
 
@@ -27,18 +27,7 @@ const RenderView = ({ request }: Props) => {
                     <ReadableApiError error={error} />
                 </Alert>
             )}
-            {isLoading && (
-                <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    width="100%"
-                    height="100%"
-                    position="absolute"
-                    bgcolor="#ffffffaa">
-                    <CircularProgress color="secondary" />
-                </Box>
-            )}
+            {isLoading && <CircularProgress color="secondary" />}
             {data && (
                 <>
                     <DataView data={data.data} />

@@ -183,7 +183,16 @@ const PreviewView = ({ data, onClose }: Props) => {
                 </Box>
             </Grid>
             <Grid size={9}>
-                <Box position="fixed" right={(theme) => theme.spacing(2)} zIndex={100}>
+                <Box
+                    position="fixed"
+                    display="flex"
+                    alignItems="center"
+                    bottom={(theme) => theme.spacing(2)}
+                    right={(theme) => theme.spacing(2)}
+                    zIndex={100}>
+                    {debouncedIsPending && (
+                        <CircularProgress color="secondary" size={24} sx={{ marginRight: 2 }} />
+                    )}
                     <ShowRenderedViewDetailsToggle
                         checked={showDetails}
                         onChange={handleDetailsToggle}
@@ -192,11 +201,6 @@ const PreviewView = ({ data, onClose }: Props) => {
                         <CloseIcon />
                     </IconButton>
                 </Box>
-                {debouncedIsPending && (
-                    <Overlay>
-                        <CircularProgress color="secondary" />
-                    </Overlay>
-                )}
                 {requestError && <Overlay />}
                 {lastGoodData && <DataView data={showDetails ? lastGoodData : lastGoodData.data} />}
             </Grid>

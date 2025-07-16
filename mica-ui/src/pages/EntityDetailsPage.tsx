@@ -270,7 +270,7 @@ const RenderDialog = ({ data, onClose }: { data: Entity; onClose: () => void }) 
                             onChange={handleParameterChange}
                         />
                     </Grid>
-                    <Grid size={9}>
+                    <Grid size={9} display="flex" alignItems="center" justifyContent="center">
                         <RenderView request={{ viewId: data.id, parameters: requestParameters }} />
                     </Grid>
                 </Grid>
