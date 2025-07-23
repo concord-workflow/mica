@@ -58,6 +58,7 @@ import static java.util.stream.Collectors.toSet;
 @DryRunReady
 public class MicaTask implements Task {
 
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
     private static final Logger log = LoggerFactory.getLogger(MicaTask.class);
 
     private final ObjectMapper objectMapper;
@@ -305,7 +306,7 @@ public class MicaTask implements Task {
     private MicaClient createMicaClient(Variables input) {
         var baseUrl = baseUrl(input);
         log.info("Connecting to {}", baseUrl);
-        return new MicaClient(httpClient, baseUrl, auth(input), userAgent, objectMapper);
+        return new MicaClient(httpClient, baseUrl, auth(input), userAgent, objectMapper, REQUEST_TIMEOUT);
     }
 
     private URI baseUrl(Variables input) {

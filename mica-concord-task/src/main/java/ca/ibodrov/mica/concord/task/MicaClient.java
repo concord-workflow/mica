@@ -22,17 +22,19 @@ package ca.ibodrov.mica.concord.task;
 
 import ca.ibodrov.mica.api.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
+import java.net.UnknownHostException;
+import java.net.http.*;
 import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -43,25 +45,28 @@ import static java.util.Objects.requireNonNull;
 
 public class MicaClient {
 
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+    private static final Logger log = LoggerFactory.getLogger(MicaClient.class);
 
     private final HttpClient client;
     private final URI baseUri;
     private final Authorization authorization;
     private final ObjectMapper objectMapper;
     private final String userAgent;
+    private final Duration requestTimeout;
 
     public MicaClient(HttpClient client,
                       URI baseUri,
                       Authorization authorization,
                       String userAgent,
-                      ObjectMapper objectMapper) {
+                      ObjectMapper objectMapper,
+                      Duration requestTimeout) {
 
         this.client = requireNonNull(client);
         this.baseUri = requireNonNull(baseUri);
         this.authorization = requireNonNull(authorization);
         this.userAgent = requireNonNull(userAgent);
         this.objectMapper = requireNonNull(objectMapper);
+        this.requestTimeout = requireNonNull(requestTimeout);
     }
 
     public BatchOperationResult apply(BatchOperationRequest body) throws ApiException {
@@ -147,7 +152,7 @@ public class MicaClient {
     private HttpRequest.Builder newRequest(String path) {
         var builder = HttpRequest.newBuilder()
                 .header("User-Agent", userAgent)
-                .timeout(REQUEST_TIMEOUT)
+                .timeout(requestTimeout)
                 .uri(baseUri.resolve(path));
         return authorization.applyTo(builder);
     }
@@ -156,6 +161,10 @@ public class MicaClient {
         try {
             return client.send(request, responseBodyHandler);
         } catch (IOException e) {
+            if (e instanceof HttpTimeoutException) {
+                handleTimeoutException(request);
+            }
+
             var message = e.getMessage();
             if (message == null) {
                 message = e.getClass().toString();
@@ -209,6 +218,16 @@ public class MicaClient {
             return Optional.empty();
         }
         return Optional.of(parseResponseAsJson(response, type));
+    }
+
+    private static void handleTimeoutException(HttpRequest request) {
+        String destIp;
+        try {
+            destIp = InetAddress.getByName(request.uri().getHost()).getHostAddress();
+        } catch (UnknownHostException e) {
+            destIp = "unknown";
+        }
+        log.warn("Timeout while connecting to {} (IP: {})", request.uri(), destIp);
     }
 
     private static void handleResponseErrors(HttpResponse<InputStream> response, String message) throws ApiException {
