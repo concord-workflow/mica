@@ -171,7 +171,7 @@ public class ITs extends TestResources {
                 .getId();
 
         var bobKey = securityContext.runAs(adminId,
-                () -> apiKeyResource.create(new CreateApiKeyRequest(bobId, null, null, null, null))
+                () -> apiKeyResource.create(new CreateApiKeyRequest(bobId, null, null, null, null, null))
                         .getKey());
 
         // POST a new entity, the request should fail with 401
