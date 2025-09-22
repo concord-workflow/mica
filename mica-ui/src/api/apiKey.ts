@@ -14,6 +14,7 @@ export const listApiKeys = (): Promise<Array<ApiKeyEntry>> =>
     doFetch(`/api/v1/apikey`).then(handleJsonResponse<Array<ApiKeyEntry>>);
 
 export interface CreateApiKeyRequest {
+    userId: string;
     name: string;
 }
 

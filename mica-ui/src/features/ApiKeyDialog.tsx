@@ -1,4 +1,4 @@
-import { CurrentUser } from '../UserContext.tsx';
+import { CurrentUser, useCurrentUser } from '../UserContext.tsx';
 import { ApiKeyEntry, listApiKeys, useCreateApiKey, useDeleteApiKey } from '../api/apiKey.ts';
 import { ApiError } from '../api/error.ts';
 import CopyToClipboardButton from '../components/CopyToClipboardButton.tsx';
@@ -73,6 +73,8 @@ interface Props {
 }
 
 const ApiKeyDialog = ({ open, onClose }: Props) => {
+    const currentUser = useCurrentUser();
+
     const {
         data: existingKeys,
         error: listError,
@@ -97,9 +99,12 @@ const ApiKeyDialog = ({ open, onClose }: Props) => {
 
     const [apiKeyName, setApiKeyName] = React.useState<string>('');
     const handleCreate = React.useCallback(() => {
-        mutateAsync({ name: apiKeyName });
+        if (currentUser.userId == null) {
+            return;
+        }
+        mutateAsync({ userId: currentUser.userId, name: apiKeyName });
         setApiKeyName('');
-    }, [apiKeyName, mutateAsync]);
+    }, [currentUser.userId, apiKeyName, mutateAsync]);
 
     const error = createError || listError;
     const isError = isCreateError || isListError;

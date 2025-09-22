@@ -139,7 +139,7 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.5</version>
+                <version>8.23</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
