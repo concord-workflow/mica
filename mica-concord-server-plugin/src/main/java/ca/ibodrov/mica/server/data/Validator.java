@@ -23,12 +23,11 @@ package ca.ibodrov.mica.server.data;
 import ca.ibodrov.mica.server.exceptions.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonMetaSchema;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaException;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.uri.URIFactory;
-import com.networknt.schema.uri.URIFetcher;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.networknt.schema.*;
+import com.networknt.schema.resource.InputStreamSource;
+import com.networknt.schema.resource.SchemaLoader;
+import com.networknt.schema.serialization.DefaultJsonNodeReader;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -39,15 +38,15 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings("ClassCanBeRecord")
 public class Validator {
 
-    private static final String[] ALL_MICA_SCHEMES = { "http", "https", "mica" };
-
     public static Validator getDefault(ObjectMapper objectMapper, SchemaFetcher schemaFetcher) {
         return new Validator(JsonSchemaFactory.builder()
-                .objectMapper(objectMapper)
-                .defaultMetaSchemaURI(JsonMetaSchema.getV202012().getUri())
-                .addMetaSchema(JsonMetaSchema.getV202012())
-                .uriFactory(new URIFactoryImpl(), ALL_MICA_SCHEMES)
-                .uriFetcher(new URIFetcherImpl(schemaFetcher), ALL_MICA_SCHEMES)
+                .jsonNodeReader(DefaultJsonNodeReader.builder()
+                        .jsonNodeFactoryFactory(jsonParser -> objectMapper.getNodeFactory()).jsonMapper(objectMapper)
+                        .yamlMapper(objectMapper.copyWith(new YAMLFactory()))
+                        .build())
+                .defaultMetaSchemaIri(JsonMetaSchema.getV202012().getIri())
+                .metaSchema(JsonMetaSchema.getV202012())
+                .schemaLoaders(schemaLoaders -> schemaLoaders.add(new MicaSchemaLoader(schemaFetcher)))
                 .build());
     }
 
@@ -72,16 +71,44 @@ public class Validator {
         return new ValidatedInput(messages);
     }
 
-    private static class URIFactoryImpl implements URIFactory {
+    private static class MicaSchemaLoader implements SchemaLoader {
+        private final SchemaFetcher schemaFetcher;
 
-        @Override
-        public URI create(String uri) {
-            return URI.create(uri);
+        public MicaSchemaLoader(SchemaFetcher schemaFetcher) {
+            this.schemaFetcher = requireNonNull(schemaFetcher);
         }
 
         @Override
-        public URI create(URI baseURI, String segment) {
-            return baseURI.resolve(segment);
+        public InputStreamSource getSchema(AbsoluteIri iri) {
+            URI uri;
+            try {
+                uri = URI.create(iri.toString());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+
+            // Handle json-schema.org resources
+            if (uri.getHost() != null && uri.getHost().equals("json-schema.org")
+                    && uri.getPath().startsWith("/draft/2020-12")) {
+                var in = Validator.class.getResourceAsStream(uri.getPath());
+                if (in != null) {
+                    return () -> in;
+                }
+            }
+
+            // Handle mica scheme
+            if (!"mica".equals(uri.getScheme())) {
+                return null;
+            }
+
+            if (!"internal".equals(uri.getHost())) {
+                return null;
+            }
+
+            String kind = uri.getPath();
+            return schemaFetcher.fetch(kind)
+                    .map(inputStream -> (InputStreamSource) () -> inputStream)
+                    .orElse(null);
         }
     }
 
@@ -101,35 +128,4 @@ public class Validator {
         }
     }
 
-    private record URIFetcherImpl(SchemaFetcher schemaFetcher) implements URIFetcher {
-
-        private URIFetcherImpl {
-            requireNonNull(schemaFetcher);
-        }
-
-        @Override
-        public InputStream fetch(URI uri) {
-            // TODO handle http/https
-            // TODO consider rewriting URIs in URIFactory
-            if (uri.getHost().equals("json-schema.org") && uri.getPath().startsWith("/draft/2020-12")) {
-                var in = Validator.class.getResourceAsStream(uri.getPath());
-                if (in == null) {
-                    throw new IllegalArgumentException("Resource not found: " + uri.getPath());
-                }
-                return in;
-            }
-
-            if (!"mica".equals(uri.getScheme())) {
-                throw new IllegalArgumentException("Unsupported scheme: " + uri.getScheme());
-            }
-
-            if (!"internal".equals(uri.getHost())) {
-                throw new IllegalArgumentException("Unsupported host: " + uri.getHost());
-            }
-
-            String kind = uri.getPath();
-            return schemaFetcher.fetch(kind)
-                    .orElseThrow(() -> new IllegalArgumentException("Schema not found: " + kind));
-        }
-    }
 }

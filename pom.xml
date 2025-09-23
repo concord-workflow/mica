@@ -49,7 +49,7 @@
         <project.url>https://github.com/concord-workflow/mica.git</project.url>
 
         <aws.java.sdk.version>2.31.40</aws.java.sdk.version>
-        <concord.version>2.32.0</concord.version>
+        <concord.version>2.33.0</concord.version>
         <graalvm.version>24.2.1</graalvm.version>
         <jooq.version>3.14.0</jooq.version>
         <node.version>v22.15.0</node.version>
@@ -76,16 +76,6 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>42.7.3</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.uuid</groupId>
-                <artifactId>java-uuid-generator</artifactId>
-                <version>4.3.0</version>
-            </dependency>
-            <dependency>
                 <groupId>io.swagger.core.v3</groupId>
                 <artifactId>swagger-annotations</artifactId>
                 <version>2.2.15</version>
@@ -106,7 +96,7 @@
             <dependency>
                 <groupId>com.networknt</groupId>
                 <artifactId>json-schema-validator</artifactId>
-                <version>1.1.0</version>
+                <version>1.5.4</version>
             </dependency>
             <!-- to cache view data -->
             <dependency>
@@ -135,11 +125,6 @@
                 <groupId>org.graalvm.js</groupId>
                 <artifactId>js-scriptengine</artifactId>
                 <version>${graalvm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.nimbusds</groupId>
-                <artifactId>nimbus-jose-jwt</artifactId>
-                <version>8.23</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>

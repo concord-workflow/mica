@@ -7,5 +7,5 @@ schema:
       type: string
       enum: [ "/mica/record/v1" ]
     data:
-      type: [ object, array, string, number, boolean, null ]
+      type: [ object, array, string, number, boolean ]
   required: [ "kind", "data" ]

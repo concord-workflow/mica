@@ -122,7 +122,7 @@ public class ValidateAllReport implements Report<ValidateAllReport.Options> {
     }
 
     private static Violation asViolation(JsonNode input, ValidationMessage message) {
-        var path = Optional.ofNullable(message.getPath());
+        var path = Optional.ofNullable(message.getInstanceLocation().toString());
         var example = path.map(pointer -> {
             try {
                 return input.at(pointer);

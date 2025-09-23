@@ -46,7 +46,8 @@ public record ValidatedInput(Set<ValidationMessage> messages) {
         // TODO use path, combine messages for each path
         return new ValidationErrorsException()
                 .withErrors(messages.stream()
-                        .sorted(comparing(ValidationMessage::getPath).thenComparing(ValidationMessage::getMessage))
+                        .sorted(comparing((ValidationMessage m) -> m.getInstanceLocation().toString())
+                                .thenComparing(ValidationMessage::getMessage))
                         .map(m -> new ValidationErrorXO(UUID.randomUUID().toString(), m.getMessage()))
                         .toList());
     }
