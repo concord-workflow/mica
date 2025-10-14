@@ -20,6 +20,8 @@ package ca.ibodrov.mica.server.ui;
  * ======
  */
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.walmartlabs.concord.db.MainDB;
 import com.walmartlabs.concord.server.org.team.TeamRole;
 import com.walmartlabs.concord.server.plugins.oidc.OidcToken;
@@ -36,10 +38,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static com.walmartlabs.concord.server.jooq.tables.Organizations.ORGANIZATIONS;
 import static com.walmartlabs.concord.server.jooq.tables.Roles.ROLES;
@@ -94,9 +93,27 @@ public class WhoamiResource implements Resource {
                         TeamRole.valueOf(r.get(USER_TEAMS.TEAM_ROLE))));
     }
 
-    @SuppressWarnings("unchecked")
     private static Optional<List<String>> getOidcGroups() {
-        return Optional.ofNullable(SecurityUtils.getCurrent(OidcToken.class))
-                .flatMap(t -> Optional.ofNullable((List<String>) t.getProfile().getAttribute("groups")));
+        var token = Optional.ofNullable(SecurityUtils.getCurrent(OidcToken.class));
+        var maybeGroups = token.flatMap(t -> Optional.ofNullable(t.getProfile().getAttribute("groups")));
+        return maybeGroups.map(WhoamiResource::assertJsonArrayOfStrings);
+    }
+
+    private static List<String> assertJsonArrayOfStrings(Object v) {
+        if (v instanceof ArrayNode arr) {
+            var result = new ArrayList<String>();
+            for (var i = 0; i < arr.size(); i++) {
+                var n = arr.get(i);
+                if (n instanceof TextNode text) {
+                    result.add(text.textValue());
+                } else {
+                    throw new IllegalStateException(
+                            "Expected an array of strings, got '%s' at %d position".formatted(n, i + 1));
+                }
+            }
+            return result;
+        }
+
+        throw new IllegalStateException("Expected an array of strings, got " + v);
     }
 }
