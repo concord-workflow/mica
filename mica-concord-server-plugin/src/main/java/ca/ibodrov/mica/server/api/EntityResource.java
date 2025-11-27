@@ -108,7 +108,7 @@ public class EntityResource implements Resource {
         var entity = getEntityById(entityId, updatedAt);
         try {
             var string = yamlMapper.prettyPrint(entity);
-            return Response.ok(string, "text/yaml").build();
+            return Response.ok(string, "application/yaml").build();
         } catch (IOException e) {
             log.warn("YAML serialization error: {}", e.getMessage(), e);
             throw ApiException.internalError(e.getMessage());
@@ -118,7 +118,7 @@ public class EntityResource implements Resource {
     @GET
     @Path("{id}/doc")
     @Operation(summary = "Return the original unparsed YAML (or JSON) document for the entity", operationId = "getEntityDoc")
-    @Produces("text/yaml")
+    @Produces("application/yaml")
     public Response getEntityDoc(@PathParam("id") EntityId entityId,
                                  @Nullable @QueryParam("updatedAt") String updatedAtString) {
 
@@ -139,7 +139,7 @@ public class EntityResource implements Resource {
                 .orElseThrow(() -> ApiException.notFound("Entity not found: " + entityId));
         try {
             var renderedDoc = yamlMapper.prettyPrint(entity);
-            return Response.ok(renderedDoc, "text/yaml").build();
+            return Response.ok(renderedDoc, "application/yaml").build();
         } catch (IOException e) {
             log.warn("YAML serialization error: {}", e.getMessage(), e);
             throw ApiException.internalError(e.getMessage());
@@ -149,7 +149,7 @@ public class EntityResource implements Resource {
     @GET
     @Path("{id}/download")
     @Operation(summary = "Downloads the original unparsed YAML (or JSON) document for the entity", operationId = "downloadEntityDoc")
-    @Produces("text/yaml")
+    @Produces("application/yaml")
     public Response downloadEntityDoc(@PathParam("id") EntityId entityId,
                                       @Nullable @QueryParam("updatedAt") String updatedAtString) {
         return Response.fromResponse(getEntityDoc(entityId, updatedAtString))

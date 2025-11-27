@@ -141,7 +141,7 @@ public class MicaClient {
 
         var uri = "/api/mica/v1/upload/partialYaml?" + qp;
         var request = newRequest(uri)
-                .header("Content-Type", "text/yaml")
+                .header("Content-Type", "application/yaml")
                 .PUT(bodyPublisher)
                 .build();
 
