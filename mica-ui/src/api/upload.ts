@@ -26,7 +26,7 @@ const putYamlString = (body: string, overwrite: boolean): Promise<EntityVersion>
     doFetch('/api/mica/v1/upload/yaml?overwrite=' + overwrite, {
         method: 'PUT',
         headers: {
-            'Content-Type': 'text/yaml',
+            'Content-Type': 'application/yaml',
         },
         body,
     }).then(handleJsonResponse<EntityVersion>);

@@ -187,7 +187,7 @@ public class ITs extends TestResources {
                           foo: "bar"
                         """))
                 .header(AUTHORIZATION, "Bearer " + bobKey)
-                .header(CONTENT_TYPE, "text/yaml")
+                .header(CONTENT_TYPE, "application/yaml")
                 .build();
 
         var response = client.send(request, BodyHandlers.ofString());
