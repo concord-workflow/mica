@@ -51,6 +51,7 @@ import com.walmartlabs.concord.server.process.queue.ProcessStatusListener;
 import com.walmartlabs.concord.server.repository.RepositoryModule;
 import com.walmartlabs.concord.server.repository.ServerAuthTokenProvider;
 import com.walmartlabs.concord.server.role.RoleModule;
+import com.walmartlabs.concord.server.sdk.ProcessKeyCache;
 import com.walmartlabs.concord.server.sdk.events.ProcessEventListener;
 import com.walmartlabs.concord.server.sdk.log.ProcessLogListener;
 import com.walmartlabs.concord.server.security.BasicAuthenticationHandler;
@@ -119,7 +120,11 @@ public class MicaServerModule implements Module {
         binder.bind(AuthTokenProvider.class).to(ServerAuthTokenProvider.class);
 
         binder.install(new RoleModule());
+
         binder.install(new SecretModule());
+        // TODO: fix concord
+        binder.bind(ProcessKeyCache.class).to(com.walmartlabs.concord.server.process.queue.ProcessKeyCache.class).in(SINGLETON);
+
         binder.install(new TaskSchedulerModule());
         binder.install(new TeamModule());
         binder.install(new UserModule());
