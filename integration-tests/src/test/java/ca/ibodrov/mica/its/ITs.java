@@ -44,6 +44,7 @@ import com.walmartlabs.concord.client2.ProcessApi;
 import com.walmartlabs.concord.client2.ProcessEntry;
 import com.walmartlabs.concord.client2.StartProcessResponse;
 import com.walmartlabs.concord.common.secret.BinaryDataSecret;
+import com.walmartlabs.concord.it.common.MockGitSshServer;
 import com.walmartlabs.concord.server.org.OrganizationEntry;
 import com.walmartlabs.concord.server.org.OrganizationManager;
 import com.walmartlabs.concord.server.org.jsonstore.JsonStoreDataManager;
@@ -113,6 +114,8 @@ import static org.testcontainers.containers.localstack.LocalStackContainer.Servi
  * Rebuild mica-concord-task with {@code mvn clean install} before running ITs.
  */
 public class ITs extends TestResources {
+
+    private static final String GIT_SERVER_URL_PATTERN = "ssh://git@localhost:%d/";
 
     static OrganizationManager orgManager;
     static ProjectManager projectManager;
@@ -439,65 +442,73 @@ public class ITs extends TestResources {
             git.add().addFilepattern(".").call();
             git.commit().setSign(false).setMessage("1 extra entity").call();
         }
-        var repoUrl = "file://" + repoDir.toAbsolutePath();
 
-        // create Concord org, project and repo
+        MockGitSshServer gitServer = new MockGitSshServer(0, repoDir);
+        gitServer.start();
 
-        var includeUri = securityContext.runAs(adminId, () -> {
-            var orgName = "org-" + UUID.randomUUID();
-            orgManager.createOrUpdate(new OrganizationEntry(orgName));
+        try {
+            String repoUrl = String.format(GIT_SERVER_URL_PATTERN, gitServer.getPort());
 
-            var projectName = "project-" + UUID.randomUUID();
-            var repoName = "repo-" + UUID.randomUUID();
-            projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
-                    Map.of(repoName,
-                            new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
+            // create Concord org, project and repo
 
-            return URI.create("concord+git://%s/%s/%s?ref=%s&path=%s&useFileNames=true&namePrefix=%s"
-                    .formatted(orgName, projectName, repoName, encode(repoBranch, UTF_8), encode(pathInRepo, UTF_8),
-                            encode("/test/", UTF_8)));
-        });
+            var includeUri = securityContext.runAs(adminId, () -> {
+                var orgName = "org-" + UUID.randomUUID();
+                orgManager.createOrUpdate(new OrganizationEntry(orgName));
 
-        // add a view to render both the entities from the DB and the ones from the Git
-        // repo
+                var projectName = "project-" + UUID.randomUUID();
+                var repoName = "repo-" + UUID.randomUUID();
+                projectManager.createOrUpdate(orgName, new ProjectEntry(projectName,
+                        Map.of(repoName,
+                                new RepositoryEntry(new RepositoryEntry(repoName, repoUrl), repoBranch, null))));
 
-        upsert(new MicaViewV1.Builder()
-                .name("/acme/views/imports-demo")
-                .parameters(parseObject("""
-                        properties:
-                          env:
-                            type: string
-                        """))
-                .selector(byEntityKind("/acme/kinds/entity")
-                        .withNamePatterns(List.of("/${parameters.env}/.*"))
-                        .withIncludes(List.of(
-                                INTERNAL_ENTITY_STORE_URI,
-                                includeUri.toString())))
-                .data(jsonPath("$.value"))
-                .build()
-                .toPartialEntity(objectMapper));
+                return URI.create("concord+git://%s/%s/%s?ref=%s&path=%s&useFileNames=true&namePrefix=%s"
+                        .formatted(orgName, projectName, repoName, encode(repoBranch, UTF_8), encode(pathInRepo, UTF_8),
+                                encode("/test/", UTF_8)));
+            });
 
-        // render the view
+            // add a view to render both the entities from the DB and the ones from the Git
+            // repo
 
-        var ciProcess = startConcordProcess(Map.of(
-                "arguments.githubPr", "123",
-                "concord.yml", """
-                        configuration:
-                          runtime: "concord-v2"
-                        flows:
-                          default:
-                            - task: mica
-                              in:
-                                action: renderView
-                                name: /acme/views/imports-demo
-                                parameters:
-                                  env: test
-                              out: result
-                            - log: ${result.data.stream().sorted().toList()}
-                        """.strip().getBytes()));
-        assertFinished(ciProcess);
-        var log = getProcessLog(ciProcess.getInstanceId());
-        assertTrue(log.contains("[bar!, baz!, foo!, qux!]"));
+            upsert(new MicaViewV1.Builder()
+                    .name("/acme/views/imports-demo")
+                    .parameters(parseObject("""
+                            properties:
+                              env:
+                                type: string
+                            """))
+                    .selector(byEntityKind("/acme/kinds/entity")
+                            .withNamePatterns(List.of("/${parameters.env}/.*"))
+                            .withIncludes(List.of(
+                                    INTERNAL_ENTITY_STORE_URI,
+                                    includeUri.toString())))
+                    .data(jsonPath("$.value"))
+                    .build()
+                    .toPartialEntity(objectMapper));
+
+            // render the view
+
+            var ciProcess = startConcordProcess(Map.of(
+                    "arguments.githubPr", "123",
+                    "concord.yml", """
+                            configuration:
+                              runtime: "concord-v2"
+                            flows:
+                              default:
+                                - task: mica
+                                  in:
+                                    action: renderView
+                                    name: /acme/views/imports-demo
+                                    parameters:
+                                      env: test
+                                  out: result
+                                - log: ${result.data.stream().sorted().toList()}
+                            """.strip().getBytes()));
+            assertFinished(ciProcess);
+            var log = getProcessLog(ciProcess.getInstanceId());
+            assertTrue(log.contains("[bar!, baz!, foo!, qux!]"));
+        } finally {
+            gitServer.stop();
+        }
     }
 
     @Test

@@ -22,6 +22,7 @@ package ca.ibodrov.mica.server.data.git;
 
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walmartlabs.concord.common.AuthTokenProvider;
 import com.walmartlabs.concord.repository.*;
 import com.walmartlabs.concord.sdk.Secret;
 import com.walmartlabs.concord.server.cfg.GitConfiguration;
@@ -56,7 +57,8 @@ public class GitUrlFetcher {
                 .sshTimeout(GIT_OPERATION_TIMEOUT)
                 .sshTimeoutRetryCount(gitCfg.getSshTimeoutRetryCount())
                 .build();
-        this.repositoryProviders = new RepositoryProviders(List.of(new GitCliRepositoryProvider(gitCliCfg)));
+        this.repositoryProviders = new RepositoryProviders(
+                List.of(new GitCliRepositoryProvider(gitCliCfg, new AuthTokenProvider.OauthTokenProvider(gitCfg))));
 
         // use separate repository cache from Concord's
         try {
