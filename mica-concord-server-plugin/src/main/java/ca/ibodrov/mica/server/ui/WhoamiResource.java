@@ -112,6 +112,18 @@ public class WhoamiResource implements Resource {
                 }
             }
             return result;
+        } else if (v instanceof List<?> list) {
+            var result = new ArrayList<String>();
+            for (var i = 0; i < list.size(); i++) {
+                var n = list.get(i);
+                if (n instanceof String str) {
+                    result.add(str);
+                } else {
+                    throw new IllegalStateException(
+                            "Expected a list of strings, got '%s' at %d position".formatted(n, i + 1));
+                }
+            }
+            return result;
         }
 
         throw new IllegalStateException("Expected an array of strings, got " + v);
