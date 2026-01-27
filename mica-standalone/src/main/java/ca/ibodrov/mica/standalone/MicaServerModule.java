@@ -123,7 +123,8 @@ public class MicaServerModule implements Module {
 
         binder.install(new SecretModule());
         // TODO: fix concord
-        binder.bind(ProcessKeyCache.class).to(com.walmartlabs.concord.server.process.queue.ProcessKeyCache.class).in(SINGLETON);
+        binder.bind(ProcessKeyCache.class).to(com.walmartlabs.concord.server.process.queue.ProcessKeyCache.class)
+                .in(SINGLETON);
 
         binder.install(new TaskSchedulerModule());
         binder.install(new TeamModule());
