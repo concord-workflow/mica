@@ -21,7 +21,6 @@ package ca.ibodrov.mica.its;
  */
 
 import ca.ibodrov.concord.webapp.WebappPluginModule;
-import ca.ibodrov.mica.db.MicaDatabaseModule;
 import ca.ibodrov.mica.server.MicaPluginModule;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -45,7 +44,8 @@ public class TestingMicaServer extends TestingConcordServer {
 
     public static TestingMicaServer withFakeOidc(PostgreSQLContainer<?> db, int port) {
         return new TestingMicaServer(db, port,
-                Map.of("oidc.discoveryUri", "http://localhost:12345/fake"));
+                Map.of("oidc.discoveryUri", "http://localhost:12345/fake",
+                        "templates.allowScripting", "false"));
     }
 
     public TestingMicaServer(PostgreSQLContainer<?> db, int port, Map<String, String> extraConfiguration) {
