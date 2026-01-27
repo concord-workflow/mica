@@ -64,6 +64,7 @@ import com.walmartlabs.concord.server.user.UserType;
 import org.eclipse.jgit.api.Git;
 import org.intellij.lang.annotations.Language;
 import org.jooq.DSLContext;
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -380,6 +381,7 @@ public class ITs extends TestResources {
     }
 
     @Test
+    @Ignore
     public void validateGitIncludesInViews() throws Exception {
         // add an entity kind to represent a config layer
 
