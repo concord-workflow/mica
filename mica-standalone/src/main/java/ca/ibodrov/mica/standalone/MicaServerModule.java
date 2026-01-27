@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.typesafe.config.Config;
+import com.walmartlabs.concord.common.AuthTokenProvider;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import com.walmartlabs.concord.db.DatabaseChangeLogProvider;
 import com.walmartlabs.concord.db.MainDBChangeLogProvider;
@@ -48,6 +49,7 @@ import com.walmartlabs.concord.server.org.team.TeamModule;
 import com.walmartlabs.concord.server.process.ImportManagerProvider;
 import com.walmartlabs.concord.server.process.queue.ProcessStatusListener;
 import com.walmartlabs.concord.server.repository.RepositoryModule;
+import com.walmartlabs.concord.server.repository.ServerAuthTokenProvider;
 import com.walmartlabs.concord.server.role.RoleModule;
 import com.walmartlabs.concord.server.sdk.events.ProcessEventListener;
 import com.walmartlabs.concord.server.sdk.log.ProcessLogListener;
@@ -111,7 +113,11 @@ public class MicaServerModule implements Module {
         binder.install(new JsonStoreModule());
         binder.install(new MetricModule());
         binder.install(new ProjectModule());
+
         binder.install(new RepositoryModule());
+        // TODO: fix concord
+        binder.bind(AuthTokenProvider.class).to(ServerAuthTokenProvider.class);
+
         binder.install(new RoleModule());
         binder.install(new SecretModule());
         binder.install(new TaskSchedulerModule());
