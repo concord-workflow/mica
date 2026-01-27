@@ -64,9 +64,9 @@ import com.walmartlabs.concord.server.user.UserType;
 import org.eclipse.jgit.api.Git;
 import org.intellij.lang.annotations.Language;
 import org.jooq.DSLContext;
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -381,7 +381,7 @@ public class ITs extends TestResources {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void validateGitIncludesInViews() throws Exception {
         // add an entity kind to represent a config layer
 
