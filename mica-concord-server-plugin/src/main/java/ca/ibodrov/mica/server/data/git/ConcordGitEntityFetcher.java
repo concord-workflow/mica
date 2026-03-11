@@ -28,6 +28,7 @@ import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import com.walmartlabs.concord.common.AuthTokenProvider;
 import com.walmartlabs.concord.repository.Repository;
 import com.walmartlabs.concord.sdk.Secret;
 import com.walmartlabs.concord.server.cfg.GitConfiguration;
@@ -78,13 +79,14 @@ public class ConcordGitEntityFetcher implements EntityFetcher {
                                    SecretManager secretManager,
                                    GitConfiguration gitCfg,
                                    RepositoryConfiguration repoCfg,
+                                   AuthTokenProvider authProvider,
                                    ObjectMapper objectMapper) {
 
         this.orgManager = requireNonNull(orgManager);
         this.projectRepositoryManager = requireNonNull(projectRepositoryManager);
         this.secretManager = requireNonNull(secretManager);
         this.yamlMapper = new YamlMapper(objectMapper);
-        this.gitUrlFetcher = new GitUrlFetcher(gitCfg, repoCfg, objectMapper);
+        this.gitUrlFetcher = new GitUrlFetcher(gitCfg, repoCfg, authProvider, objectMapper);
     }
 
     @Override
