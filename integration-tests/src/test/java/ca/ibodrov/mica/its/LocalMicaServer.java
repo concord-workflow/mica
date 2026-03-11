@@ -63,11 +63,11 @@ public class LocalMicaServer {
                 .orElseThrow(() -> new RuntimeException("Missing %s env var".formatted(key)));
     }
 
-    private static Map<String, String> createConfig() {
+    private static Map<String, Object> createConfig() {
         var authServerUri = assertEnvVar("TEST_OIDC_AUTHSERVER");
         var oidcClientId = assertEnvVar("TEST_OIDC_CLIENTID");
         var oidcSecret = assertEnvVar("TEST_OIDC_SECRET");
-        return ImmutableMap.<String, String>builder()
+        return ImmutableMap.<String, Object>builder()
                 .put("oidc.enabled", "true")
                 .put("oidc.clientId", oidcClientId)
                 .put("oidc.secret", oidcSecret)
