@@ -43,12 +43,14 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
  */
 public class TestingMicaServer extends TestingConcordServer {
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static TestingMicaServer withFakeOidc(PostgreSQLContainer<?> db, int port) {
         return new TestingMicaServer(db, port,
-                Map.of("oidc.discoveryUri", "http://localhost:12345/fake"));
+                Map.of("oidc.discoveryUri", "http://localhost:12345/fake",
+                        "git.allowedSchemes", List.of("https", "http", "ssh", "classpath", "file")));
     }
 
-    public TestingMicaServer(PostgreSQLContainer<?> db, int port, Map<String, String> extraConfiguration) {
+    public TestingMicaServer(PostgreSQLContainer<?> db, int port, Map<String, Object> extraConfiguration) {
         super(db, port, extraConfiguration, extraModules());
     }
 

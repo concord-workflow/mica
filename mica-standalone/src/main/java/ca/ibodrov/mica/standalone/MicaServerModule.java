@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.typesafe.config.Config;
+import com.walmartlabs.concord.common.AuthTokenProvider;
 import com.walmartlabs.concord.common.ObjectMapperProvider;
 import com.walmartlabs.concord.db.DatabaseChangeLogProvider;
 import com.walmartlabs.concord.db.MainDBChangeLogProvider;
@@ -48,6 +49,7 @@ import com.walmartlabs.concord.server.org.team.TeamModule;
 import com.walmartlabs.concord.server.process.ImportManagerProvider;
 import com.walmartlabs.concord.server.process.queue.ProcessStatusListener;
 import com.walmartlabs.concord.server.repository.RepositoryModule;
+import com.walmartlabs.concord.server.repository.ServerAuthTokenProvider;
 import com.walmartlabs.concord.server.role.RoleModule;
 import com.walmartlabs.concord.server.sdk.events.ProcessEventListener;
 import com.walmartlabs.concord.server.sdk.log.ProcessLogListener;
@@ -63,6 +65,7 @@ import com.walmartlabs.concord.server.security.internal.LocalUserInfoProvider;
 import com.walmartlabs.concord.server.task.TaskSchedulerModule;
 import com.walmartlabs.concord.server.user.UserInfoProvider;
 import com.walmartlabs.concord.server.user.UserModule;
+import com.walmartlabs.concord.server.sdk.ProcessKeyCache;
 import org.apache.shiro.realm.Realm;
 
 import javax.servlet.http.HttpServlet;
@@ -117,6 +120,11 @@ public class MicaServerModule implements Module {
         binder.install(new TaskSchedulerModule());
         binder.install(new TeamModule());
         binder.install(new UserModule());
+
+        // TODO: fix concord
+        binder.bind(AuthTokenProvider.class).to(ServerAuthTokenProvider.class);
+        binder.bind(ProcessKeyCache.class).to(com.walmartlabs.concord.server.process.queue.ProcessKeyCache.class)
+                .in(SINGLETON);
 
         bindJaxRsResource(binder, OrganizationResource.class);
         bindJaxRsResource(binder, ServerResource.class);

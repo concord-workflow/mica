@@ -22,6 +22,7 @@ package ca.ibodrov.mica.server.data.git;
 
 import ca.ibodrov.mica.server.exceptions.StoreException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.walmartlabs.concord.common.AuthTokenProvider;
 import com.walmartlabs.concord.repository.*;
 import com.walmartlabs.concord.sdk.Secret;
 import com.walmartlabs.concord.server.cfg.GitConfiguration;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -46,6 +48,7 @@ public class GitUrlFetcher {
 
     public GitUrlFetcher(GitConfiguration gitCfg,
                          RepositoryConfiguration repoCfg,
+                         AuthTokenProvider authProvider,
                          ObjectMapper objectMapper) {
 
         // use shorter timeouts than Concord's default provider
@@ -55,8 +58,10 @@ public class GitUrlFetcher {
                 .fetchTimeout(GIT_FETCH_TIMEOUT)
                 .sshTimeout(GIT_OPERATION_TIMEOUT)
                 .sshTimeoutRetryCount(gitCfg.getSshTimeoutRetryCount())
+                .allowedSchemes(new HashSet<>(gitCfg.getAllowedSchemes()))
                 .build();
-        this.repositoryProviders = new RepositoryProviders(List.of(new GitCliRepositoryProvider(gitCliCfg)));
+        this.repositoryProviders = new RepositoryProviders(
+                List.of(new GitCliRepositoryProvider(gitCliCfg, authProvider)));
 
         // use separate repository cache from Concord's
         try {

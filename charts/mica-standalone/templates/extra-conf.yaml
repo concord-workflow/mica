@@ -13,6 +13,37 @@ data:
         {{- end }}
       }
 
+      {{- if .Values.mica.github.appInstallation.auth }}
+      github {
+        appInstallation {
+          auth = [
+            {{- range $index, $entry := .Values.mica.github.appInstallation.auth }}
+            {
+              id = "{{ $entry.id }}"
+              type = "{{ $entry.type }}"
+              urlPattern = "{{ $entry.urlPattern }}"
+              {{- if $entry.apiUrl }}
+              apiUrl = "{{ $entry.apiUrl }}"
+              {{- end }}
+              {{- if $entry.clientId }}
+              clientId = "{{ $entry.clientId }}"
+              {{- end }}
+              {{- if $entry.privateKeyPath }}
+              privateKey = "{{ $entry.privateKeyPath }}"
+              {{- end }}
+              {{- if $entry.token }}
+              token = "{{ $entry.token }}"
+              {{- end }}
+              {{- if $entry.username }}
+              username = "{{ $entry.username }}"
+              {{- end }}
+            }
+            {{- end }}
+          ]
+        }
+      }
+      {{- end }}
+
       oidc {
         teamMapping = {
           {{- range $teamId, $team := .Values.mica.oidc.teamMapping }}
