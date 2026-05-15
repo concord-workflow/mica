@@ -28,7 +28,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import org.jooq.*;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.Record1;
+import org.jooq.Record5;
+import org.jooq.Record7;
 import org.jooq.impl.DSL;
 
 import javax.annotation.Nullable;
