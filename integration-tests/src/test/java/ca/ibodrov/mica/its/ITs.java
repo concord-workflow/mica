@@ -66,7 +66,8 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -104,7 +105,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
 /**
  * Requires up-to-date version of mica-concord-task JAR in the local Maven
@@ -126,9 +126,17 @@ public class ITs extends TestResources {
     static UUID adminId;
     static S3Client s3Client;
 
-    static LocalStackContainer localStack = new LocalStackContainer(
-            DockerImageName.parse("localstack/localstack:s3-latest"))
-            .withServices(S3);
+    private static final int LOCALSTACK_PORT = 4566;
+    private static final String AWS_ACCESS_KEY_ID = "test";
+    private static final String AWS_SECRET_ACCESS_KEY = "test";
+    private static final String AWS_REGION = "us-east-1";
+
+    static GenericContainer<?> localStack = new GenericContainer<>(
+            DockerImageName.parse("localstack/localstack:4.0.3"))
+            .withExposedPorts(LOCALSTACK_PORT)
+            .withEnv("SERVICES", "s3")
+            .withEnv("AWS_DEFAULT_REGION", AWS_REGION)
+            .waitingFor(Wait.forHttp("/_localstack/health").forPort(LOCALSTACK_PORT));
 
     @BeforeAll
     public static void setUp() {
@@ -150,18 +158,22 @@ public class ITs extends TestResources {
         localStack.start();
 
         s3Client = S3Client.builder()
-                .endpointOverride(localStack.getEndpointOverride(S3))
+                .endpointOverride(localStackEndpoint())
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(
-                                localStack.getAccessKey(),
-                                localStack.getSecretKey())))
-                .region(Region.of(localStack.getRegion()))
+                                AWS_ACCESS_KEY_ID,
+                                AWS_SECRET_ACCESS_KEY)))
+                .region(Region.of(AWS_REGION))
                 .build();
     }
 
     @AfterAll
     public static void tearDown() {
         localStack.stop();
+    }
+
+    private static URI localStackEndpoint() {
+        return URI.create("http://%s:%s".formatted(localStack.getHost(), localStack.getMappedPort(LOCALSTACK_PORT)));
     }
 
     @Test
@@ -825,16 +837,16 @@ public class ITs extends TestResources {
                     null,
                     secretName,
                     null,
-                    localStack.getAccessKey(),
-                    localStack.getSecretKey().toCharArray(),
+                    AWS_ACCESS_KEY_ID,
+                    AWS_SECRET_ACCESS_KEY.toCharArray(),
                     SecretVisibility.PRIVATE,
                     "concord");
             return null;
         });
 
         var includeUri = "s3://%s/test.json?region=%s&secretRef=%s/%s&endpoint=%s"
-                .formatted(bucketName, localStack.getRegion(), orgName, secretName,
-                        localStack.getEndpointOverride(S3));
+                .formatted(bucketName, AWS_REGION, orgName, secretName,
+                        localStackEndpoint());
 
         upsert(new MicaViewV1.Builder()
                 .name("/acme/views/s3-single-demo")
