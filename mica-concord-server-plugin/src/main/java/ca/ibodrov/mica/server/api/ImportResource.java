@@ -32,7 +32,14 @@ import com.walmartlabs.concord.server.security.Roles;
 import com.walmartlabs.concord.server.security.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.jooq.*;
+import org.jooq.Condition;
+import org.jooq.Configuration;
+import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.Table;
+import org.jooq.TableRecord;
+import org.jooq.UniqueKey;
+import org.jooq.UpdatableRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

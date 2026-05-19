@@ -26,6 +26,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -64,7 +65,12 @@ public class S3ClientManager {
 
         params.getFirst("endpoint")
                 .map(S3ClientManager::parseEndpoint)
-                .ifPresent(builder::endpointOverride);
+                .ifPresent(endpoint -> {
+                    builder.endpointOverride(endpoint);
+                    builder.serviceConfiguration(S3Configuration.builder()
+                            .pathStyleAccessEnabled(true)
+                            .build());
+                });
 
         return builder.build();
     }

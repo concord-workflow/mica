@@ -177,6 +177,7 @@
                             <name>org.jooq.meta.postgres.PostgresDatabase</name>
                             <inputSchema>public</inputSchema>
                             <includes>.*</includes>
+                            <excludes>databasechangelog|databasechangeloglock</excludes>
                             <forcedTypes>
                                 <forcedType>
                                     <name>INSTANT</name>

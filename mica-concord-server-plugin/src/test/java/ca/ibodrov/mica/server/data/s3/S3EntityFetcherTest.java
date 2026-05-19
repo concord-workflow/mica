@@ -27,13 +27,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -45,15 +47,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
 public class S3EntityFetcherTest {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final int LOCALSTACK_PORT = 4566;
+    private static final String AWS_ACCESS_KEY_ID = "test";
+    private static final String AWS_SECRET_ACCESS_KEY = "test";
+    private static final String AWS_REGION = "us-east-1";
 
-    private static final LocalStackContainer localStack = new LocalStackContainer(
-            DockerImageName.parse("localstack/localstack:s3-latest"))
-            .withServices(S3);
+    private static final GenericContainer<?> localStack = new GenericContainer<>(
+            DockerImageName.parse("localstack/localstack:4.0.3"))
+            .withExposedPorts(LOCALSTACK_PORT)
+            .withEnv("SERVICES", "s3")
+            .withEnv("AWS_DEFAULT_REGION", AWS_REGION)
+            .waitingFor(Wait.forHttp("/_localstack/health").forPort(LOCALSTACK_PORT));
 
     private static S3Client s3Client;
     private static S3EntityFetcher fetcher;
@@ -64,12 +72,15 @@ public class S3EntityFetcherTest {
         localStack.start();
 
         var localStackCredentials = StaticCredentialsProvider
-                .create(AwsBasicCredentials.create(localStack.getAccessKey(), localStack.getSecretKey()));
+                .create(AwsBasicCredentials.create(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY));
 
         s3Client = S3Client.builder()
-                .endpointOverride(localStack.getEndpointOverride(S3))
+                .endpointOverride(localStackEndpoint())
                 .credentialsProvider(localStackCredentials)
-                .region(Region.of(localStack.getRegion()))
+                .region(Region.of(AWS_REGION))
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .build())
                 .build();
 
         var credentialsProvider = mock(S3CredentialsProvider.class);
@@ -82,6 +93,10 @@ public class S3EntityFetcherTest {
     @AfterAll
     public static void tearDown() {
         localStack.stop();
+    }
+
+    private static URI localStackEndpoint() {
+        return URI.create("http://%s:%s".formatted(localStack.getHost(), localStack.getMappedPort(LOCALSTACK_PORT)));
     }
 
     @BeforeEach
@@ -105,7 +120,7 @@ public class S3EntityFetcherTest {
 
         var fetchRequest = FetchRequest
                 .ofUri(URI.create("s3://%s/test.json?endpoint=%s&region=%s&secretRef=test/test"
-                        .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+                        .formatted(bucketName, localStackEndpoint(), AWS_REGION)));
 
         var result = fetcher.fetch(fetchRequest).stream().toList();
         assertEquals(1, result.size());
@@ -129,7 +144,7 @@ public class S3EntityFetcherTest {
 
         var fetchRequest = FetchRequest
                 .ofUri(URI.create("s3://%s?endpoint=%s&region=%s&secretRef=test/test"
-                        .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+                        .formatted(bucketName, localStackEndpoint(), AWS_REGION)));
 
         var result = fetcher.fetch(fetchRequest).stream().toList();
         assertEquals(entityCount, result.size());
@@ -152,7 +167,7 @@ public class S3EntityFetcherTest {
 
         var fetchRequest = FetchRequest
                 .ofUri(URI.create("s3://%s?endpoint=%s&region=%s&secretRef=test/test&namePattern=test[1-3].json"
-                        .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+                        .formatted(bucketName, localStackEndpoint(), AWS_REGION)));
 
         var result = fetcher.fetch(fetchRequest).stream().sorted(comparing(EntityLike::name)).toList();
         assertEquals(3, result.size());
@@ -176,7 +191,7 @@ public class S3EntityFetcherTest {
 
         var fetchRequest = FetchRequest
                 .ofUri(URI.create("s3://%s/test.yaml?endpoint=%s&region=%s&secretRef=test/test"
-                        .formatted(bucketName, localStack.getEndpointOverride(S3), localStack.getRegion())));
+                        .formatted(bucketName, localStackEndpoint(), AWS_REGION)));
 
         var result = fetcher.fetch(fetchRequest).stream().toList();
         assertEquals(1, result.size());
