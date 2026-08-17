@@ -47,10 +47,6 @@
                     <artifactId>js</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>org.bouncycastle</groupId>
-                    <artifactId>bcprov-jdk18on</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>io.takari.bpm</groupId>
                     <artifactId>bpm-engine-impl</artifactId>
                 </exclusion>
