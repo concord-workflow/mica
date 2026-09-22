@@ -46,9 +46,19 @@
                     <groupId>org.graalvm.js</groupId>
                     <artifactId>js</artifactId>
                 </exclusion>
+                <!-- Mica does not use BouncyCastle; bcpkix/bcutil arrive via
+                     concord-github-app-installation and would be left without bcprov anyway -->
                 <exclusion>
                     <groupId>org.bouncycastle</groupId>
                     <artifactId>bcprov-jdk18on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcpkix-jdk18on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcutil-jdk18on</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>io.takari.bpm</groupId>
