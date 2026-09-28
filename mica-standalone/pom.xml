@@ -46,13 +46,10 @@
                     <groupId>org.graalvm.js</groupId>
                     <artifactId>js</artifactId>
                 </exclusion>
-                <!-- bcpkix-jdk18on is kept: com.nimbusds.jose.jwk.PEMEncodedKeyParser
-                     (pulled in transitively for JWT/JWK handling) needs its
-                     org.bouncycastle.openssl classes at class-init time -->
-                <exclusion>
-                    <groupId>org.bouncycastle</groupId>
-                    <artifactId>bcprov-jdk18on</artifactId>
-                </exclusion>
+                <!-- bcprov/bcpkix/bcutil are kept: concord-github-app-installation's
+                     AccessTokenProvider calls com.nimbusds.jose.jwk.JWK.parseFromPEMEncodedObjects,
+                     whose PEMEncodedKeyParser.<clinit> needs bcpkix's PEM classes, which in turn
+                     need bcprov's JcaJceHelper -->
                 <exclusion>
                     <groupId>io.takari.bpm</groupId>
                     <artifactId>bpm-engine-impl</artifactId>
