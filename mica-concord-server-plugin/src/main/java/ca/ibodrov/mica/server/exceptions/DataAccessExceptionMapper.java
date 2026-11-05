@@ -24,11 +24,11 @@ import ca.ibodrov.mica.api.model.ApiError;
 import com.walmartlabs.concord.server.sdk.rest.Component;
 import org.jooq.exception.DataAccessException;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Provider
 public class DataAccessExceptionMapper implements Component, ExceptionMapper<DataAccessException> {

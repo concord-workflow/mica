@@ -49,7 +49,7 @@ import java.util.Set;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Data.jsonPath;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Selector.byEntityKind;
 import static ca.ibodrov.mica.api.kinds.MicaViewV1.Validation.asEntityKind;
-import static javax.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
+import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewControllerTest extends AbstractDatabaseTest {

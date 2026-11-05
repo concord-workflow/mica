@@ -31,8 +31,8 @@ import org.jooq.DSLContext;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import javax.validation.constraints.NotEmpty;
-import javax.ws.rs.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.ws.rs.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 import static ca.ibodrov.mica.db.jooq.Tables.MICA_ENTITIES;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jooq.impl.DSL.*;
 
 @Path("/api/mica/ui/entityList")

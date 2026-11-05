@@ -35,8 +35,8 @@ import com.walmartlabs.concord.common.secret.BinaryDataSecret;
 import com.walmartlabs.concord.server.org.secret.SecretType;
 
 import javax.inject.Inject;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
 

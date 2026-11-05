@@ -47,7 +47,9 @@ public class TestingMicaServer extends TestingConcordServer {
     public static TestingMicaServer withFakeOidc(PostgreSQLContainer<?> db, int port) {
         return new TestingMicaServer(db, port,
                 Map.of("oidc.discoveryUri", "http://localhost:12345/fake",
-                        "git.allowedSchemes", List.of("https", "http", "ssh", "classpath", "file")));
+                        "git.allowedSchemes", List.of("https", "http", "ssh", "classpath", "file"),
+                        // the default agent token's user doesn't have the 'agentWebsocket' permission
+                        "websockets.requirePermission", false));
     }
 
     public TestingMicaServer(PostgreSQLContainer<?> db, int port, Map<String, Object> extraConfiguration) {

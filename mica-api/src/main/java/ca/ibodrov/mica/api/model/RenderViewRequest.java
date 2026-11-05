@@ -24,7 +24,7 @@ import ca.ibodrov.mica.api.validation.ValidName;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 import java.util.Optional;
 import java.util.Set;
 

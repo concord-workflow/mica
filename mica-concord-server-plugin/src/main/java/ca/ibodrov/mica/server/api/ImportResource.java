@@ -43,9 +43,9 @@ import org.jooq.UpdatableRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.security.RolesAllowed;
 import javax.inject.Inject;
-import javax.ws.rs.*;
+import jakarta.ws.rs.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -69,8 +69,8 @@ import static com.walmartlabs.concord.server.jooq.tables.Secrets.SECRETS;
 import static com.walmartlabs.concord.server.jooq.tables.Teams.TEAMS;
 import static com.walmartlabs.concord.server.jooq.tables.Users.USERS;
 import static java.util.Objects.requireNonNull;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 
 @Tag(name = "Data Import")
 @Path("/api/mica/v1/import")

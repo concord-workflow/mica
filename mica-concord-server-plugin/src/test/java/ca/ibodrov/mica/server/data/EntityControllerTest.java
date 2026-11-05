@@ -43,8 +43,8 @@ import java.util.UUID;
 
 import static ca.ibodrov.mica.db.jooq.tables.MicaEntities.MICA_ENTITIES;
 import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.CONFLICT;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EntityControllerTest extends AbstractDatabaseTest {

@@ -22,7 +22,7 @@ package ca.ibodrov.mica.api.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 

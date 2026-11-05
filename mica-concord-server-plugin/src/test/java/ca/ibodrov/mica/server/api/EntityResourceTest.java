@@ -32,14 +32,14 @@ import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validation;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static ca.ibodrov.mica.server.data.UserEntryUtils.user;
 import static java.time.ZoneOffset.UTC;
-import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static jakarta.ws.rs.core.Response.Status.CONFLICT;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EntityResourceTest extends AbstractDatabaseTest {
