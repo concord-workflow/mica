@@ -68,7 +68,7 @@ import com.walmartlabs.concord.server.user.UserModule;
 import com.walmartlabs.concord.server.sdk.ProcessKeyCache;
 import org.apache.shiro.realm.Realm;
 
-import javax.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServlet;
 import java.security.SecureRandom;
 
 import static com.google.inject.Scopes.SINGLETON;

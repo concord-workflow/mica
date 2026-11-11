@@ -50,8 +50,8 @@ import com.walmartlabs.concord.server.sdk.ScheduledTask;
 import com.walmartlabs.concord.server.sdk.rest.Component;
 
 import javax.inject.Named;
-import javax.servlet.http.HttpServlet;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;

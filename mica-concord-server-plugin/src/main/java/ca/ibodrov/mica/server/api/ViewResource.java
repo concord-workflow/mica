@@ -32,13 +32,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.inject.Inject;
-import javax.validation.Valid;
-import javax.ws.rs.*;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 
 @Tag(name = "View")
 @Path("/api/mica/v1/view")

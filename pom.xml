@@ -43,15 +43,15 @@
     </modules>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.url>https://github.com/concord-workflow/mica.git</project.url>
 
-        <aws.java.sdk.version>2.31.40</aws.java.sdk.version>
-        <concord.version>2.41.0</concord.version>
+        <aws.java.sdk.version>2.55.2</aws.java.sdk.version>
+        <concord.version>2.47.0</concord.version>
         <graalvm.version>24.2.1</graalvm.version>
-        <jooq.version>3.19.33</jooq.version>
+        <jooq.version>3.21.8</jooq.version>
         <node.version>v22.15.0</node.version>
         <npm.version>10.9.2</npm.version>
         <testcontainers.version>1.21.0</testcontainers.version>
@@ -310,7 +310,7 @@
                 </plugin>
                 <plugin>
                     <groupId>io.swagger.core.v3</groupId>
-                    <artifactId>swagger-maven-plugin</artifactId>
+                    <artifactId>swagger-maven-plugin-jakarta</artifactId>
                     <version>2.2.16</version>
                 </plugin>
                 <plugin>

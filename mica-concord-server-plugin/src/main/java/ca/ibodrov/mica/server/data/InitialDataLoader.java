@@ -26,7 +26,7 @@ import ca.ibodrov.mica.server.YamlMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.DSLContext;
 import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
+import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,8 +71,8 @@ public class InitialDataLoader {
     private void loadPackage(String packageName) {
         var cl = getClass().getClassLoader();
         var yamlMapper = new YamlMapper(objectMapper);
-        var reflections = new Reflections(packageName, new ResourcesScanner());
-        reflections.getResources(s -> s.endsWith(".yaml")).forEach(resourceName -> {
+        var reflections = new Reflections(packageName, Scanners.Resources);
+        reflections.getResources(".*\\.yaml").forEach(resourceName -> {
             try (var in = cl.getResourceAsStream(resourceName)) {
                 assert in != null;
                 var doc = new String(in.readAllBytes(), UTF_8);

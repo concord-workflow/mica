@@ -20,7 +20,7 @@ package ca.ibodrov.mica.api.model;
  * ======
  */
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 
 import static java.util.Objects.requireNonNull;

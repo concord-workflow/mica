@@ -28,7 +28,7 @@ import com.walmartlabs.concord.server.org.secret.SecretManager;
 import com.walmartlabs.concord.server.org.secret.SecretType;
 
 import javax.inject.Inject;
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import static com.walmartlabs.concord.server.org.secret.SecretManager.AccessScope.apiRequest;
 import static java.util.Objects.requireNonNull;

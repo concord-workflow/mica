@@ -36,7 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import org.jooq.DSLContext;
 
 import javax.inject.Inject;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
